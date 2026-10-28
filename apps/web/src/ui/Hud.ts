@@ -1,0 +1,522 @@
+import {
+  inRect,
+  weaponDef,
+  type FirePolicy,
+  type GameState,
+  type MoveMode,
+  type OrderType,
+  type SimEvent,
+  type Squad,
+  type Survivor,
+  type World,
+} from '@dead-sector/sim';
+import { fmtTime, T } from './i18n';
+
+export interface HudActions {
+  selectSquad(id: string): void;
+  order(type: OrderType): void;
+  cyclePolicy(): void;
+  setMode(mode: MoveMode): void;
+  togglePause(): void;
+  toggleSpeed(): void;
+  save(): void;
+  load(): void;
+  confirmExtraction(): void;
+  openMenu(): void;
+}
+
+export interface HudView {
+  state: GameState;
+  world: World;
+  selectedSquadId: string | null;
+  paused: boolean;
+  speed: 1 | 2;
+  debugText: string | null;
+}
+
+const esc = (s: string): string =>
+  s.replace(
+    /[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
+  );
+const pct = (v: number, max = 100): number => Math.max(0, Math.min(100, (v / max) * 100));
+const SPAWNER_NAMES: Record<string, string> = {
+  'spawn-north': 'norte',
+  'spawn-south': 'sul',
+  'spawn-west': 'oeste',
+  'spawn-east': 'leste',
+};
+
+function direction(dx: number, dy: number): string {
+  const a = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const dirs = ['leste', 'sudeste', 'sul', 'sudoeste', 'oeste', 'noroeste', 'norte', 'nordeste'];
+  return dirs[(Math.round(a / 45) + 8) % 8] as string;
+}
+
+/** HTML/CSS tactical HUD. Reads state, sends intents through HudActions; never mutates the simulation. */
+export class Hud {
+  private root: HTMLDivElement;
+  private els: Record<string, HTMLElement> = {};
+  private logItems: string[] = [];
+  private lastCategoryLog: Record<string, number> = {};
+  private toastTimer: number | undefined;
+  private context = '';
+  private lastRender = 0;
+  private htmlCache = new Map<HTMLElement, string>();
+
+  /** Writes markup only when it changed, avoiding DOM churn (and detached-element races). */
+  private setHtml(el: HTMLElement | undefined, html: string): void {
+    if (!el || this.htmlCache.get(el) === html) return;
+    this.htmlCache.set(el, html);
+    el.innerHTML = html;
+  }
+
+  constructor(
+    host: HTMLElement,
+    private actions: HudActions,
+  ) {
+    this.root = document.createElement('div');
+    this.root.className = 'hud';
+    this.root.innerHTML = `
+      <div class="topbar panel" data-testid="topbar">
+        <span class="objective" data-el="objective"></span>
+        <span class="clock" data-el="clock" data-testid="clock"></span>
+        <span title="Ruído recente">Ruído <span class="meter"><i data-el="noise" style="width:0%"></i></span></span>
+        <span class="paused-flag" data-el="pausedFlag" data-testid="paused-flag"></span>
+        <button data-act="pause" data-testid="btn-pause"><span class="kbd">Espaço</span><span data-el="pauseLabel">Pausar</span></button>
+        <button data-act="speed" data-testid="btn-speed"><span class="kbd">Tab</span><span data-el="speed">1×</span></button>
+        <button data-act="save" data-testid="btn-save">Salvar</button>
+        <button data-act="load" data-testid="btn-load">Carregar</button>
+        <button data-act="menu"><span class="kbd">Esc</span>Menu</button>
+      </div>
+      <div class="left">
+        <div data-el="squads"></div>
+        <div class="objectives panel"><h4>Objetivos</h4><ul data-el="objectives" data-testid="objectives"></ul></div>
+      </div>
+      <div class="right">
+        <div class="orders panel">
+          <h4>Ordens — <span data-el="orderSquad">—</span></h4>
+          <div class="grid">
+            <button data-order="move"><span class="kbd">W</span>Mover</button>
+            <button data-order="sneak"><span class="kbd">Q</span>Furtivo</button>
+            <button data-order="sprint"><span class="kbd">E</span>Correr</button>
+            <button data-order="hold"><span class="kbd">H</span>Manter</button>
+            <button data-order="hide"><span class="kbd">T</span>Esconder</button>
+            <button data-order="retreat"><span class="kbd">R</span>Retirada</button>
+            <button data-order="regroup"><span class="kbd">G</span>Reagrupar</button>
+            <button data-act="policy" data-testid="btn-policy"><span class="kbd">F</span><span data-el="policy"></span></button>
+          </div>
+          <div class="legend">Botão direito: mover no modo atual · sobre infectado: atacar · sobre porta/armário/civil/rádio: interagir</div>
+          <div class="context" data-el="context" data-testid="context"></div>
+        </div>
+        <div class="log panel"><h4>Registro</h4><ul data-el="log" data-testid="event-log"></ul></div>
+      </div>
+      <div class="bottom" data-el="units" data-testid="units"></div>
+      <div class="banner panel" data-el="banner" style="display:none"></div>
+      <div class="toast" data-el="toast" style="opacity:0"></div>
+      <div class="debug panel" data-el="debug" style="display:none"></div>`;
+    host.appendChild(this.root);
+    this.root
+      .querySelectorAll<HTMLElement>('[data-el]')
+      .forEach((el) => (this.els[el.dataset['el'] as string] = el));
+    this.root.addEventListener('click', (ev) => {
+      const t = (ev.target as HTMLElement).closest<HTMLElement>(
+        '[data-act],[data-order],[data-squad]',
+      );
+      if (!t) return;
+      if (t.dataset['order']) this.actions.order(t.dataset['order'] as OrderType);
+      if (t.dataset['squad']) this.actions.selectSquad(t.dataset['squad']);
+      switch (t.dataset['act']) {
+        case 'pause':
+          return this.actions.togglePause();
+        case 'speed':
+          return this.actions.toggleSpeed();
+        case 'save':
+          return this.actions.save();
+        case 'load':
+          return this.actions.load();
+        case 'menu':
+          return this.actions.openMenu();
+        case 'policy':
+          return this.actions.cyclePolicy();
+        case 'confirmExtraction':
+          return this.actions.confirmExtraction();
+      }
+    });
+  }
+
+  destroy(): void {
+    this.root.remove();
+  }
+
+  toast(msg: string): void {
+    const el = this.els['toast'] as HTMLElement;
+    el.textContent = msg;
+    el.style.opacity = '1';
+    window.clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => (el.style.opacity = '0'), 2600);
+  }
+
+  setContext(msg: string): void {
+    this.context = msg;
+  }
+
+  private push(state: GameState, text: string, cls = ''): void {
+    this.logItems.unshift(
+      `<li class="${cls}"><span class="t">${fmtTime(state.tick / 10)}</span>${text}</li>`,
+    );
+    if (this.logItems.length > 60) this.logItems.length = 60;
+  }
+
+  private name(state: GameState, id: unknown): string {
+    const s = state.survivors.find((x) => x.id === id);
+    return esc(s ? (s.name.split(' ')[0] as string) : String(id));
+  }
+
+  private squadName(state: GameState, id: unknown): string {
+    return esc(state.squads.find((s) => s.id === id)?.displayName ?? String(id));
+  }
+
+  /** Converts simulation events into PT-BR log lines (only information the squads could know). */
+  ingest(events: SimEvent[], state: GameState, world: World): void {
+    const visible = new Set(state.contacts.filter((c) => c.visible).map((c) => c.zombieId));
+    for (const e of events) {
+      const p = e.payload;
+      switch (e.type) {
+        case 'ORDER_ISSUED':
+          this.push(
+            state,
+            `${this.squadName(state, p['squadId'])}: ordem ${T.orders[p['orderType'] as string] ?? p['orderType']}`,
+          );
+          break;
+        case 'ORDER_BLOCKED': {
+          const msg = `${this.squadName(state, p['squadId'])}: ${T.blocked[p['reason'] as string] ?? 'ordem bloqueada'}`;
+          this.push(state, msg, 'bad');
+          this.toast(msg);
+          this.context = msg;
+          break;
+        }
+        case 'ORDER_REJECTED':
+          this.toast(T.blocked[p['reason'] as string] ?? 'Ordem recusada');
+          break;
+        case 'ORDER_COMPLETED':
+          this.push(state, `${this.squadName(state, p['squadId'])}: ordem concluída`);
+          break;
+        case 'ENEMY_SPOTTED':
+          if (!p['reacquired'])
+            this.push(
+              state,
+              `Contato: ${T.zombie[p['typeId'] as string] ?? 'infectado'} avistado`,
+              'warn',
+            );
+          break;
+        case 'ZOMBIE_ALERTED':
+          if (visible.has(p['zombieId'] as string))
+            this.push(
+              state,
+              `Infectado alertado (${p['cause'] === 'sound' ? 'ouviu algo' : 'viu a equipe'})`,
+              'warn',
+            );
+          break;
+        case 'NOISE_EMITTED': {
+          const cat = p['category'] as string;
+          const ours =
+            state.squads.some((s) => s.id === p['sourceEntityId']) ||
+            state.survivors.some((s) => s.id === p['sourceEntityId']);
+          if (ours || cat === 'footstep') break;
+          const x = p['x'] as number;
+          const y = p['y'] as number;
+          const listeners = state.survivors.filter(
+            (s) => s.alive && s.squadId !== null && !s.extracted,
+          );
+          if (listeners.length === 0) break;
+          const near = listeners.reduce((a, b) =>
+            Math.hypot(a.position.x - x, a.position.y - y) <
+            Math.hypot(b.position.x - x, b.position.y - y)
+              ? a
+              : b,
+          );
+          const d = Math.hypot(near.position.x - x, near.position.y - y);
+          if ((p['intensity'] as number) - d * world.rules.noise.attenuationPerMeter < 8) break;
+          if ((this.lastCategoryLog[cat] ?? -999) > state.tick - 40) break;
+          this.lastCategoryLog[cat] = state.tick;
+          const where =
+            d < 6 ? 'muito perto' : `a ${direction(x - near.position.x, y - near.position.y)}`;
+          const label =
+            cat === 'door'
+              ? 'Pancadas em porta'
+              : cat === 'shout'
+                ? 'Rosnados'
+                : (T.noise[cat] ?? 'Ruído');
+          this.push(state, `🔊 ${label} ${where}`, cat === 'alarm' ? 'good' : 'warn');
+          break;
+        }
+        case 'OUT_OF_AMMO':
+          this.push(state, `${this.name(state, p['survivorId'])} está sem munição`, 'warn');
+          break;
+        case 'ACTOR_INJURED':
+          this.push(
+            state,
+            p['bitten']
+              ? `${this.name(state, p['actorId'])} foi MORDIDO!`
+              : `${this.name(state, p['actorId'])} ferido (−${p['damage']})`,
+            'bad',
+          );
+          break;
+        case 'ACTOR_KILLED':
+          if (p['kind'] === 'survivor')
+            this.push(state, `${this.name(state, p['actorId'])} morreu`, 'bad');
+          else
+            this.push(
+              state,
+              `${T.zombie[p['typeId'] as string] ?? 'Infectado'} abatido por ${this.name(state, p['killerId'])}`,
+              'good',
+            );
+          break;
+        case 'LEADER_CHANGED':
+          this.push(
+            state,
+            p['leaderId']
+              ? `${this.squadName(state, p['squadId'])}: liderança passa para ${this.name(state, p['leaderId'])}`
+              : `${this.squadName(state, p['squadId'])} está sem líder`,
+            'warn',
+          );
+          break;
+        case 'SURVIVOR_PANICKED':
+          this.push(
+            state,
+            `${this.name(state, p['survivorId'])} entrou em pânico (${p['behaviour'] === 'flee' ? 'fugindo' : 'paralisado'})`,
+            'bad',
+          );
+          break;
+        case 'SURVIVOR_RALLIED':
+          this.push(state, `${this.name(state, p['survivorId'])} se recompôs`, 'good');
+          break;
+        case 'DOOR_CHANGED':
+          if (p['broken']) this.push(state, 'Uma porta cedeu aos infectados!', 'bad');
+          else if (p['forced'])
+            this.push(state, `${this.name(state, p['byId'])} arrombou a porta`, 'warn');
+          break;
+        case 'INTERACTION_STARTED': {
+          const what: Record<string, string> = {
+            cabinet: 'recolhendo remédios',
+            civilian: 'resgatando a civil',
+            beacon: 'ativando o rádio',
+            door: 'mexendo na porta',
+          };
+          this.push(
+            state,
+            `${this.name(state, p['survivorId'])}: ${what[p['kind'] as string] ?? 'interagindo'}…`,
+          );
+          break;
+        }
+        case 'INTERACTION_INTERRUPTED':
+          this.push(state, `${this.name(state, p['survivorId'])}: interação interrompida`, 'warn');
+          break;
+        case 'OBJECTIVE_COMPLETED':
+          this.push(
+            state,
+            `Objetivo concluído: ${T.objectives[p['objectiveId'] as string]}`,
+            'good',
+          );
+          this.toast('Objetivo concluído');
+          break;
+        case 'EXTRACTION_STARTED':
+          this.push(
+            state,
+            'Rádio ativado: transporte a caminho. O sinal atrai infectados!',
+            'warn',
+          );
+          break;
+        case 'EXTRACTION_READY':
+          this.push(state, 'Transporte no local — todos na área de extração!', 'good');
+          break;
+        case 'REINFORCEMENT_SPAWNED':
+          this.push(
+            state,
+            `🔊 Movimentação de infectados na entrada ${SPAWNER_NAMES[p['spawnerId'] as string] ?? ''}`,
+            'warn',
+          );
+          break;
+        case 'MISSION_ENDED':
+          this.push(
+            state,
+            `${T.outcome[p['status'] as string]}`,
+            p['status'] === 'success' ? 'good' : 'bad',
+          );
+          break;
+      }
+    }
+  }
+
+  private statusTags(state: GameState, members: Survivor[]): string {
+    const tags: string[] = [];
+    const panic = members.filter((m) => m.panicked).length;
+    const wounded = members.filter((m) => m.health < m.maxHealth * 0.6).length;
+    const noAmmo = members.filter(
+      (m) =>
+        m.weapon.magazineCapacity > 0 &&
+        m.weapon.magazineRounds === 0 &&
+        m.weapon.reserveRounds === 0,
+    ).length;
+    if (panic) tags.push(`<span class="tag bad">⚠ pânico ${panic}</span>`);
+    if (wounded) tags.push(`<span class="tag warn">✚ feridos ${wounded}</span>`);
+    if (noAmmo) tags.push(`<span class="tag warn">∅ sem munição ${noAmmo}</span>`);
+    if (!panic && !wounded)
+      tags.push(
+        `<span class="tag ok">✓ ${members.some((m) => m.band !== 'calm') ? 'tenso' : 'calmo'}</span>`,
+      );
+    void state;
+    return tags.join('');
+  }
+
+  private squadCard(state: GameState, sq: Squad, index: number, selected: boolean): string {
+    const members = sq.memberIds
+      .map((id) => state.survivors.find((s) => s.id === id))
+      .filter((s): s is Survivor => !!s);
+    const alive = members.filter((m) => m.alive);
+    const leader = members.find((m) => m.id === sq.leaderId);
+    const color = sq.id === 'alfa' ? 'var(--alfa)' : 'var(--bravo)';
+    const order = sq.order
+      ? `${T.orders[sq.order.type]} · ${T.orderStatus[sq.order.status]}`
+      : 'sem ordem';
+    return `<div class="squad-card panel ${selected ? 'selected' : ''}" data-squad="${sq.id}" data-testid="squad-${sq.id}" style="border-left-color:${color}">
+      <div class="name"><span class="kbd">${index + 1}</span>${esc(sq.displayName)} <span class="small">${alive.length}/${members.length}</span></div>
+      <div class="meta">Líder: ${leader && leader.alive ? esc(leader.name) : '—'}</div>
+      <div class="meta">${order}</div>
+      <div class="meta">${T.policy[sq.firePolicy]} · ${T.mode[sq.moveMode]}</div>
+      <div>${alive.length ? this.statusTags(state, alive) : '<span class="tag bad">eliminado</span>'}</div>
+    </div>`;
+  }
+
+  private unitCard(world: World, s: Survivor): string {
+    const w = weaponDef(world, s);
+    const ammo =
+      w.kind === 'melee' ? 'corpo a corpo' : `${s.weapon.magazineRounds}/${s.weapon.reserveRounds}`;
+    const reason = s.reason ? (T.reasons[s.reason] ?? s.reason) : '';
+    const act = s.alive
+      ? `${T.activity[s.activity] ?? s.activity}${reason ? ` — ${reason}` : ''}`
+      : 'morto';
+    const inf =
+      s.infection !== 'healthy'
+        ? `<span class="tag bad">${T.infection[s.infection]}</span>`
+        : s.bitten
+          ? '<span class="tag warn">mordido</span>'
+          : '';
+    return `<div class="unit panel ${s.alive ? '' : 'dead'}" data-testid="unit-${s.id}">
+      <div class="n">${s.isLeader ? '★ ' : ''}${esc(s.name)}</div>
+      <div class="r">${esc(s.role)} · ${esc(w.displayName)}</div>
+      <div class="line"><span>Vida ${Math.max(0, Math.round(s.health))}</span><span>${inf}</span></div>
+      <div class="bar hp"><i style="width:${pct(s.health, s.maxHealth)}%"></i></div>
+      <div class="line"><span>Estresse ${Math.round(s.stress)}</span><span>${T.bands[s.band]}</span></div>
+      <div class="bar st"><i style="width:${pct(s.stress)}%"></i></div>
+      <div class="line"><span>Fôlego</span><span>Munição ${ammo}</span></div>
+      <div class="bar sta"><i style="width:${pct(s.stamina)}%"></i></div>
+      <div class="act">${act}</div>
+    </div>`;
+  }
+
+  update(view: HudView, now: number): void {
+    if (now - this.lastRender < 100) return;
+    this.lastRender = now;
+    const { state, world } = view;
+    const els = this.els;
+    const current = state.objectives.find((o) => o.status === 'pending');
+    (els['objective'] as HTMLElement).textContent = current
+      ? `▶ ${T.objectives[current.id]}`
+      : (T.outcome[state.mission.status] ?? '');
+    (els['clock'] as HTMLElement).textContent =
+      `${fmtTime(state.tick / 10)} / ${fmtTime(state.mission.timeLimitTicks / 10)}`;
+    const recent = state.recentNoises.reduce((a, n) => a + n.intensity, 0);
+    (els['noise'] as HTMLElement).style.width = `${pct(recent, 400)}%`;
+    (els['pausedFlag'] as HTMLElement).textContent = view.paused ? 'PAUSADO' : '';
+    (els['pauseLabel'] as HTMLElement).textContent = view.paused ? 'Retomar' : 'Pausar';
+    (els['speed'] as HTMLElement).textContent = `${view.speed}×`;
+    this.setHtml(
+      els['squads'],
+      state.squads
+        .map((sq, i) => this.squadCard(state, sq, i, sq.id === view.selectedSquadId))
+        .join(''),
+    );
+    const sel = state.squads.find((s) => s.id === view.selectedSquadId);
+    (els['orderSquad'] as HTMLElement).textContent = sel?.displayName ?? '—';
+    (els['policy'] as HTMLElement).textContent = sel ? (T.policy[sel.firePolicy] ?? '') : '';
+    this.root.querySelectorAll<HTMLButtonElement>('[data-order]').forEach((b) => {
+      b.classList.toggle(
+        'active',
+        !!sel && sel.order?.type === b.dataset['order'] && sel.order?.status === 'executing',
+      );
+      b.disabled = !sel;
+    });
+    this.setHtml(
+      els['objectives'],
+      state.objectives
+        .map((o) => {
+          const cls =
+            o.status === 'completed'
+              ? 'obj-done'
+              : o.status === 'failed'
+                ? 'obj-failed'
+                : o === current
+                  ? 'obj-current'
+                  : '';
+          const mark = o.status === 'completed' ? '✓' : o.status === 'failed' ? '✗' : '○';
+          return `<li class="${cls}">${mark} ${T.objectives[o.id]}</li>`;
+        })
+        .join(''),
+    );
+    this.setHtml(
+      els['units'],
+      sel
+        ? sel.memberIds
+            .map((id) => state.survivors.find((s) => s.id === id))
+            .filter((s): s is Survivor => !!s)
+            .map((s) => this.unitCard(world, s))
+            .join('')
+        : '',
+    );
+    this.setHtml(els['log'], this.logItems.join(''));
+    // explain autonomous behaviour of the selected squad
+    let ctx = this.context;
+    const panicked = sel?.memberIds
+      .map((id) => state.survivors.find((s) => s.id === id))
+      .filter((s) => s && s.alive && (s.panicked || s.activity === 'refusing'));
+    if (panicked && panicked.length)
+      ctx = `Equipe não obedece totalmente: ${panicked.map((s) => `${esc(s!.name.split(' ')[0] as string)} (${T.reasons[s!.reason ?? ''] ?? T.activity[s!.activity]})`).join(', ')}`;
+    else if (sel?.order?.status === 'executing') ctx = '';
+    this.setHtml(els['context'], ctx);
+
+    const m = state.mission;
+    const banner = els['banner'] as HTMLElement;
+    const civ = state.survivors.find((s) => s.isObjectiveCivilian);
+    if (m.extractionActive && m.status === 'running') {
+      banner.style.display = 'block';
+      const civIn =
+        !!civ &&
+        civ.alive &&
+        civ.rescued &&
+        inRect(civ.position, world.mission.objectives.extraction.zone);
+      if (m.extractionReady) {
+        this.setHtml(
+          banner,
+          civIn
+            ? 'Transporte no local — embarcando…'
+            : `Transporte no local. Aguardando a civil na área de extração. <button data-act="confirmExtraction" data-testid="btn-confirm-extraction">Extrair sem a civil (sucesso parcial)</button>`,
+        );
+      } else {
+        this.setHtml(
+          banner,
+          `Extração: resistam na área — <b>${Math.floor(m.extractionHoldTicks / 10)}/${Math.round(m.extractionHoldRequiredTicks / 10)} s</b>${civIn ? '' : ' · civil fora da área'}`,
+        );
+      }
+    } else banner.style.display = 'none';
+
+    const dbg = els['debug'] as HTMLElement;
+    if (view.debugText) {
+      dbg.style.display = 'block';
+      dbg.textContent = view.debugText;
+    } else dbg.style.display = 'none';
+  }
+}
+
+export const POLICY_CYCLE: FirePolicy[] = ['returnFire', 'weaponsFree', 'holdFire'];

@@ -1,0 +1,40 @@
+[
+  {
+    "id": "walker",
+    "displayName": "Errante",
+    "maxHealth": 100,
+    "moveSpeedMetersPerSecond": 0.8,
+    "wanderSpeedFactor": 0.5,
+    "visionRangeMeters": 10,
+    "visionFovDegrees": 140,
+    "closeAwarenessMeters": 1.8,
+    "hearingThreshold": 15,
+    "attackRangeMeters": 0.9,
+    "attackCooldownSeconds": 1.8,
+    "attackDamage": 14,
+    "attackHitChance": 0.7,
+    "biteChanceOnHit": 0.25,
+    "doorDamage": 12,
+    "searchSeconds": 12,
+    "spawnWeight": 4
+  },
+  {
+    "id": "runner",
+    "displayName": "Corredor",
+    "maxHealth": 70,
+    "moveSpeedMetersPerSecond": 2.4,
+    "wanderSpeedFactor": 0.3,
+    "visionRangeMeters": 13,
+    "visionFovDegrees": 150,
+    "closeAwarenessMeters": 2.2,
+    "hearingThreshold": 12,
+    "attackRangeMeters": 0.9,
+    "attackCooldownSeconds": 1.4,
+    "attackDamage": 12,
+    "attackHitChance": 0.7,
+    "biteChanceOnHit": 0.2,
+    "doorDamage": 8,
+    "searchSeconds": 16,
+    "spawnWeight": 1
+  }
+]

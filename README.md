@@ -84,8 +84,6 @@ Two proven ways to win on the canonical seed (automated tests replay both):
 - No minimap (spec §13.1) and no drag-box selection; shift-queued waypoints not implemented.
 - Infection is tracked and reported (HUD, debriefing) but never turns survivors in battle (as the MVP spec allows).
 - Heavy/screamer infected, night lighting and multiple maps are later phases.
-- Inside the Claude desktop in-app browser pane, Phaser may log `Framebuffer status: Incomplete Attachment` at boot
-  when the pane is hidden; the game renders normally and Playwright Chromium shows no console errors.
 - Balance is tuned for the canonical seed (1337); other seeds are playable but scripted bots sometimes lose the civilian there.
 
 ## Next tasks

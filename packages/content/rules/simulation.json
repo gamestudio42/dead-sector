@@ -1,0 +1,112 @@
+{
+  "tickMs": 100,
+  "movement": {
+    "sneakSpeed": 0.9,
+    "moveSpeed": 1.6,
+    "sprintSpeed": 3.2,
+    "sprintStaminaPerSecond": 7,
+    "staminaRegenPerSecond": 4,
+    "minSprintStamina": 10,
+    "woundedHealthThreshold": 40,
+    "woundedSpeedFactor": 0.75,
+    "formationSpacing": 1.2,
+    "arriveDistance": 0.3,
+    "stuckWindowSeconds": 2,
+    "stuckMinDistance": 0.2,
+    "maxReplans": 3,
+    "civilianSpeed": 1.9,
+    "civilianFollowDistance": 2.2
+  },
+  "noise": {
+    "attenuationPerMeter": 1.6,
+    "footstep": {
+      "sneak": 5,
+      "move": 12,
+      "sprint": 24
+    },
+    "footstepPulseSeconds": 0.5,
+    "groupBonusPerExtraMember": 2,
+    "absorption": {
+      "street": 0,
+      "sidewalk": 0,
+      "grass": 0.2,
+      "rubble": 0.3,
+      "wall": 30,
+      "fence": 1,
+      "window": 10,
+      "doorClosed": 18,
+      "doorOpen": 1,
+      "doorLocked": 18,
+      "floor": 0,
+      "parking": 0,
+      "wreck": 2,
+      "bush": 1.5,
+      "cabinet": 3
+    },
+    "doorOpen": 10,
+    "doorForce": 25,
+    "doorBash": 25,
+    "zombieGroan": 22,
+    "recentNoiseSeconds": 3
+  },
+  "vision": {
+    "survivorDayRange": 18,
+    "survivorNightRange": 7,
+    "fovDegrees": 120,
+    "peripheralRange": 3,
+    "sneakDetectionFactor": 0.6,
+    "hideDetectionFactor": 0.45,
+    "sprintDetectionFactor": 1.15,
+    "contactMemorySeconds": 60
+  },
+  "stress": {
+    "perZombieWithin6m": 0.9,
+    "maxZombiesCounted": 8,
+    "surrounded": 3,
+    "isolated": 1.5,
+    "safeArea": -1.2,
+    "leaderNearby": -0.8,
+    "courage": -0.2,
+    "nearZombieRadius": 6,
+    "surroundRadius": 4,
+    "isolationRadius": 8,
+    "leaderRadius": 10,
+    "safeRadius": 15,
+    "panicEnter": 75,
+    "panicExit": 55,
+    "panicMinSeconds": 4,
+    "breakdown": 90,
+    "shakenThreshold": 50,
+    "shakenRiskZombies": 3,
+    "impulses": {
+      "allyDeath": 15,
+      "leaderDeath": 10,
+      "bite": 12,
+      "wound": 6,
+      "civilianDeath": 20
+    }
+  },
+  "combat": {
+    "skillBonusPerPoint": 0.005,
+    "rangePenalty": 0.45,
+    "movePenalty": 0.15,
+    "stressPenalty": 0.3,
+    "darknessPenalty": 0.2,
+    "holdStanceBonus": 0.05,
+    "meleeStaminaCost": 4,
+    "meleeTriggerDistance": 1.1,
+    "autoReloadFraction": 0.5,
+    "returnFireRadius": 6,
+    "zombieStaggerSeconds": 0.3
+  },
+  "infection": {
+    "exposedToInfectedSeconds": 120,
+    "infectedToCriticalSeconds": 600
+  },
+  "interaction": {
+    "doorForceSecondsBase": 6,
+    "doorForceSecondsMin": 2.5,
+    "doorToggleSeconds": 0.6,
+    "interruptRadius": 1.6
+  }
+}

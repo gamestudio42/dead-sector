@@ -1,0 +1,54 @@
+[
+  {
+    "id": "pistol",
+    "displayName": "Pistola",
+    "kind": "firearm",
+    "shotsPerSecond": 2,
+    "magazineCapacity": 12,
+    "damage": 38,
+    "minDamageAtMaxRange": 30,
+    "noise": 70,
+    "rangeMeters": 12,
+    "baseAccuracy": 0.5,
+    "reloadSeconds": 2
+  },
+  {
+    "id": "carbine",
+    "displayName": "Carabina",
+    "kind": "firearm",
+    "shotsPerSecond": 3,
+    "magazineCapacity": 24,
+    "damage": 50,
+    "minDamageAtMaxRange": 42,
+    "noise": 85,
+    "rangeMeters": 20,
+    "baseAccuracy": 0.55,
+    "reloadSeconds": 2.5
+  },
+  {
+    "id": "shotgun",
+    "displayName": "Espingarda",
+    "kind": "firearm",
+    "shotsPerSecond": 0.8,
+    "magazineCapacity": 6,
+    "damage": 85,
+    "minDamageAtMaxRange": 30,
+    "noise": 90,
+    "rangeMeters": 9,
+    "baseAccuracy": 0.7,
+    "reloadSeconds": 3.5
+  },
+  {
+    "id": "melee",
+    "displayName": "Bastão/faca",
+    "kind": "melee",
+    "shotsPerSecond": 1,
+    "magazineCapacity": 0,
+    "damage": 28,
+    "minDamageAtMaxRange": 28,
+    "noise": 5,
+    "rangeMeters": 1.1,
+    "baseAccuracy": 0.75,
+    "reloadSeconds": 0
+  }
+]

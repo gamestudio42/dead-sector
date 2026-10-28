@@ -1,0 +1,18 @@
+[
+  {
+    "id": "normal",
+    "displayName": "Normal",
+    "zombieVisionMultiplier": 1,
+    "zombieHearingMultiplier": 1,
+    "infectionChanceOnBite": 0.85,
+    "reinforcementBudgetMultiplier": 1
+  },
+  {
+    "id": "tense",
+    "displayName": "Tenso",
+    "zombieVisionMultiplier": 1.15,
+    "zombieHearingMultiplier": 1.2,
+    "infectionChanceOnBite": 0.95,
+    "reinforcementBudgetMultiplier": 1.3
+  }
+]

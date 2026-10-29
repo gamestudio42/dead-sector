@@ -6,7 +6,6 @@
 
 ## NEXT
 
-- Block 5 — content: contextual tutorial, two more maps, three linked missions with persistent losses (Phase 5).
 - Block 6 — finish: multi-seed balance, GPU/FPS budget on low-end hardware, desktop package.
 - Art upgrade: replace procedural character sheets with a hand-made or CC0 set (keep frame layout: 8 walk, attack, corpse).
 
@@ -15,6 +14,10 @@
 - (none)
 
 ## DONE
+
+- Block 5 — content: maps Pátio da Ferrovia and Centro Velho, missions Sinal Fraco and Plantão Noturno (night), mission
+  texts in data, campaign Setor Ferrugem with roster carry-over, interlude, retries and local persistence, contextual
+  tutorial; rescued civilians follow a calm escort.
 
 - Block 4 — tactical depth: breakable windows, plank barricades (kits, hammer noise, removal), infection that turns
   survivors (medic slows it), heavy and screamer infected, escalating alarm (4 levels, hysteresis) and announced roaming

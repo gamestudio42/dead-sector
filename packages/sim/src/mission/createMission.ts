@@ -1,3 +1,4 @@
+import type { CarryOver } from '../campaign/Campaign';
 import type { ContentBundle, SurvivorTemplate } from '@dead-sector/content';
 import type {
   Door,
@@ -182,6 +183,8 @@ export function createMissionState(
   content: ContentBundle,
   missionId: string,
   seed: number,
+  /** Campaign roster: only living survivors deploy, in the condition they came back in. */
+  carry?: CarryOver,
 ): GameState {
   const mission = content.missions[missionId];
   if (!mission) throw new Error(`Unknown mission ${missionId}`);
@@ -294,7 +297,8 @@ export function createMissionState(
   const taken = new Set<number>();
 
   for (const sq of mission.squads) {
-    const cells = freeCellsAround(world, state, sq.spawn, sq.memberIds.length, taken);
+    const deploying = sq.memberIds.filter((id) => !carry || carry[id]?.alive !== false);
+    const cells = freeCellsAround(world, state, sq.spawn, deploying.length, taken);
     const squad: Squad = {
       id: sq.id,
       displayName: sq.displayName,
@@ -307,7 +311,7 @@ export function createMissionState(
       barricadeKits: sq.barricadeKits,
       spawn: { ...sq.spawn },
     };
-    sq.memberIds.forEach((memberId, i) => {
+    deploying.forEach((memberId, i) => {
       const t = content.survivors[memberId];
       if (!t) throw new Error(`Unknown survivor ${memberId}`);
       const w = content.weapons[t.weaponId];
@@ -322,11 +326,33 @@ export function createMissionState(
         cooldown: 0,
       });
       s.moveMode = sq.moveMode;
+      const c = carry?.[memberId];
+      if (c) {
+        s.health = Math.max(1, Math.min(t.maxHealth, c.health));
+        s.infection = c.infection;
+        s.bitten = c.bitten;
+        s.kills = c.kills;
+        if (w.magazineCapacity > 0) {
+          s.weapon.magazineRounds = Math.min(w.magazineCapacity, c.ammo);
+          s.weapon.reserveRounds = Math.max(0, c.ammo - s.weapon.magazineRounds);
+        }
+      }
       squad.memberIds.push(s.id);
       if (t.isLeader && !squad.leaderId) squad.leaderId = s.id;
       state.survivors.push(s);
     });
-    state.squads.push(squad);
+    if (!squad.leaderId && squad.memberIds.length) {
+      // the designated leader fell in an earlier mission: the most able member takes over
+      const members = state.survivors.filter((m) => squad.memberIds.includes(m.id));
+      const best = [...members].sort(
+        (a, b) => b.leadership - a.leadership || (a.id < b.id ? -1 : 1),
+      )[0];
+      if (best) {
+        best.isLeader = true;
+        squad.leaderId = best.id;
+      }
+    }
+    if (squad.memberIds.length) state.squads.push(squad);
   }
 
   const civ = mission.civilian;

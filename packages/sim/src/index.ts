@@ -24,3 +24,4 @@ export * from './save/Replay';
 export * from './debrief';
 export * from './testing/ScriptedPlans';
 export { MAX_WAYPOINTS } from './systems/Commands';
+export * from './campaign/Campaign';

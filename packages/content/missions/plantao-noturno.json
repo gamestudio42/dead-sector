@@ -1,0 +1,326 @@
+{
+  "id": "plantao-noturno",
+  "displayName": "Plantão Noturno",
+  "briefing": "A infecção avança entre os sobreviventes. A Dra. Helena Costa resiste no Posto de Saúde São Lucas, no Centro Velho, com o último estoque de antibióticos. À noite os infectados enxergam menos — e vocês também. Recupere os antibióticos, resgate a médica e leve todos ao parque a noroeste, onde o caminhão de evacuação espera.",
+  "mapId": "centro-velho",
+  "canonicalSeed": 777,
+  "difficultyId": "normal",
+  "timeLimitSeconds": 900,
+  "isNight": true,
+  "squads": [
+    {
+      "id": "alfa",
+      "displayName": "Alfa",
+      "memberIds": ["alfa-leader", "alfa-marksman", "alfa-medic", "alfa-civilian"],
+      "spawn": {
+        "x": 5.5,
+        "y": 66.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    },
+    {
+      "id": "bravo",
+      "displayName": "Bravo",
+      "memberIds": ["bravo-leader", "bravo-scout", "bravo-mechanic", "bravo-volunteer"],
+      "spawn": {
+        "x": 11.5,
+        "y": 66.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    }
+  ],
+  "civilian": {
+    "id": "civilian-helena",
+    "name": "Helena Costa",
+    "role": "Médica",
+    "position": {
+      "x": 49.5,
+      "y": 27.5
+    },
+    "maxHealth": 80
+  },
+  "zombieZones": [
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 22,
+        "y0": 22,
+        "x1": 37,
+        "y1": 37
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 16,
+        "y0": 38,
+        "x1": 63,
+        "y1": 43
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 38,
+        "y0": 0,
+        "x1": 43,
+        "y1": 79
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 1,
+      "rect": {
+        "x0": 47,
+        "y0": 30,
+        "x1": 56,
+        "y1": 35
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 64,
+        "y0": 22,
+        "x1": 79,
+        "y1": 57
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 22,
+        "y0": 44,
+        "x1": 37,
+        "y1": 57
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 0,
+        "y0": 16,
+        "x1": 15,
+        "y1": 37
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 1,
+      "rect": {
+        "x0": 1,
+        "y0": 1,
+        "x1": 15,
+        "y1": 15
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 1,
+      "rect": {
+        "x0": 44,
+        "y0": 0,
+        "x1": 79,
+        "y1": 15
+      }
+    },
+    {
+      "typeId": "screamer",
+      "count": 1,
+      "rect": {
+        "x0": 22,
+        "y0": 22,
+        "x1": 37,
+        "y1": 37
+      }
+    },
+    {
+      "typeId": "heavy",
+      "count": 1,
+      "rect": {
+        "x0": 44,
+        "y0": 38,
+        "x1": 58,
+        "y1": 43
+      }
+    }
+  ],
+  "spawners": [
+    {
+      "id": "spawn-north",
+      "cell": {
+        "x": 18,
+        "y": 0
+      }
+    },
+    {
+      "id": "spawn-east",
+      "cell": {
+        "x": 79,
+        "y": 40
+      }
+    },
+    {
+      "id": "spawn-south",
+      "cell": {
+        "x": 60,
+        "y": 79
+      }
+    },
+    {
+      "id": "spawn-west",
+      "cell": {
+        "x": 0,
+        "y": 60
+      }
+    }
+  ],
+  "hordes": {
+    "firstAtSeconds": 540,
+    "intervalSeconds": 240,
+    "max": 1,
+    "size": 6,
+    "heavyPerHorde": 1,
+    "warningSeconds": 20,
+    "routes": [
+      {
+        "spawnerId": "spawn-north",
+        "waypoints": [
+          {
+            "x": 18,
+            "y": 10
+          },
+          {
+            "x": 18,
+            "y": 40
+          },
+          {
+            "x": 40,
+            "y": 40
+          },
+          {
+            "x": 60,
+            "y": 40
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-east",
+        "waypoints": [
+          {
+            "x": 70,
+            "y": 40
+          },
+          {
+            "x": 40,
+            "y": 40
+          },
+          {
+            "x": 40,
+            "y": 60
+          },
+          {
+            "x": 18,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-south",
+        "waypoints": [
+          {
+            "x": 60,
+            "y": 70
+          },
+          {
+            "x": 60,
+            "y": 40
+          },
+          {
+            "x": 60,
+            "y": 18
+          },
+          {
+            "x": 40,
+            "y": 18
+          }
+        ]
+      }
+    ]
+  },
+  "reinforcements": {
+    "budget": 24,
+    "maxConcurrent": 60,
+    "pressureThreshold": 90,
+    "pressureDecayPerSecond": 0.08,
+    "cooldownSeconds": 12,
+    "runnerChance": 0.1,
+    "minSurvivorDistance": 14
+  },
+  "objectives": {
+    "perimeter": {
+      "x0": 44,
+      "y0": 22,
+      "x1": 58,
+      "y1": 37
+    },
+    "cabinet": {
+      "cell": {
+        "x": 54,
+        "y": 25
+      },
+      "interactSeconds": 6
+    },
+    "civilianRescueSeconds": 3,
+    "extraction": {
+      "beacon": {
+        "x": 8.5,
+        "y": 8.5
+      },
+      "zone": {
+        "x0": 4,
+        "y0": 4,
+        "x1": 13,
+        "y1": 13
+      },
+      "activateSeconds": 2,
+      "holdSeconds": 20,
+      "activationNoise": 80,
+      "pulseNoise": 45,
+      "pulseSeconds": 5
+    }
+  },
+  "texts": {
+    "area": "posto de saúde",
+    "item": "os antibióticos",
+    "itemTag": "ANTIBIÓTICOS",
+    "itemDone": "Antibióticos",
+    "person": "a médica",
+    "personTag": "MÉDICA",
+    "objectives": {
+      "enterPerimeter": "Chegar ao Posto de Saúde São Lucas",
+      "collectMedicine": "Pegar os antibióticos na farmácia do posto (6 s)",
+      "rescueCivilian": "Resgatar a Dra. Helena no consultório (3 s)",
+      "activateExtraction": "Sinalizar ao caminhão no parque noroeste",
+      "holdExtraction": "Resistir 20 s no parque com a médica"
+    },
+    "intel": [
+      "É noite: os infectados veem menos, mas vocês também. Ruído vale mais do que nunca.",
+      "A praça central tem um gritador entre os arbustos; contorná-la pelas ruas laterais é mais seguro.",
+      "A porta dos fundos do posto está trancada; a frente dá para a avenida, onde um brutamontes vaga.",
+      "O consultório da médica fica no canto noroeste do posto, atrás de uma porta interna.",
+      "As ruas formam uma grade: hordas patrulham as avenidas principais.",
+      "Antibióticos curam a infecção: se a missão der certo, ninguém mais se transforma."
+    ]
+  }
+}

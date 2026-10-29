@@ -124,3 +124,39 @@ export const fmtTime = (seconds: number): string => {
   const s = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
+
+/** Texts of the mission being played (item, person, objectives); set when a mission scene starts. */
+export interface MissionTexts {
+  area: string;
+  item: string;
+  itemTag: string;
+  itemDone: string;
+  person: string;
+  personTag: string;
+  objectives: Record<string, string>;
+  intel: string[];
+}
+
+export const MT: MissionTexts = {
+  area: 'farmácia',
+  item: 'os medicamentos',
+  itemTag: 'REMÉDIOS',
+  itemDone: 'Remédios',
+  person: 'a civil',
+  personTag: 'CIVIL',
+  objectives: { ...T.objectives },
+  intel: [],
+};
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Applies a mission's texts to every PT-BR string that names its item, person or objectives. */
+export function setMissionTexts(texts: MissionTexts): void {
+  Object.assign(MT, texts);
+  Object.assign(T.objectives, texts.objectives);
+  T.blocked['requiresMedicine'] = `Recolha ${texts.item} antes de chamar a extração`;
+  T.endReason['extracted'] = `${cap(texts.item)} e ${texts.person} retirados com vida.`;
+  T.endReason['extractedWithoutCivilian'] =
+    `${cap(texts.item)} recuperados, mas ${texts.person} não foi retirada(o).`;
+  T.endReason['civilianDied'] = `${cap(texts.person)} morreu.`;
+}

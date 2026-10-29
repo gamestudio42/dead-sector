@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  campaignSchema,
   difficultySchema,
   mapSchema,
   missionSchema,
@@ -7,6 +8,7 @@ import {
   survivorTemplateSchema,
   weaponSchema,
   zombieTypeSchema,
+  type CampaignDef,
   type DifficultyDef,
   type MapDef,
   type MissionDef,
@@ -22,6 +24,11 @@ import difficultyJson from '../difficulty/difficulty.json';
 import rulesJson from '../rules/simulation.json';
 import pharmacyMissionJson from '../missions/a-ultima-farmacia.json';
 import ferrugemMapJson from '../maps/bairro-da-ferrugem.json';
+import sinalFracoMissionJson from '../missions/sinal-fraco.json';
+import plantaoMissionJson from '../missions/plantao-noturno.json';
+import ferroviaMapJson from '../maps/patio-da-ferrovia.json';
+import centroVelhoMapJson from '../maps/centro-velho.json';
+import ferrugemCampaignJson from '../campaigns/ferrugem.json';
 
 export * from '../schemas/index';
 
@@ -32,6 +39,7 @@ export interface ContentBundle {
   difficulties: Record<string, DifficultyDef>;
   missions: Record<string, MissionDef>;
   maps: Record<string, MapDef>;
+  campaigns: Record<string, CampaignDef>;
   rules: SimulationRules;
 }
 
@@ -74,6 +82,7 @@ export interface RawContent {
   rules: unknown;
   missions: unknown[];
   maps: unknown[];
+  campaigns: unknown[];
 }
 
 export const builtInRawContent: RawContent = {
@@ -82,8 +91,9 @@ export const builtInRawContent: RawContent = {
   survivors: survivorsJson,
   difficulties: difficultyJson,
   rules: rulesJson,
-  missions: [pharmacyMissionJson],
-  maps: [ferrugemMapJson],
+  missions: [pharmacyMissionJson, sinalFracoMissionJson, plantaoMissionJson],
+  maps: [ferrugemMapJson, ferroviaMapJson, centroVelhoMapJson],
+  campaigns: [ferrugemCampaignJson],
 };
 
 /** Validates raw JSON content and checks cross references; throws ContentValidationError. */
@@ -107,6 +117,10 @@ export function validateContent(raw: RawContent): ContentBundle {
     maps: indexById(
       raw.maps.map((m, i) => parse(mapSchema, m, `maps[${i}]`)),
       'maps',
+    ),
+    campaigns: indexById(
+      (raw.campaigns ?? []).map((c, i) => parse(campaignSchema, c, `campaigns[${i}]`)),
+      'campaigns',
     ),
   };
   const issues: string[] = [];
@@ -152,6 +166,10 @@ export function validateContent(raw: RawContent): ContentBundle {
         issues.push(`mission ${m.id} hordes need the heavy infected type`);
     }
   }
+  for (const c of Object.values(bundle.campaigns))
+    for (const step of c.missions)
+      if (!bundle.missions[step.missionId])
+        issues.push(`campaign ${c.id} references unknown mission ${step.missionId}`);
   if (issues.length) throw new ContentValidationError('cross-references', issues);
   return bundle;
 }

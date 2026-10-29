@@ -91,6 +91,7 @@ const objectivesOpen = flag('objectivesOpen', true);
 const logOpen = flag('logOpen', true);
 const unitsOpen = flag('unitsOpen', true);
 const minimapOpen = flag('minimapOpen', true);
+const tips = flag('tips', true);
 
 /** Per-viewer preferences (localStorage, falls back to defaults when unavailable). */
 export const Settings = {
@@ -179,6 +180,29 @@ export const Settings = {
   },
   set unitsOpen(v: boolean) {
     unitsOpen.set(v);
+  },
+  /** Contextual tutorial hints. */
+  get tips(): boolean {
+    return tips.get();
+  },
+  set tips(v: boolean) {
+    tips.set(v);
+  },
+  /** Ids of hints already shown on this profile. */
+  get tipsSeen(): Set<string> {
+    try {
+      return new Set(JSON.parse(readStored('tipsSeen') ?? '[]') as string[]);
+    } catch {
+      return new Set();
+    }
+  },
+  markTipSeen(id: string): void {
+    const seen = Settings.tipsSeen;
+    seen.add(id);
+    writeStored('tipsSeen', JSON.stringify([...seen]));
+  },
+  resetTips(): void {
+    writeStored('tipsSeen', '[]');
   },
   get minimapOpen(): boolean {
     return minimapOpen.get();

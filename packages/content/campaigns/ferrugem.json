@@ -1,0 +1,24 @@
+{
+  "id": "ferrugem",
+  "displayName": "Setor Ferrugem",
+  "intro": "Três operações para tirar um grupo de sobreviventes do Setor Ferrugem. Quem cair fica para trás; feridos e infectados seguem com vocês para a próxima missão. Medicamentos trazidos de volta tratam a infecção entre as operações.",
+  "missions": [
+    {
+      "missionId": "a-ultima-farmacia",
+      "title": "1. A Última Farmácia",
+      "rewardSupplies": 2
+    },
+    {
+      "missionId": "sinal-fraco",
+      "title": "2. Sinal Fraco",
+      "rewardSupplies": 0
+    },
+    {
+      "missionId": "plantao-noturno",
+      "title": "3. Plantão Noturno",
+      "rewardSupplies": 8
+    }
+  ],
+  "healFraction": 0.35,
+  "ammoResupplyFraction": 0.8
+}

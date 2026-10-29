@@ -88,6 +88,8 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       ${check('captions', 'Legendas de sons', Settings.captions, 'Mostra tiros, rosnados e portas com direção e distância')}
       ${check('contrast', 'Alto contraste', Settings.contrast, 'Painéis opacos, texto maior e barras com contorno')}
       ${check('shake', 'Tremor de câmera e flashes', Settings.shake, 'Desligue para reduzir movimento na tela')}
+      ${check('tips', 'Dicas de tutorial', Settings.tips, 'Aparecem uma vez, quando a situação acontece')}
+      <label class="opt"><span>Rever todas as dicas<small>Mostra de novo as dicas já vistas</small></span><button data-act="resetTips">Rever</button></label>
       <p class="small">Cores sempre vêm acompanhadas de ícones ou texto. Pausa e velocidade nunca penalizam o jogador.</p>
     </section>
     <section data-pane="controls" hidden>
@@ -148,6 +150,12 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       btn.textContent = 'Pressione…';
       return;
     }
+    if (t.closest('[data-act=resetTips]')) {
+      Settings.resetTips();
+      Settings.tips = true;
+      (q('[data-opt=tips]') as HTMLInputElement).checked = true;
+      return;
+    }
     if (t.closest('[data-act=resetKeys]')) {
       KeyBindings.reset();
       capturing = null;
@@ -184,6 +192,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       if (key === 'captions') Settings.captions = v;
       if (key === 'contrast') Settings.contrast = v;
       if (key === 'shake') Settings.shake = v;
+      if (key === 'tips') Settings.tips = v;
       audio.applySettings();
       audio.uiClick();
       return;

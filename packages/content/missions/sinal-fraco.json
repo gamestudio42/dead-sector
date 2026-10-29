@@ -1,0 +1,330 @@
+{
+  "id": "sinal-fraco",
+  "displayName": "Sinal Fraco",
+  "briefing": "O rádio da farmácia mal alcança o resgate. No Pátio da Ferrovia, a sala de controle guarda baterias de rádio de longo alcance, e um maquinista se trancou na cabine de sinalização ao sul dos trilhos. Pegue as baterias, traga o maquinista e chame o transporte pela doca de cargas ao norte.",
+  "mapId": "patio-da-ferrovia",
+  "canonicalSeed": 2024,
+  "difficultyId": "normal",
+  "timeLimitSeconds": 900,
+  "isNight": false,
+  "squads": [
+    {
+      "id": "alfa",
+      "displayName": "Alfa",
+      "memberIds": ["alfa-leader", "alfa-marksman", "alfa-medic", "alfa-civilian"],
+      "spawn": {
+        "x": 8.5,
+        "y": 68.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    },
+    {
+      "id": "bravo",
+      "displayName": "Bravo",
+      "memberIds": ["bravo-leader", "bravo-scout", "bravo-mechanic", "bravo-volunteer"],
+      "spawn": {
+        "x": 15.5,
+        "y": 68.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    }
+  ],
+  "civilian": {
+    "id": "civilian-joaquim",
+    "name": "Joaquim Prates",
+    "role": "Maquinista",
+    "position": {
+      "x": 32.5,
+      "y": 54.5
+    },
+    "maxHealth": 70
+  },
+  "zombieZones": [
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 4,
+        "y0": 6,
+        "x1": 29,
+        "y1": 23
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 4,
+      "rect": {
+        "x0": 1,
+        "y0": 44,
+        "x1": 78,
+        "y1": 49
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 47,
+        "y0": 22,
+        "x1": 70,
+        "y1": 40
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 50,
+        "y0": 25,
+        "x1": 60,
+        "y1": 37
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 46,
+        "y0": 3,
+        "x1": 71,
+        "y1": 17
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 44,
+        "y0": 62,
+        "x1": 78,
+        "y1": 78
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 3,
+        "y0": 30,
+        "x1": 30,
+        "y1": 39
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 2,
+      "rect": {
+        "x0": 37,
+        "y0": 0,
+        "x1": 42,
+        "y1": 40
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 1,
+      "rect": {
+        "x0": 44,
+        "y0": 62,
+        "x1": 78,
+        "y1": 78
+      }
+    },
+    {
+      "typeId": "screamer",
+      "count": 1,
+      "rect": {
+        "x0": 60,
+        "y0": 50,
+        "x1": 78,
+        "y1": 57
+      }
+    },
+    {
+      "typeId": "heavy",
+      "count": 1,
+      "rect": {
+        "x0": 47,
+        "y0": 22,
+        "x1": 70,
+        "y1": 40
+      }
+    }
+  ],
+  "spawners": [
+    {
+      "id": "spawn-north",
+      "cell": {
+        "x": 39,
+        "y": 0
+      }
+    },
+    {
+      "id": "spawn-east",
+      "cell": {
+        "x": 79,
+        "y": 59
+      }
+    },
+    {
+      "id": "spawn-south",
+      "cell": {
+        "x": 75,
+        "y": 79
+      }
+    },
+    {
+      "id": "spawn-west",
+      "cell": {
+        "x": 0,
+        "y": 59
+      }
+    }
+  ],
+  "hordes": {
+    "firstAtSeconds": 420,
+    "intervalSeconds": 240,
+    "max": 2,
+    "size": 6,
+    "heavyPerHorde": 1,
+    "warningSeconds": 20,
+    "routes": [
+      {
+        "spawnerId": "spawn-north",
+        "waypoints": [
+          {
+            "x": 39,
+            "y": 10
+          },
+          {
+            "x": 39,
+            "y": 30
+          },
+          {
+            "x": 39,
+            "y": 52
+          },
+          {
+            "x": 20,
+            "y": 59
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-east",
+        "waypoints": [
+          {
+            "x": 70,
+            "y": 59
+          },
+          {
+            "x": 50,
+            "y": 59
+          },
+          {
+            "x": 39,
+            "y": 59
+          },
+          {
+            "x": 39,
+            "y": 40
+          },
+          {
+            "x": 39,
+            "y": 20
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-south",
+        "waypoints": [
+          {
+            "x": 75,
+            "y": 70
+          },
+          {
+            "x": 75,
+            "y": 40
+          },
+          {
+            "x": 75,
+            "y": 20
+          },
+          {
+            "x": 75,
+            "y": 5
+          }
+        ]
+      }
+    ]
+  },
+  "reinforcements": {
+    "budget": 24,
+    "maxConcurrent": 60,
+    "pressureThreshold": 90,
+    "pressureDecayPerSecond": 0.08,
+    "cooldownSeconds": 12,
+    "runnerChance": 0.2,
+    "minSurvivorDistance": 14
+  },
+  "objectives": {
+    "perimeter": {
+      "x0": 46,
+      "y0": 21,
+      "x1": 71,
+      "y1": 41
+    },
+    "cabinet": {
+      "cell": {
+        "x": 66,
+        "y": 25
+      },
+      "interactSeconds": 6
+    },
+    "civilianRescueSeconds": 3,
+    "extraction": {
+      "beacon": {
+        "x": 57.5,
+        "y": 14.5
+      },
+      "zone": {
+        "x0": 52,
+        "y0": 5,
+        "x1": 63,
+        "y1": 11
+      },
+      "activateSeconds": 2,
+      "holdSeconds": 20,
+      "activationNoise": 80,
+      "pulseNoise": 45,
+      "pulseSeconds": 5
+    }
+  },
+  "texts": {
+    "area": "sala de controle",
+    "item": "as baterias de rádio",
+    "itemTag": "BATERIAS",
+    "itemDone": "Baterias",
+    "person": "o maquinista",
+    "personTag": "MAQUINISTA",
+    "objectives": {
+      "enterPerimeter": "Entrar no pátio da sala de controle",
+      "collectMedicine": "Pegar as baterias no depósito (6 s)",
+      "rescueCivilian": "Resgatar o maquinista na cabine de sinalização (3 s)",
+      "activateExtraction": "Chamar o transporte pelo rádio na doca norte",
+      "holdExtraction": "Resistir 20 s na doca com o maquinista"
+    },
+    "intel": [
+      "Os trilhos são cobertos de brita: atravessar é lento, e os vagões só deixam algumas passagens.",
+      "A porta norte da sala de controle está trancada; a entrada oeste fica aberta, mas é vigiada.",
+      "Há um brutamontes no pátio da sala de controle e um gritador junto aos trilhos, a leste.",
+      "Contêineres no pátio sudeste dão cobertura, mas escondem infectados.",
+      "A doca de cargas é ampla: bom campo de tiro, nenhum lugar para se esconder.",
+      "Feridos e infectados da missão anterior continuam assim. Tábuas foram repostas: 2 kits por esquadrão."
+    ]
+  }
+}

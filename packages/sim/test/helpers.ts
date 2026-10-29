@@ -78,6 +78,7 @@ export function testContent(sc: TestScenario): ContentBundle {
   return validateContent({
     ...builtInRawContent,
     missions: [mission],
+    campaigns: [],
     maps: [
       {
         id: 'test-map',

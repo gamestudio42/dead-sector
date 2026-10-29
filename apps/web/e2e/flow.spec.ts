@@ -12,7 +12,7 @@ type Hooks = {
   fastForward: (n: number) => number;
   eventCount: (t: string) => number;
   restart: (seed?: number, paused?: boolean) => void;
-  startPlan: (n: 'stealth' | 'combat') => void;
+  startPlan: (n: 'stealth' | 'combat' | 'mission') => void;
 };
 const SHOTS = '../../docs/testing/screenshots';
 mkdirSync(SHOTS, { recursive: true });
@@ -29,6 +29,7 @@ function trackErrors(page: Page): string[] {
 async function startMission(page: Page): Promise<void> {
   await page.goto('/');
   await page.getByTestId('btn-new-mission').click();
+  await page.getByTestId('pick-a-ultima-farmacia').click();
   await expect(page.getByTestId('briefing')).toBeVisible();
   await page.getByTestId('btn-deploy').click();
   await expect(page.getByTestId('topbar')).toBeVisible();
@@ -38,7 +39,7 @@ async function startMission(page: Page): Promise<void> {
 const hook = <T>(page: Page, fn: (h: Hooks) => T): Promise<T> =>
   page.evaluate(`(${fn.toString()})(window.__DEAD_SECTOR__)`) as Promise<T>;
 
-async function playPlanToEnd(page: Page, plan: 'stealth' | 'combat'): Promise<void> {
+async function playPlanToEnd(page: Page, plan: 'stealth' | 'combat' | 'mission'): Promise<void> {
   await page.evaluate(() => (window as any).__DEAD_SECTOR__.restart(undefined, true));
   await page.waitForFunction(
     () => (window as any).__DEAD_SECTOR__?.tick() === 0 && (window as any).__DEAD_SECTOR__.paused(),
@@ -197,6 +198,7 @@ test('options pause the mission, apply settings and persist panel layout', async
   await expect(page.locator('[data-panel=log]')).toHaveClass(/collapsed/);
   await page.goto('/');
   await page.getByTestId('btn-new-mission').click();
+  await page.getByTestId('pick-a-ultima-farmacia').click();
   await page.getByTestId('btn-deploy').click();
   await expect(page.locator('[data-panel=log]')).toHaveClass(/collapsed/);
   await expect(page.locator('html')).toHaveClass(/high-contrast/);
@@ -282,5 +284,50 @@ test('controls: drag-select, Shift waypoints, Ctrl context menu and rebound keys
   await page.keyboard.press('Space');
   await expect.poll(() => hook(page, (h) => h.state().squads[0].order?.type)).toBe('hold');
   await page.screenshot({ path: `${SHOTS}/controls-1280x720.png` });
+  expect(errors).toEqual([]);
+});
+
+for (const id of ['sinal-fraco', 'plantao-noturno'])
+  test(`mission ${id} loads its own map, texts and objectives`, async ({ page }) => {
+    const errors = trackErrors(page);
+    await page.goto('/');
+    await page.getByTestId('btn-new-mission').click();
+    await page.getByTestId(`pick-${id}`).click();
+    await expect(page.getByTestId('briefing')).toBeVisible();
+    await page.getByTestId('btn-deploy').click();
+    await expect(page.getByTestId('topbar')).toBeVisible();
+    await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
+    expect(await hook(page, (h) => h.state().missionId)).toBe(id);
+    await expect(page.getByTestId('current-objective')).not.toContainText('farmácia');
+    await page.evaluate(() => (window as any).__DEAD_SECTOR__.fastForward(100));
+    expect(errors).toEqual([]);
+  });
+
+test('campaign: losses and progress carry into the next mission', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/');
+  await page.getByTestId('btn-campaign').click();
+  await expect(page.getByTestId('briefing')).toContainText('Campanha');
+  await page.getByTestId('btn-deploy').click();
+  await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
+  await playPlanToEnd(page, 'mission');
+  await expect(page.getByTestId('interlude')).toBeVisible({ timeout: 15_000 });
+  await page.getByTestId('btn-campaign-next').click();
+  await expect(page.getByTestId('briefing')).toContainText('Sinal Fraco');
+  // the roster shows the condition everyone came back in
+  await expect(page.locator('[data-testid=briefing] td.state').first()).not.toHaveText('pronto');
+  const dead = await page.locator('[data-testid=briefing] tr.fallen').count();
+  await page.getByTestId('btn-deploy').click();
+  await page.waitForFunction(
+    () => (window as any).__DEAD_SECTOR__?.state().missionId === 'sinal-fraco',
+  );
+  const deployed = await hook(
+    page,
+    (h) => h.state().survivors.filter((s: any) => s.squadId).length,
+  );
+  expect(deployed).toBe(8 - dead);
+  // and the campaign survives a reload of the page
+  await page.goto('/');
+  await expect(page.getByTestId('btn-campaign')).toContainText('Continuar campanha');
   expect(errors).toEqual([]);
 });

@@ -9,6 +9,7 @@ import {
   type Vec2,
   type World,
 } from '@dead-sector/sim';
+import { MT } from '../ui/i18n';
 import { Settings } from '../ui/SaveStore';
 import { CELL, COLORS, DEPTH, SQUAD_COLORS } from './constants';
 import {
@@ -278,7 +279,7 @@ export class EntityRenderer {
       g.fillStyle(0x7fe0c0)
         .fillRect(cx - 1.5, cy - 5, 3, 10)
         .fillRect(cx - 5, cy - 1.5, 10, 3);
-      this.label(CABINET_ID, 'REMÉDIOS', cx, cy - 11, '#9ff0d8');
+      this.label(CABINET_ID, MT.itemTag, cx, cy - 11, '#9ff0d8');
     }
 
     // last-known contacts (never live positions of unseen zombies)
@@ -382,7 +383,7 @@ export class EntityRenderer {
       g.lineStyle(2, COLORS.panic, 1).strokeEllipse(x, y + 1, 19, 15);
     if (s.isLeader)
       top.fillStyle(0xffffff, 0.9).fillTriangle(x - 2.2, y - 12, x + 2.2, y - 12, x, y - 9.5);
-    if (s.isObjectiveCivilian) this.label(s.id, 'CIVIL', x, y - 10, '#f0e6d6');
+    if (s.isObjectiveCivilian) this.label(s.id, MT.personTag, x, y - 10, '#f0e6d6');
     // health arc only when hurt or selected (keeps the field readable)
     const hp = Math.max(0, s.health / s.maxHealth);
     if (hp < 0.999 || selected) {

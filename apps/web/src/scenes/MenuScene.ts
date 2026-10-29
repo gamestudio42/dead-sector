@@ -1,15 +1,18 @@
 import Phaser from 'phaser';
 import { loadContent } from '@dead-sector/content';
+import { currentMissionId, newCampaign } from '@dead-sector/sim';
 import { AudioEngine } from '../audio/AudioEngine';
 import { Backdrop } from '../render/Backdrop';
+import { CampaignStore } from '../ui/CampaignStore';
 import { clearUi, uiRoot } from '../ui/dom';
 import { openOptions } from '../ui/OptionsPanel';
 import { applyContrast, SaveStore } from '../ui/SaveStore';
 
 export const MISSION_ID = 'a-ultima-farmacia';
+export const CAMPAIGN_ID = 'ferrugem';
 export const QUICKSAVE = 'quicksave';
 
-/** Title screen over a live, decorative view of the mission map. */
+/** Title screen over a live, decorative view of the first map. */
 export class MenuScene extends Phaser.Scene {
   private backdrop: Backdrop | null = null;
 
@@ -20,7 +23,8 @@ export class MenuScene extends Phaser.Scene {
   create(): void {
     applyContrast();
     this.backdrop = new Backdrop(this, MISSION_ID);
-    const mission = loadContent().missions[MISSION_ID]!;
+    const content = loadContent();
+    const campaign = content.campaigns[CAMPAIGN_ID]!;
     clearUi();
     const screen = document.createElement('div');
     screen.className = 'screen title-screen';
@@ -29,7 +33,16 @@ export class MenuScene extends Phaser.Scene {
         <h1 class="title">DEAD <span>SECTOR</span></h1>
         <div class="subtitle">Tática em tempo real pausável</div>
         <nav class="menu-buttons">
-          <button data-act="new" data-testid="btn-new-mission"><b>Nova missão</b><small>${mission.displayName} · Bairro da Ferrugem</small></button>
+          <button data-act="campaign" data-testid="btn-campaign"><b data-el="campaignLabel">Campanha: ${campaign.displayName}</b><small data-el="campaignSub">${campaign.missions.length} missões encadeadas · perdas permanentes</small></button>
+          <button data-act="new" data-testid="btn-new-mission"><b>Missão avulsa</b><small>Jogar uma missão sem consequências</small></button>
+          <div class="mission-pick" data-el="pick" hidden>
+            ${campaign.missions
+              .map(
+                (m) =>
+                  `<button data-mission="${m.missionId}" data-testid="pick-${m.missionId}"><b>${m.title}</b><small>${content.maps[content.missions[m.missionId]!.mapId]!.displayName}${content.missions[m.missionId]!.isNight ? ' · noite' : ''}</small></button>`,
+              )
+              .join('')}
+          </div>
           <button data-act="continue" data-testid="btn-continue" disabled><b>Continuar</b><small>Salvamento rápido</small></button>
           <button data-act="options" data-testid="btn-menu-options"><b>Opções</b><small>Áudio, vídeo, acessibilidade e controles</small></button>
         </nav>
@@ -39,21 +52,66 @@ export class MenuScene extends Phaser.Scene {
     uiRoot().appendChild(screen);
     const q = <T extends HTMLElement>(sel: string) => screen.querySelector(sel) as T;
     const audio = AudioEngine.get();
-    q('[data-act=new]').onclick = () => {
-      audio.uiClick();
-      this.scene.start('Briefing');
-    };
-    q('[data-act=options]').onclick = () => {
-      audio.uiClick();
-      screen.style.visibility = 'hidden';
-      openOptions(() => (screen.style.visibility = ''));
-    };
-    const cont = q<HTMLButtonElement>('[data-act=continue]');
-    void SaveStore.load(QUICKSAVE).then((data) => {
-      if (!data) return;
-      cont.disabled = false;
-      cont.onclick = () => this.scene.start('Tactical', { save: data });
+
+    let saved: Awaited<ReturnType<typeof CampaignStore.load>> = null;
+    void CampaignStore.load().then((c) => {
+      if (!c || c.status !== 'active') return;
+      saved = c;
+      const step = campaign.missions[c.missionIndex];
+      const alive = c.roster.filter((r) => r.alive).length;
+      q('[data-el=campaignLabel]').textContent = `Continuar campanha: ${step?.title ?? ''}`;
+      q('[data-el=campaignSub]').textContent =
+        `${alive}/${c.roster.length} sobreviventes · ${c.supplies} doses de tratamento · nova campanha nas opções abaixo`;
+      const restart = document.createElement('button');
+      restart.dataset['act'] = 'newCampaign';
+      restart.innerHTML = '<b>Nova campanha</b><small>Descarta a campanha em andamento</small>';
+      q('[data-act=campaign]').after(restart);
     });
+
+    screen.addEventListener('click', (e) => {
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-act],[data-mission]');
+      if (!t) return;
+      audio.uiClick();
+      if (t.dataset['mission'])
+        return this.scene.start('Briefing', { missionId: t.dataset['mission'], campaign: false });
+      switch (t.dataset['act']) {
+        case 'campaign': {
+          const c = saved ?? newCampaign(content, CAMPAIGN_ID);
+          void CampaignStore.save(c).then(() =>
+            this.scene.start('Briefing', {
+              missionId: currentMissionId(content, c),
+              campaign: true,
+            }),
+          );
+          return;
+        }
+        case 'newCampaign': {
+          const c = newCampaign(content, CAMPAIGN_ID);
+          void CampaignStore.save(c).then(() =>
+            this.scene.start('Briefing', {
+              missionId: currentMissionId(content, c),
+              campaign: true,
+            }),
+          );
+          return;
+        }
+        case 'new':
+          q('[data-el=pick]').hidden = !q('[data-el=pick]').hidden;
+          return;
+        case 'options':
+          screen.style.visibility = 'hidden';
+          openOptions(() => (screen.style.visibility = ''));
+          return;
+      }
+    });
+    const cont = q<HTMLButtonElement>('[data-act=continue]');
+    void Promise.all([SaveStore.load(QUICKSAVE), CampaignStore.quicksaveIsCampaign()]).then(
+      ([data, isCampaign]) => {
+        if (!data) return;
+        cont.disabled = false;
+        cont.onclick = () => this.scene.start('Tactical', { save: data, campaign: isCampaign });
+      },
+    );
   }
 
   override update(_time: number, delta: number): void {

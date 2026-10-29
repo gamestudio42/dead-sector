@@ -356,16 +356,15 @@ function decideCivilian(world: World, state: GameState, ctx: TickContext, s: Sur
     s.path = [];
     return;
   }
-  if (s.panicked) {
-    handlePanic(world, state, ctx, s, null, seenZombies(ctx, s));
-    return;
-  }
+  // a rescued civilian in panic clings to the escort instead of freezing in the open
+  const clinging = s.panicked;
   let leader = s.followTargetId ? ctx.survivorsById.get(s.followTargetId) : undefined;
-  if (!leader || !leader.alive || leader.extracted) {
+  // never follow someone running away in panic: switch to a calm member of the escort
+  if (!leader || !leader.alive || leader.extracted || leader.panicked) {
     let best: Survivor | null = null;
     let bestScore = Infinity;
     for (const m of state.survivors) {
-      if (!m.alive || m.extracted || m.squadId === null) continue;
+      if (!m.alive || m.extracted || m.squadId === null || m.panicked) continue;
       const score = dist(m.position, s.position) - (m.isLeader ? 3 : 0);
       if (score < bestScore) {
         bestScore = score;
@@ -375,8 +374,8 @@ function decideCivilian(world: World, state: GameState, ctx: TickContext, s: Sur
     leader = best ?? undefined;
     s.followTargetId = leader?.id ?? null;
   }
-  s.activity = 'following';
-  s.reason = null;
+  s.activity = clinging ? 'fleeing' : 'following';
+  s.reason = clinging ? 'panicFlee' : null;
   if (!leader) {
     s.path = [];
     s.activity = 'waiting';
@@ -389,7 +388,7 @@ function decideCivilian(world: World, state: GameState, ctx: TickContext, s: Sur
     s.pathIndex = 0;
     return;
   }
-  s.moveMode = d > 6 ? 'sprint' : 'move';
+  s.moveMode = d > 6 || clinging ? 'sprint' : 'move';
   if (pathDone(s) || state.tick % 5 === 0) {
     const path = findPath(world, state, s.position, leader.position, {
       agent: 'survivor',

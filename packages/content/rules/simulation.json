@@ -122,10 +122,6 @@
   "alarm": {
     "perIntensity": 0.012,
     "decayPerSecond": 0.8,
-    "tiers": [
-      25,
-      50,
-      80
-    ]
+    "tiers": [25, 50, 80]
   }
 }

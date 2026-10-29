@@ -1,4 +1,5 @@
 import { loadContent, type ContentBundle } from '@dead-sector/content';
+import type { CarryOver } from '../campaign/Campaign';
 import type { GameCommand, GameCommandInput, GameState, SimEvent } from '../model/types';
 import { createWorld, type World } from '../model/World';
 import { createMissionState } from '../mission/createMission';
@@ -72,12 +73,13 @@ export class GameSimulation {
     missionId = 'a-ultima-farmacia',
     seed?: number,
     content: ContentBundle = loadContent(),
+    carry?: CarryOver,
   ): GameSimulation {
     const mission = content.missions[missionId];
     if (!mission) throw new Error(`Unknown mission ${missionId}`);
     return new GameSimulation(
       content,
-      createMissionState(content, missionId, seed ?? mission.canonicalSeed),
+      createMissionState(content, missionId, seed ?? mission.canonicalSeed, carry),
     );
   }
 

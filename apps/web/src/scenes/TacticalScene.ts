@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { loadContent } from '@dead-sector/content';
 import {
   COMBAT_PLAN,
+  MISSION_PLANS,
+  type CarryOver,
   createPlanRunner,
   deserializeState,
   FixedStepClock,
@@ -29,6 +31,7 @@ import {
 } from '../input/OrderController';
 import { squadAt, squadsInRect } from '../input/SelectionController';
 import { barksForEvents } from '../presentation/barks';
+import { startTips, tip, tipsForEvents } from '../presentation/tutorial';
 import {
   emptyRecord,
   recordEvents,
@@ -43,7 +46,9 @@ import { EntityRenderer } from '../render/EntityRenderer';
 import { FogRenderer } from '../render/FogRenderer';
 import { LightingRenderer } from '../render/LightingRenderer';
 import { MapRenderer } from '../render/MapRenderer';
+import { CampaignStore } from '../ui/CampaignStore';
 import { ContextMenu } from '../ui/ContextMenu';
+import { setMissionTexts } from '../ui/i18n';
 import { clearUi, uiRoot } from '../ui/dom';
 import { Hud, POLICY_CYCLE } from '../ui/Hud';
 import { Minimap } from '../ui/Minimap';
@@ -101,20 +106,37 @@ export class TacticalScene extends Phaser.Scene {
     super('Tactical');
   }
 
-  create(data: { seed?: number; save?: string; paused?: boolean }): void {
+  /** Mission being played, whether it belongs to the campaign, and the roster it deployed with. */
+  private missionId = MISSION_ID;
+  private inCampaign = false;
+  private carry: CarryOver | undefined;
+
+  create(data: {
+    missionId?: string;
+    seed?: number;
+    save?: string;
+    paused?: boolean;
+    campaign?: boolean;
+    carry?: CarryOver;
+  }): void {
+    this.missionId = data.missionId ?? MISSION_ID;
+    this.inCampaign = !!data.campaign;
+    this.carry = data.carry;
     clearUi();
     const content = loadContent();
     if (data.save) {
       try {
         this.sim = new GameSimulation(content, deserializeState(data.save));
       } catch (err) {
-        this.sim = GameSimulation.create(MISSION_ID, data.seed, content);
+        this.sim = GameSimulation.create(this.missionId, data.seed, content, this.carry);
         window.setTimeout(
           () => this.hud.toast(`Salvamento inválido: ${(err as Error).message}`),
           50,
         );
       }
-    } else this.sim = GameSimulation.create(MISSION_ID, data.seed, content);
+    } else this.sim = GameSimulation.create(this.missionId, data.seed, content, this.carry);
+    this.missionId = this.sim.state.missionId;
+    setMissionTexts(this.sim.world.mission.texts);
     this.clock = new FixedStepClock();
     this.clock.paused = !!data.paused;
     this.eventCounts = {};
@@ -156,6 +178,7 @@ export class TacticalScene extends Phaser.Scene {
       (x, y) => this.rightClick({ x, y }),
     );
     this.hud.mountMinimap(this.minimap.el);
+    if (Settings.tips) for (const id of startTips(Settings.tipsSeen)) this.hud.queueTip(tip(id));
 
     this.selection = [this.sim.state.squads[0]?.id ?? 'alfa'];
     this.boxG = this.add.graphics().setDepth(19);
@@ -411,13 +434,14 @@ export class TacticalScene extends Phaser.Scene {
 
   private async saveGame(): Promise<void> {
     await SaveStore.save(QUICKSAVE, serializeState(this.sim.state));
+    await CampaignStore.setQuicksaveMode(this.inCampaign);
     this.hud.toast(`Jogo salvo (tick ${this.sim.tick})`);
   }
 
   private async loadGame(): Promise<void> {
     const data = await SaveStore.load(QUICKSAVE);
     if (!data) return this.hud.toast('Nenhum salvamento encontrado');
-    this.scene.restart({ save: data });
+    this.scene.restart({ save: data, campaign: this.inCampaign });
   }
 
   private showOptions(): void {
@@ -452,7 +476,13 @@ export class TacticalScene extends Phaser.Scene {
       if (a === 'save') void this.saveGame();
       if (a === 'load') void this.loadGame();
       if (a === 'options') this.showOptions();
-      if (a === 'restart') this.scene.restart({ seed: this.sim.state.seed });
+      if (a === 'restart')
+        this.scene.restart({
+          missionId: this.missionId,
+          seed: this.sim.state.seed,
+          campaign: this.inCampaign,
+          carry: this.carry,
+        });
       if (a === 'menu') this.scene.start('Menu');
     });
     uiRoot().appendChild(m);
@@ -536,6 +566,9 @@ export class TacticalScene extends Phaser.Scene {
       }
     }
     this.minimap.ingest(events, this.sim.state, now);
+    if (Settings.tips)
+      for (const id of tipsForEvents(events, this.sim.state, Settings.tipsSeen))
+        this.hud.queueTip(tip(id));
     this.barkR.push(barksForEvents(events, this.sim.state), now);
     this.hud.ingest(events, this.sim.state, this.sim.world);
     if (this.dbgR && this.sim.tick % 100 === 0)
@@ -551,7 +584,11 @@ export class TacticalScene extends Phaser.Scene {
     if (this.sim.ended) {
       if (!this.endAt) this.endAt = time;
       else if (time - this.endAt > 1500) {
-        this.scene.start('Debrief', { state: this.sim.state, record: this.record });
+        this.scene.start('Debrief', {
+          state: this.sim.state,
+          record: this.record,
+          campaign: this.inCampaign,
+        });
         return;
       }
     }
@@ -623,10 +660,21 @@ export class TacticalScene extends Phaser.Scene {
       },
       eventCount: (type: string) => this.eventCounts[type] ?? 0,
       restart: (seed?: number, paused = true) =>
-        this.scene.restart({ seed: seed ?? this.sim.state.seed, paused }),
-      startPlan: (name: 'stealth' | 'combat') => {
+        this.scene.restart({
+          missionId: this.missionId,
+          seed: seed ?? this.sim.state.seed,
+          paused,
+          campaign: this.inCampaign,
+          carry: this.carry,
+        }),
+      startPlan: (name: 'stealth' | 'combat' | 'mission') => {
         this.plan = {
-          steps: name === 'stealth' ? STEALTH_PLAN : COMBAT_PLAN,
+          steps:
+            name === 'stealth'
+              ? STEALTH_PLAN
+              : name === 'combat'
+                ? COMBAT_PLAN
+                : (MISSION_PLANS[this.missionId] ?? COMBAT_PLAN),
           runner: createPlanRunner(),
         };
       },

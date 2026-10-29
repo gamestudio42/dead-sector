@@ -1360,3 +1360,10 @@ table.roster tr.fallen td.state {
   color: #a9c97a;
   pointer-events: auto;
 }
+/* tall menus (mission list open, small screens) scroll instead of clipping the title */
+.screen.title-screen {
+  align-items: safe center;
+  overflow-y: auto;
+  padding-top: 24px;
+  padding-bottom: 24px;
+}

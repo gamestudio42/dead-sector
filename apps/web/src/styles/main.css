@@ -473,3 +473,51 @@ table.stats th {
   color: var(--muted);
   margin-top: 4px;
 }
+
+/* Screen-edge red pulse when a survivor is hurt (stronger on a bite). */
+.damage-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(150, 10, 6, 0.55) 100%);
+}
+.damage-vignette.hit {
+  animation: dmg-pulse 450ms ease-out;
+}
+.damage-vignette.bite {
+  animation: dmg-pulse 900ms ease-out;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(170, 8, 4, 0.75) 100%);
+}
+@keyframes dmg-pulse {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* Subtle permanent vignette framing the tactical view. */
+#game::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.38) 100%);
+}
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 10px;
+}
+.settings-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.settings-row input[type='range'] {
+  width: 110px;
+}

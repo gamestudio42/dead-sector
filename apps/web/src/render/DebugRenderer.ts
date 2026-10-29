@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { propagateNoise, type GameState, type NoiseEvent, type World } from '@dead-sector/sim';
-import { CELL } from './constants';
+import { CELL, DEPTH } from './constants';
 
 const STATE_COLORS: Record<string, string> = {
   idle: '#9a9a9a',
@@ -29,8 +29,8 @@ export class DebugRenderer {
       this.grid.lineBetween(x * CELL, 0, x * CELL, world.height * CELL);
     for (let y = 0; y <= world.height; y++)
       this.grid.lineBetween(0, y * CELL, world.width * CELL, y * CELL);
-    this.field = scene.add.graphics().setDepth(6);
-    this.g = scene.add.graphics().setDepth(13);
+    this.field = scene.add.graphics().setDepth(DEPTH.debug);
+    this.g = scene.add.graphics().setDepth(DEPTH.debug);
   }
 
   private drawField(state: GameState, noise: NoiseEvent): void {
@@ -73,7 +73,7 @@ export class DebugRenderer {
             stroke: '#000',
             strokeThickness: 2,
           })
-          .setDepth(14)
+          .setDepth(DEPTH.labels)
           .setOrigin(0.5, 0);
         this.labels.push(t);
       }

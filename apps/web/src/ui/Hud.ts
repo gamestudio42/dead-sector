@@ -10,8 +10,9 @@ import {
   type Survivor,
   type World,
 } from '@dead-sector/sim';
-import { fmtTime, T } from './i18n';
+import { fmtTime, MT, T } from './i18n';
 import { KeyBindings, keyLabel, type Action } from '../input/KeyBindings';
+import type { Tip } from '../presentation/tutorial';
 import { Settings } from './SaveStore';
 
 export interface HudActions {
@@ -167,6 +168,7 @@ export class Hud {
       </div>
       <div class="banner panel" data-el="banner" style="display:none"></div>
       <div class="toast" data-el="toast" style="opacity:0"></div>
+      <div class="tip-card panel" data-el="tip" data-testid="tip" hidden></div>
       <div class="debug panel" data-el="debug" style="display:none"></div>`;
     host.appendChild(this.root);
     this.root
@@ -177,6 +179,14 @@ export class Hud {
         .querySelector(`[data-panel=${key}]`)
         ?.classList.toggle('collapsed', !PANEL_FLAGS[key].get());
     this.root.addEventListener('click', (ev) => {
+      const tipBtn = (ev.target as HTMLElement).closest<HTMLElement>('[data-tip]');
+      if (tipBtn) {
+        if (tipBtn.dataset['tip'] === 'off') {
+          Settings.tips = false;
+          this.tipQueue = [];
+        } else this.tipQueue.shift();
+        return this.renderTip();
+      }
       const toggle = (ev.target as HTMLElement).closest<HTMLElement>('[data-toggle]');
       if (toggle) return this.togglePanel(toggle.dataset['toggle'] as string);
       const t = (ev.target as HTMLElement).closest<HTMLElement>(
@@ -209,6 +219,28 @@ export class Hud {
   destroy(): void {
     window.clearTimeout(this.toastTimer);
     this.root.remove();
+  }
+
+  private tipQueue: Tip[] = [];
+
+  /** Queues a contextual hint; one card at a time, each marked seen when it appears. */
+  queueTip(t: Tip | null): void {
+    if (!t || !Settings.tips || this.tipQueue.some((q) => q.id === t.id)) return;
+    this.tipQueue.push(t);
+    if (this.tipQueue.length === 1) this.renderTip();
+  }
+
+  private renderTip(): void {
+    const el = this.els['tip'] as HTMLElement;
+    const t = this.tipQueue[0];
+    if (!t || !Settings.tips) {
+      el.hidden = true;
+      return;
+    }
+    Settings.markTipSeen(t.id);
+    el.hidden = false;
+    el.innerHTML = `<div class="tip-title">💡 ${esc(t.title)}</div><p>${esc(t.text)}</p>
+      <div class="tip-actions"><button data-tip="ok" data-testid="tip-ok">Entendi</button><button data-tip="off" class="link">Desligar dicas</button></div>`;
   }
 
   /** Collapses/expands a HUD panel and remembers the choice. */
@@ -398,8 +430,8 @@ export class Hud {
           break;
         case 'INTERACTION_STARTED': {
           const what: Record<string, string> = {
-            cabinet: 'recolhendo remédios',
-            civilian: 'resgatando a civil',
+            cabinet: `recolhendo ${MT.item}`,
+            civilian: `resgatando ${MT.person}`,
             beacon: 'ativando o rádio',
             door: 'mexendo na porta',
             barricade: 'pregando tábuas (barulho!)',
@@ -658,12 +690,12 @@ export class Hud {
           banner,
           civIn
             ? 'Transporte no local — embarcando…'
-            : `Transporte no local. Aguardando a civil na área de extração. <button data-act="confirmExtraction" data-testid="btn-confirm-extraction">Extrair sem a civil (sucesso parcial)</button>`,
+            : `Transporte no local. Aguardando ${MT.person} na área de extração. <button data-act="confirmExtraction" data-testid="btn-confirm-extraction">Extrair sem ${MT.person} (sucesso parcial)</button>`,
         );
       } else {
         this.setHtml(
           banner,
-          `Extração: resistam na área — <b>${Math.floor(m.extractionHoldTicks / 10)}/${Math.round(m.extractionHoldRequiredTicks / 10)} s</b>${civIn ? '' : ' · civil fora da área'}`,
+          `Extração: resistam na área — <b>${Math.floor(m.extractionHoldTicks / 10)}/${Math.round(m.extractionHoldRequiredTicks / 10)} s</b>${civIn ? '' : ` · ${MT.person} fora da área`}`,
         );
       }
     } else banner.style.display = 'none';

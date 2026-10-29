@@ -208,6 +208,44 @@ export const missionSchema = z.object({
       pulseSeconds: z.number().positive(),
     }),
   }),
+  /** Player-facing PT-BR texts for this mission (objective names, item and person, intel). */
+  texts: z.object({
+    area: z.string().min(1),
+    item: z.string().min(1),
+    itemTag: z.string().min(1),
+    itemDone: z.string().min(1),
+    person: z.string().min(1),
+    personTag: z.string().min(1),
+    objectives: z.object({
+      enterPerimeter: z.string().min(1),
+      collectMedicine: z.string().min(1),
+      rescueCivilian: z.string().min(1),
+      activateExtraction: z.string().min(1),
+      holdExtraction: z.string().min(1),
+    }),
+    intel: z.array(z.string().min(1)),
+  }),
+});
+
+/** A linked campaign: missions in order, with what carries over between them. */
+export const campaignSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+  intro: z.string().min(1),
+  missions: z
+    .array(
+      z.object({
+        missionId: z.string().min(1),
+        title: z.string().min(1),
+        /** Treatment doses earned when the mission item is brought back (each cures one infected survivor). */
+        rewardSupplies: z.number().int().nonnegative(),
+      }),
+    )
+    .min(1),
+  /** Fraction of max health recovered between missions. */
+  healFraction: z.number().min(0).max(1),
+  /** Fraction of each survivor's starting reserve ammo found between missions. */
+  ammoResupplyFraction: z.number().min(0).max(1),
 });
 
 const num = z.number();
@@ -331,6 +369,7 @@ export type SurvivorTemplate = z.infer<typeof survivorTemplateSchema>;
 export type DifficultyDef = z.infer<typeof difficultySchema>;
 export type MapDef = z.infer<typeof mapSchema>;
 export type MissionDef = z.infer<typeof missionSchema>;
+export type CampaignDef = z.infer<typeof campaignSchema>;
 export type SimulationRules = z.infer<typeof simulationRulesSchema>;
 export type Rect = z.infer<typeof rectSchema>;
 export type FirePolicy = z.infer<typeof firePolicySchema>;

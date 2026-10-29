@@ -1243,3 +1243,89 @@ button.bind.capturing {
   box-shadow: 0 0 8px rgba(224, 86, 62, 0.8);
   animation: blink 0.6s ease-in-out infinite;
 }
+
+/* ---------- tutorial tips ---------- */
+.tip-card {
+  position: absolute;
+  left: 8px;
+  bottom: calc(232px * var(--hud-scale));
+  width: calc(260px * var(--hud-scale));
+  padding: 9px 11px;
+  border-left: 3px solid var(--accent) !important;
+  animation: caption-in 0.25s ease-out;
+}
+.tip-card .tip-title {
+  font-weight: 700;
+  color: #f1ead8;
+}
+.tip-card p {
+  margin: 4px 0 8px;
+  font-size: 0.92em;
+  line-height: 1.4;
+  color: #d6d1c4;
+}
+.tip-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+button.link {
+  background: none !important;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* ---------- campaign ---------- */
+.mission-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 14px;
+  border-left: 2px solid rgba(201, 167, 74, 0.4);
+}
+.night-tag {
+  font-size: 13px;
+  vertical-align: middle;
+  background: #1d2a44;
+  color: #a9c2ff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-left: 8px;
+}
+.campaign-status {
+  margin: -6px 0 10px;
+}
+table.roster td.state {
+  font-size: 12px;
+  color: #b9e2a8;
+}
+table.roster td.state.hurt {
+  color: #ffe0a0;
+}
+table.roster td.state.infected {
+  color: #ffb4a6;
+}
+table.roster tr.fallen td {
+  color: #6f6a62;
+  text-decoration: line-through;
+}
+table.roster tr.fallen td.state {
+  text-decoration: none;
+}
+.interlude {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(201, 167, 74, 0.45);
+  border-radius: 6px;
+  background: rgba(201, 167, 74, 0.06);
+}
+.interlude h4 {
+  margin: 0 0 6px;
+}
+.interlude ul {
+  margin: 0 0 6px;
+  padding-left: 20px;
+  line-height: 1.5;
+}

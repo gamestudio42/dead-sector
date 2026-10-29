@@ -6,6 +6,7 @@ import { CELL, DEPTH } from './constants';
 /** Lighting buffer resolution relative to world pixels (lights are soft, so 1/4 is plenty). */
 const RES = 4;
 const AMBIENT_DUSK = 0.4;
+const AMBIENT_NIGHT = 0.66;
 
 interface Flash {
   x: number;
@@ -37,7 +38,7 @@ export class LightingRenderer {
   ) {
     this.light = scene.make.image({ key: 'fx-light', add: false });
     this.cone = scene.make.image({ key: 'fx-cone', add: false });
-    if (mode === 'dusk') {
+    if (mode === 'dusk' || world.mission.isNight) {
       this.rt = scene.add
         .renderTexture(0, 0, (world.width * CELL) / RES, (world.height * CELL) / RES)
         .setOrigin(0, 0)
@@ -98,7 +99,8 @@ export class LightingRenderer {
     if (!rt) return;
 
     rt.clear();
-    rt.fill(0x05070c, AMBIENT_DUSK);
+    // night missions are much darker: only lanterns, flashes and fires cut through
+    rt.fill(0x05070c, this.world.mission.isNight ? AMBIENT_NIGHT : AMBIENT_DUSK);
     survivorLights((x, y, angle) => {
       this.eraseLight(x, y, 4.5, 0.85);
       this.cone

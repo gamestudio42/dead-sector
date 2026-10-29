@@ -3,24 +3,14 @@ import { loadContent } from '@dead-sector/content';
 import { AudioEngine } from '../audio/AudioEngine';
 import { Backdrop } from '../render/Backdrop';
 import { clearUi, uiRoot } from '../ui/dom';
-import { T } from '../ui/i18n';
+import { CampaignStore } from '../ui/CampaignStore';
+import { MT, setMissionTexts, T } from '../ui/i18n';
 import { baseMap, drawMissionMarks } from '../ui/MapCanvas';
-import { MISSION_ID } from './MenuScene';
+import { CAMPAIGN_ID, MISSION_ID } from './MenuScene';
+import { carryOver, type CampaignState } from '@dead-sector/sim';
 
 const PX = 3;
 const SQUAD_CSS: Record<string, string> = { alfa: '#5aa9ff', bravo: '#ffad4d' };
-
-const INTEL = [
-  'Tiros são ouvidos a quarteirões de distância e atraem reforços pelas quatro entradas do bairro.',
-  'A porta dos fundos da farmácia está trancada: arrombar é possível, mas faz barulho.',
-  'Ao transmitir, o rádio de extração atrai infectados até o transporte chegar.',
-  'A civil está ferida e não luta: ela segue a equipe a pé depois do resgate.',
-  'Furtivo e portas fechadas abafam o ruído. Corredores reagem rápido a qualquer som.',
-  'Infectados atraídos quebram janelas e portas. Cada esquadrão tem 2 kits de tábuas para barricar (Ctrl + clique direito ou B) — martelar faz barulho.',
-  'Há um gritador no leste e um brutamontes na avenida sul. O grito atrai tudo ao redor; o brutamontes aguenta muito tiro.',
-  'Barulho constante eleva o alerta do bairro. Em Caçada, e com o passar do tempo, hordas entram pelas bordas e patrulham as avenidas.',
-  'Mordidas infectam: sem tratamento, o ferido se transforma em poucos minutos. Um socorrista por perto ganha tempo.',
-];
 
 const pips = (v: number) =>
   `<span class="pips" title="${v}/100">${Array.from({ length: 5 }, (_, i) => `<i class="${v >= (i + 1) * 20 - 10 ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -33,13 +23,22 @@ export class BriefingScene extends Phaser.Scene {
     super('Briefing');
   }
 
-  create(): void {
-    this.backdrop = new Backdrop(this, MISSION_ID);
+  create(data: { missionId?: string; campaign?: boolean }): void {
+    const missionId = data.missionId ?? MISSION_ID;
+    const inCampaign = !!data.campaign;
+    this.backdrop = new Backdrop(this, missionId);
     const content = loadContent();
-    const mission = content.missions[MISSION_ID]!;
+    const mission = content.missions[missionId]!;
+    setMissionTexts(mission.texts);
     const world = this.backdrop.world;
     let seed = mission.canonicalSeed;
+    let campaign: CampaignState | null = null;
     clearUi();
+    const STAGE: Record<string, string> = {
+      exposed: 'exposto',
+      infected: 'infectado',
+      critical: 'crítico',
+    };
 
     const roster = mission.squads
       .map((sq) => {
@@ -47,12 +46,12 @@ export class BriefingScene extends Phaser.Scene {
           .map((id) => {
             const t = content.survivors[id]!;
             const w = content.weapons[t.weaponId];
-            return `<tr><td>${t.isLeader ? '★ ' : ''}${t.name}</td><td>${t.role}</td><td>${w?.displayName ?? t.weaponId}</td>
-              <td>${pips(t.courage)}</td><td>${pips(t.marksmanship)}</td><td>${pips(t.stealth)}</td></tr>`;
+            return `<tr data-member="${id}"><td>${t.isLeader ? '★ ' : ''}${t.name}</td><td>${t.role}</td><td>${w?.displayName ?? t.weaponId}</td>
+              <td>${pips(t.courage)}</td><td>${pips(t.marksmanship)}</td><td>${pips(t.stealth)}</td><td class="state" data-state="${id}">pronto</td></tr>`;
           })
           .join('');
         return `<h4 style="color:${SQUAD_CSS[sq.id]}">Esquadrão ${sq.displayName}</h4>
-          <table class="roster"><tr><th>Nome</th><th>Função</th><th>Arma</th><th>Coragem</th><th>Pontaria</th><th>Furtividade</th></tr>${rows}</table>`;
+          <table class="roster"><tr><th>Nome</th><th>Função</th><th>Arma</th><th>Coragem</th><th>Pontaria</th><th>Furtividade</th><th>Estado</th></tr>${rows}</table>`;
       })
       .join('');
 
@@ -60,14 +59,15 @@ export class BriefingScene extends Phaser.Scene {
     screen.className = 'screen briefing-screen';
     screen.innerHTML = `
       <div class="card panel briefing-card" data-testid="briefing">
-        <div class="subtitle">Briefing de operação</div>
-        <h2>${mission.displayName}</h2>
+        <div class="subtitle" data-el="kicker">${inCampaign ? 'Campanha · ' + content.campaigns[CAMPAIGN_ID]!.displayName : 'Missão avulsa'} — briefing de operação</div>
+        <h2>${mission.displayName}${mission.isNight ? ' <span class="night-tag">noite</span>' : ''}</h2>
+        <div class="campaign-status small" data-el="campaignStatus" hidden></div>
         <div class="briefing-grid">
           <div class="map-col">
             <canvas data-el="map" width="${world.width * PX}" height="${world.height * PX}"></canvas>
             <div class="map-legend small">
               <span><i style="background:#5aa9ff"></i>Alfa</span><span><i style="background:#ffad4d"></i>Bravo</span>
-              <span><i class="dash"></i>Perímetro da farmácia</span><span><i style="background:#7fbf6a"></i>Extração</span>
+              <span><i class="dash"></i>Perímetro: ${MT.area}</span><span><i style="background:#7fbf6a"></i>Extração</span>
               <span><i style="background:#e0563e"></i>Entradas de infectados</span>
             </div>
           </div>
@@ -76,11 +76,11 @@ export class BriefingScene extends Phaser.Scene {
             <h4>Objetivos</h4>
             <ol class="obj-list">${['enterPerimeter', 'collectMedicine', 'rescueCivilian', 'activateExtraction', 'holdExtraction'].map((id) => `<li>${T.objectives[id]}</li>`).join('')}</ol>
             <h4>Informações</h4>
-            <ul class="intel">${INTEL.map((i) => `<li>${i}</li>`).join('')}</ul>
-            <p class="small">Tempo limite: ${Math.round(mission.timeLimitSeconds / 60)} min · Falha se a civil morrer ou se todos caírem.</p>
+            <ul class="intel">${MT.intel.map((i) => `<li>${i}</li>`).join('')}</ul>
+            <p class="small">Tempo limite: ${Math.round(mission.timeLimitSeconds / 60)} min · Falha se ${MT.person} morrer ou se todos caírem.</p>
           </div>
         </div>
-        <details class="roster-wrap"><summary>Equipe (${mission.squads.reduce((n, s) => n + s.memberIds.length, 0)} sobreviventes)</summary>${roster}</details>
+        <details class="roster-wrap" ${inCampaign ? 'open' : ''}><summary>Equipe (${mission.squads.reduce((n, s) => n + s.memberIds.length, 0)} sobreviventes)</summary>${roster}</details>
         <div class="row briefing-actions">
           <span class="small">Semente: <b data-el="seed">${seed}</b> <span data-el="seedNote">(canônica)</span></span>
           <button data-act="seed" title="Mesma missão com posições e eventos diferentes">Nova semente</button>
@@ -133,8 +133,13 @@ export class BriefingScene extends Phaser.Scene {
     g.fillStyle = '#e9e4d6';
     g.font = 'bold 11px system-ui';
     const o = mission.objectives;
-    g.fillText('FARMÁCIA', o.perimeter.x0 * PX + 4, o.perimeter.y0 * PX - 4);
-    g.fillText('EXTRAÇÃO', o.extraction.zone.x0 * PX + 2, o.extraction.zone.y0 * PX - 4);
+    // keep labels inside the canvas (long area names near the edge)
+    const label = (text: string, x: number, y: number) => {
+      const w = g.measureText(text).width;
+      g.fillText(text, Math.max(2, Math.min(x, canvas.width - w - 2)), Math.max(11, y));
+    };
+    label(MT.area.toUpperCase(), o.perimeter.x0 * PX + 4, o.perimeter.y0 * PX - 4);
+    label('EXTRAÇÃO', o.extraction.zone.x0 * PX + 2, o.extraction.zone.y0 * PX - 4);
 
     const audio = AudioEngine.get();
     const setSeed = (s: number, canon: boolean) => {
@@ -148,9 +153,47 @@ export class BriefingScene extends Phaser.Scene {
       audio.uiClick();
       this.scene.start('Menu');
     };
+    if (inCampaign) {
+      // campaign: the roster deploys as it came back from the last mission
+      q('[data-act=seed]').hidden = true;
+      q('[data-act=canon]').hidden = true;
+      void CampaignStore.load().then((c) => {
+        if (!c) return;
+        campaign = c;
+        const tries = c.history.filter((h) => h.missionId === missionId).length;
+        seed = mission.canonicalSeed + tries;
+        q('[data-el=seed]').textContent = String(seed);
+        q('[data-el=seedNote]').textContent = tries ? `(tentativa ${tries + 1})` : '(canônica)';
+        const alive = c.roster.filter((r) => r.alive).length;
+        const status = q('[data-el=campaignStatus]');
+        status.hidden = false;
+        status.textContent = `${alive}/${c.roster.length} sobreviventes · ${c.supplies} doses de tratamento · ${c.rescued.length} resgatados até agora`;
+        for (const r of c.roster) {
+          const cell = screen.querySelector<HTMLElement>(`[data-state="${r.templateId}"]`);
+          if (!cell) continue;
+          const t = content.survivors[r.templateId]!;
+          if (!r.alive) {
+            cell.textContent = 'morto';
+            cell.className = 'state dead';
+            cell.parentElement?.classList.add('fallen');
+            continue;
+          }
+          const bits = [`vida ${r.health}/${t.maxHealth}`];
+          if (r.infection !== 'healthy') bits.push(`infecção: ${STAGE[r.infection]}`);
+          if (content.weapons[t.weaponId]!.magazineCapacity > 0) bits.push(`${r.ammo} balas`);
+          cell.textContent = bits.join(' · ');
+          cell.className = `state ${r.infection !== 'healthy' ? 'infected' : r.health < t.maxHealth * 0.6 ? 'hurt' : ''}`;
+        }
+      });
+    }
     q('[data-act=deploy]').onclick = () => {
       audio.uiClick();
-      this.scene.start('Tactical', { seed });
+      this.scene.start('Tactical', {
+        missionId,
+        seed,
+        campaign: inCampaign,
+        carry: campaign ? carryOver(campaign) : undefined,
+      });
     };
   }
 

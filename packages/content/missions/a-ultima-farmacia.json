@@ -11,12 +11,7 @@
     {
       "id": "alfa",
       "displayName": "Alfa",
-      "memberIds": [
-        "alfa-leader",
-        "alfa-marksman",
-        "alfa-medic",
-        "alfa-civilian"
-      ],
+      "memberIds": ["alfa-leader", "alfa-marksman", "alfa-medic", "alfa-civilian"],
       "spawn": {
         "x": 7.5,
         "y": 5.5
@@ -28,12 +23,7 @@
     {
       "id": "bravo",
       "displayName": "Bravo",
-      "memberIds": [
-        "bravo-leader",
-        "bravo-scout",
-        "bravo-mechanic",
-        "bravo-volunteer"
-      ],
+      "memberIds": ["bravo-leader", "bravo-scout", "bravo-mechanic", "bravo-volunteer"],
       "spawn": {
         "x": 15.5,
         "y": 5.5
@@ -367,5 +357,31 @@
       "pulseNoise": 45,
       "pulseSeconds": 5
     }
+  },
+  "texts": {
+    "area": "farmácia",
+    "item": "os medicamentos",
+    "itemTag": "REMÉDIOS",
+    "itemDone": "Remédios",
+    "person": "a civil",
+    "personTag": "CIVIL",
+    "objectives": {
+      "enterPerimeter": "Entrar no perímetro da farmácia",
+      "collectMedicine": "Recolher medicamentos do armário (5 s)",
+      "rescueCivilian": "Resgatar a civil no depósito (3 s)",
+      "activateExtraction": "Ativar o rádio de extração no estacionamento sul",
+      "holdExtraction": "Resistir 20 s na área de extração com a civil"
+    },
+    "intel": [
+      "Tiros são ouvidos a quarteirões de distância e atraem reforços pelas quatro entradas do bairro.",
+      "A porta dos fundos da farmácia está trancada: arrombar é possível, mas faz barulho.",
+      "Ao transmitir, o rádio de extração atrai infectados até o transporte chegar.",
+      "A civil está ferida e não luta: ela segue a equipe a pé depois do resgate.",
+      "Furtivo e portas fechadas abafam o ruído. Corredores reagem rápido a qualquer som.",
+      "Infectados atraídos quebram janelas e portas. Cada esquadrão tem 2 kits de tábuas para barricar (Ctrl + clique direito ou B) — martelar faz barulho.",
+      "Há um gritador no leste e um brutamontes na avenida sul. O grito atrai tudo ao redor; o brutamontes aguenta muito tiro.",
+      "Barulho constante eleva o alerta do bairro. Em Caçada, e com o passar do tempo, hordas entram pelas bordas e patrulham as avenidas.",
+      "Mordidas infectam: sem tratamento, o ferido se transforma em poucos minutos. Um socorrista por perto ganha tempo."
+    ]
   }
 }

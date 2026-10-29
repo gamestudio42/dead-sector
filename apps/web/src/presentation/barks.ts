@@ -1,4 +1,5 @@
 import type { GameState, SimEvent, Survivor, Vec2 } from '@dead-sector/sim';
+import { MT } from '../ui/i18n';
 
 /** A short spoken line shown above a survivor. Higher priority pre-empts lower ones. */
 export interface Bark {
@@ -109,7 +110,10 @@ export function barksForEvents(events: SimEvent[], state: GameState): Bark[] {
         const dead = surv(p['actorId']);
         if (!dead) break;
         const line = dead.isObjectiveCivilian
-          ? ['A civil caiu!', 'Perdemos a civil!']
+          ? [
+              `Perdemos ${MT.person}!`,
+              `${MT.personTag.charAt(0)}${MT.personTag.slice(1).toLowerCase()} caiu!`,
+            ]
           : [`Perdemos ${firstName(dead)}!`, `Não! ${firstName(dead)}!`];
         say(nearestSquadMember(state, dead.position, dead.id), line, e.id, 4);
         break;
@@ -137,7 +141,7 @@ export function barksForEvents(events: SimEvent[], state: GameState): Bark[] {
           const c =
             state.survivors.find((s) => s.alive && s.interaction?.targetId === 'cabinet') ??
             state.survivors.find((s) => s.alive && s.isLeader);
-          say(c, ['Peguei os remédios!', 'Remédios na mochila.'], e.id, 3);
+          say(c, [`Peguei ${MT.item}!`, `${MT.itemDone} na mochila.`], e.id, 3);
         }
         break;
       }

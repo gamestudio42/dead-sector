@@ -1,10 +1,18 @@
 import Phaser from 'phaser';
 import { loadContent } from '@dead-sector/content';
-import { buildDebrief, createWorld, type GameState } from '@dead-sector/sim';
+import {
+  applyMissionResult,
+  buildDebrief,
+  createWorld,
+  currentMissionId,
+  type GameState,
+} from '@dead-sector/sim';
+import { CampaignStore } from '../ui/CampaignStore';
+import { CAMPAIGN_ID } from './MenuScene';
 import { gradeFor } from '../presentation/grade';
 import { emptyRecord, type MissionRecord } from '../presentation/timeline';
 import { clearUi, uiRoot } from '../ui/dom';
-import { fmtTime, T } from '../ui/i18n';
+import { fmtTime, MT, T } from '../ui/i18n';
 import { baseMap, drawMissionMarks, fogLayer } from '../ui/MapCanvas';
 
 const PX = 3;
@@ -21,7 +29,7 @@ export class DebriefScene extends Phaser.Scene {
     super('Debrief');
   }
 
-  create(data: { state: GameState; record?: MissionRecord }): void {
+  create(data: { state: GameState; record?: MissionRecord; campaign?: boolean }): void {
     clearUi();
     const state = data.state;
     const rec = data.record ?? emptyRecord();
@@ -55,8 +63,8 @@ export class DebriefScene extends Phaser.Scene {
               ${tile('Retirados', `<span data-testid="debrief-extracted">${d.extracted}</span>`, `${d.dead} mortos`)}
               ${tile('Abates', String(d.zombiesKilled), `${Math.round(d.hitRate * 100)}% de ${d.shotsFired} disparos`)}
               ${tile('Ruído total', String(d.totalNoise), `${d.reinforcements} reforços atraídos`)}
-              ${tile('Suprimentos', d.medicineRecovered ? 'Remédios' : 'Nenhum')}
-              ${tile('Civil', d.civilianExtracted ? 'Salva' : 'Não retirada')}
+              ${tile('Suprimentos', d.medicineRecovered ? MT.itemDone : 'Nenhum')}
+              ${tile(MT.personTag.charAt(0) + MT.personTag.slice(1).toLowerCase(), d.civilianExtracted ? 'A salvo' : 'Não retirada(o)')}
             </div>
             <h4>Linha do tempo</h4>
             <ol class="timeline">${
@@ -80,7 +88,8 @@ export class DebriefScene extends Phaser.Scene {
             )
             .join('')}
         </table>
-        <div class="row">
+        <section class="interlude" data-el="interlude" data-testid="interlude" hidden></section>
+        <div class="row" data-el="actions">
           <button data-act="again" class="primary" data-testid="btn-again">Jogar novamente</button>
           <button data-act="menu" data-testid="btn-menu">Menu principal</button>
         </div>
@@ -120,8 +129,53 @@ export class DebriefScene extends Phaser.Scene {
     }
 
     (screen.querySelector('[data-act=again]') as HTMLButtonElement).onclick = () =>
-      this.scene.start('Tactical', { seed: state.seed });
+      this.scene.start('Tactical', { missionId: state.missionId, seed: state.seed });
+    if (data.campaign) void this.advanceCampaign(screen, state);
     (screen.querySelector('[data-act=menu]') as HTMLButtonElement).onclick = () =>
       this.scene.start('Menu');
+  }
+
+  /** Folds the mission into the saved campaign and shows what happened before the next one. */
+  private async advanceCampaign(screen: HTMLElement, state: GameState): Promise<void> {
+    const content = loadContent();
+    const campaign = await CampaignStore.load();
+    const def = content.campaigns[CAMPAIGN_ID];
+    if (!campaign || !def || campaign.status !== 'active') return;
+    // a mission is folded in exactly once, even if this screen is shown again
+    const key = `${state.missionId}@${state.seed}#${state.tick}`;
+    if (campaign.history.some((h) => h.key === key)) return;
+    const { campaign: next, report } = applyMissionResult(content, campaign, state);
+    const last = next.history[next.history.length - 1];
+    if (last) last.key = key;
+    await CampaignStore.save(next);
+    const box = screen.querySelector('[data-el=interlude]') as HTMLElement;
+    const head =
+      next.status === 'won'
+        ? 'Campanha concluída: o Setor Ferrugem ficou para trás.'
+        : next.status === 'lost'
+          ? 'Campanha perdida: não restou ninguém.'
+          : state.mission.status === 'failed'
+            ? 'A operação falhou. Os sobreviventes recuam e tentam de novo — quem caiu não volta.'
+            : `Entre missões — próxima: ${def.missions[next.missionIndex]?.title ?? ''}`;
+    const alive = next.roster.filter((r) => r.alive).length;
+    box.hidden = false;
+    box.innerHTML = `<h4>${head}</h4>
+      <ul>${report.lines.map((l) => `<li>${l}</li>`).join('') || '<li>Noite tranquila.</li>'}</ul>
+      <p class="small">${alive}/${next.roster.length} sobreviventes · ${next.supplies} doses de tratamento · ${next.rescued.length} resgatados</p>`;
+    const actions = screen.querySelector('[data-el=actions]') as HTMLElement;
+    const again = actions.querySelector('[data-act=again]') as HTMLButtonElement;
+    again.remove();
+    if (next.status === 'active') {
+      const go = document.createElement('button');
+      go.className = 'primary';
+      go.dataset['testid'] = 'btn-campaign-next';
+      go.textContent = state.mission.status === 'failed' ? 'Tentar de novo ▶' : 'Próxima missão ▶';
+      go.onclick = () =>
+        this.scene.start('Briefing', {
+          missionId: currentMissionId(content, next),
+          campaign: true,
+        });
+      actions.prepend(go);
+    }
   }
 }

@@ -6,16 +6,17 @@ import {
   type Vec2,
   type World,
 } from '@dead-sector/sim';
+import { MT } from '../ui/i18n';
 
 export type ClickTarget =
   | { kind: 'attack'; id: string; label: string }
   | { kind: 'interact'; id: string; label: string; interactKind: string }
   | null;
 
-const INTERACT_LABELS: Record<string, string> = {
-  cabinet: 'Recolher remédios',
-  civilian: 'Resgatar a civil',
-  beacon: 'Ativar o rádio',
+const INTERACT_LABELS: Record<string, () => string> = {
+  cabinet: () => `Recolher ${MT.item}`,
+  civilian: () => `Resgatar ${MT.person}`,
+  beacon: () => 'Ativar o rádio',
 };
 
 /** What a right click at `p` would act on: a visible infected, an available interactable, or nothing. */
@@ -36,7 +37,7 @@ export function targetAt(world: World, state: GameState, p: Vec2): ClickTarget {
     .filter((x) => x.d < (x.i.kind === 'door' ? 0.75 : x.i.kind === 'cabinet' ? 1.3 : 1))
     .sort((a, b) => a.d - b.d)[0];
   if (!target) return null;
-  let label = INTERACT_LABELS[target.i.kind] ?? 'Interagir';
+  let label = INTERACT_LABELS[target.i.kind]?.() ?? 'Interagir';
   if (target.i.kind === 'door') {
     const door = state.doors.find((d) => d.id === target.i.id);
     label =

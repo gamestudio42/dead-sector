@@ -190,6 +190,138 @@ export const COMBAT_PLAN: PlanStep[] = [
   { label: 'hold', when: settled('bravo'), commands: [order('bravo', 'hold')] },
 ];
 
+/** "Sinal Fraco": rescue the switchman south of the tracks, cross on the service road, batteries, north dock. */
+export const SIGNAL_PLAN: PlanStep[] = [
+  {
+    label: 'leave the lot',
+    when: [{ kind: 'start' }],
+    commands: [...fire('weaponsFree'), ...both('move', { x: 22.5, y: 59.5 }, { x: 18.5, y: 60.5 })],
+  },
+  {
+    label: 'signal cabin',
+    when: settled('alfa', 'bravo'),
+    commands: [
+      order('bravo', 'interact', undefined, 'civilian-joaquim'),
+      order('alfa', 'move', { x: 30.5, y: 58.5 }),
+    ],
+  },
+  {
+    label: 'service road north',
+    when: [{ kind: 'objective', id: 'rescueCivilian' }],
+    commands: both('move', { x: 40.5, y: 38.5 }, { x: 39.5, y: 42.5 }),
+  },
+  {
+    label: 'control yard',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 47.5, y: 31.5 }, { x: 44.5, y: 33.5 }),
+  },
+  {
+    label: 'batteries',
+    when: settled('alfa', 'bravo'),
+    commands: [order('alfa', 'interact', undefined, 'cabinet'), order('bravo', 'hold')],
+  },
+  {
+    label: 'out of the building',
+    when: [{ kind: 'objective', id: 'collectMedicine' }],
+    commands: both('move', { x: 47.5, y: 30.5 }, { x: 44.5, y: 30.5 }),
+  },
+  {
+    label: 'road north',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 43.5, y: 18.5 }, { x: 41.5, y: 20.5 }),
+  },
+  {
+    label: 'dock',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 55.5, y: 12.5 }, { x: 59.5, y: 9.5 }),
+  },
+  {
+    label: 'radio',
+    when: settled('alfa', 'bravo'),
+    commands: [order('alfa', 'interact', undefined, 'beacon')],
+  },
+  {
+    label: 'hold the dock',
+    when: [{ kind: 'objective', id: 'activateExtraction' }],
+    commands: [order('alfa', 'move', { x: 56.5, y: 8.5 }), order('bravo', 'hold')],
+  },
+  { label: 'hold', when: settled('alfa'), commands: [order('alfa', 'hold')] },
+];
+
+/** "Plantão Noturno": around the plaza by the west road, clinic front door, back north-west to the park. */
+export const NIGHT_PLAN: PlanStep[] = [
+  {
+    label: 'courtyard to the road',
+    when: [{ kind: 'start' }],
+    // at night every shot carries: only shoot back
+    commands: [...fire('returnFire'), ...both('move', { x: 18.5, y: 57.5 }, { x: 19.5, y: 61.5 })],
+  },
+  {
+    label: 'west road north',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 18.5, y: 44.5 }, { x: 19.5, y: 47.5 }),
+  },
+  {
+    label: 'cross avenue',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 38.5, y: 41.5 }, { x: 34.5, y: 41.5 }),
+  },
+  {
+    label: 'clinic front',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 51.5, y: 39.5 }, { x: 47.5, y: 39.5 }),
+  },
+  {
+    label: 'antibiotics and doctor',
+    when: settled('alfa', 'bravo'),
+    commands: [
+      order('alfa', 'interact', undefined, 'cabinet'),
+      order('bravo', 'interact', undefined, 'civilian-helena'),
+    ],
+  },
+  {
+    label: 'regroup out front',
+    when: [
+      { kind: 'objective', id: 'collectMedicine' },
+      { kind: 'objective', id: 'rescueCivilian' },
+    ],
+    commands: both('move', { x: 50.5, y: 40.5 }, { x: 46.5, y: 41.5 }),
+  },
+  {
+    label: 'avenue west',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 21.5, y: 40.5 }, { x: 24.5, y: 41.5 }),
+  },
+  {
+    label: 'west road north',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 18.5, y: 22.5 }, { x: 19.5, y: 25.5 }),
+  },
+  {
+    label: 'to the park',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 10.5, y: 14.5 }, { x: 13.5, y: 12.5 }),
+  },
+  {
+    label: 'signal the truck',
+    when: settled('alfa', 'bravo'),
+    commands: [order('alfa', 'interact', undefined, 'beacon')],
+  },
+  {
+    label: 'hold the park',
+    when: [{ kind: 'objective', id: 'activateExtraction' }],
+    commands: [order('alfa', 'hold'), order('bravo', 'move', { x: 9.5, y: 6.5 })],
+  },
+  { label: 'hold', when: settled('bravo'), commands: [order('bravo', 'hold')] },
+];
+
+/** One scripted route per mission (the combat route for the first one), for acceptance and E2E. */
+export const MISSION_PLANS: Record<string, PlanStep[]> = {
+  'a-ultima-farmacia': COMBAT_PLAN,
+  'sinal-fraco': SIGNAL_PLAN,
+  'plantao-noturno': NIGHT_PLAN,
+};
+
 function holds(state: GameState, c: PlanCondition, stepStartTick: number): boolean {
   switch (c.kind) {
     case 'start':

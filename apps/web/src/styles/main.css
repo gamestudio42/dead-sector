@@ -1355,3 +1355,8 @@ table.roster tr.fallen td.state {
   line-height: 1.5;
   color: #d6d1c4;
 }
+.build-note a,
+.credits-card a {
+  color: #a9c97a;
+  pointer-events: auto;
+}

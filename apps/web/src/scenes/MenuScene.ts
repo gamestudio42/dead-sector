@@ -34,7 +34,11 @@ function showCredits(): void {
     fonte, logo ou código de outros jogos foi usado.</p>
     <h4>Bibliotecas</h4>
     <table class="stats">${LIBRARIES.map(([n, r, l]) => `<tr><td>${n}</td><td>${r}</td><td>${l}</td></tr>`).join('')}</table>
-    <p class="small">Versão ${__BUILD_ID__}</p>
+    <h4>Licença e código-fonte</h4>
+    <p class="small">Software livre sob a GNU Affero General Public License, versão 3 ou posterior
+    (AGPL-3.0-or-later). Copyright (c) 2026 Marcel Savegnago. O código-fonte completo está em
+    <a href="https://github.com/gamestudio42/dead-sector" target="_blank" rel="noopener" data-testid="source-link">github.com/gamestudio42/dead-sector</a>.</p>
+    <p class="small">Versão ${__BUILD_ID__} · Game Studio 42</p>
   </div>`;
   m.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
@@ -80,7 +84,7 @@ export class MenuScene extends Phaser.Scene {
         </nav>
         <p class="tagline">Cada disparo é ouvido. Cada decisão cobra seu preço.</p>
       </div>
-      <div class="build-note small">Dead Sector ${__BUILD_ID__} · arte e som originais gerados em código</div>`;
+      <div class="build-note small">Dead Sector ${__BUILD_ID__} · AGPL-3.0 · <a href="https://github.com/gamestudio42/dead-sector" target="_blank" rel="noopener">código-fonte</a></div>`;
     uiRoot().appendChild(screen);
     const q = <T extends HTMLElement>(sel: string) => screen.querySelector(sel) as T;
     const audio = AudioEngine.get();

@@ -1,0 +1,14 @@
+{
+  "title": "Dead Sector",
+  "tagline": {
+    "en": "Every shot is heard. Every order has a price.",
+    "pt": "Cada disparo é ouvido. Cada ordem tem um preço.",
+    "es": "Cada disparo se oye. Cada orden tiene un precio.",
+    "fr": "Chaque tir s'entend. Chaque ordre a un prix.",
+    "de": "Jeder Schuss wird gehört. Jeder Befehl hat seinen Preis."
+  },
+  "cover": "apps/web/public/icon.svg",
+  "genre": "tactics",
+  "tech": ["TypeScript", "Phaser", "WebAudio"],
+  "order": 9
+}

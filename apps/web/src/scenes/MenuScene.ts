@@ -12,6 +12,37 @@ export const MISSION_ID = 'a-ultima-farmacia';
 export const CAMPAIGN_ID = 'ferrugem';
 export const QUICKSAVE = 'quicksave';
 
+const LIBRARIES: [string, string, string][] = [
+  ['Phaser', 'motor de renderização 2D', 'MIT'],
+  ['Zod', 'validação do conteúdo', 'MIT'],
+  ['Vite', 'build e servidor de desenvolvimento', 'MIT'],
+  ['TypeScript', 'linguagem', 'Apache-2.0'],
+  ['Vitest', 'testes', 'MIT'],
+  ['Playwright', 'testes no navegador', 'Apache-2.0'],
+  ['ESLint · Prettier', 'qualidade de código', 'MIT'],
+];
+
+function showCredits(): void {
+  const m = document.createElement('div');
+  m.className = 'overlay-menu';
+  m.dataset['testid'] = 'credits';
+  m.innerHTML = `<div class="card panel credits-card">
+    <div class="options-head"><h3>Créditos</h3><button data-act="close" aria-label="Fechar">✕</button></div>
+    <p>Dead Sector é um projeto original: código, mapas, missões, regras, textos, arte e sons foram criados para ele.
+    Toda a arte é desenhada em código e todo o som é sintetizado em tempo real — nenhum arquivo de terceiros.</p>
+    <p class="small">Inspirado na <i>mecânica</i> de jogos clássicos de tática de esquadrões; nenhum mapa, interface,
+    fonte, logo ou código de outros jogos foi usado.</p>
+    <h4>Bibliotecas</h4>
+    <table class="stats">${LIBRARIES.map(([n, r, l]) => `<tr><td>${n}</td><td>${r}</td><td>${l}</td></tr>`).join('')}</table>
+    <p class="small">Versão ${__BUILD_ID__}</p>
+  </div>`;
+  m.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    if (t === m || t.closest('[data-act=close]')) m.remove();
+  });
+  uiRoot().appendChild(m);
+}
+
 /** Title screen over a live, decorative view of the first map. */
 export class MenuScene extends Phaser.Scene {
   private backdrop: Backdrop | null = null;
@@ -45,10 +76,11 @@ export class MenuScene extends Phaser.Scene {
           </div>
           <button data-act="continue" data-testid="btn-continue" disabled><b>Continuar</b><small>Salvamento rápido</small></button>
           <button data-act="options" data-testid="btn-menu-options"><b>Opções</b><small>Áudio, vídeo, acessibilidade e controles</small></button>
+          <button data-act="credits" data-testid="btn-credits"><b>Créditos</b><small>Autoria e bibliotecas</small></button>
         </nav>
         <p class="tagline">Cada disparo é ouvido. Cada decisão cobra seu preço.</p>
       </div>
-      <div class="build-note small">Protótipo · arte e som originais gerados em código</div>`;
+      <div class="build-note small">Dead Sector ${__BUILD_ID__} · arte e som originais gerados em código</div>`;
     uiRoot().appendChild(screen);
     const q = <T extends HTMLElement>(sel: string) => screen.querySelector(sel) as T;
     const audio = AudioEngine.get();
@@ -97,6 +129,9 @@ export class MenuScene extends Phaser.Scene {
         }
         case 'new':
           q('[data-el=pick]').hidden = !q('[data-el=pick]').hidden;
+          return;
+        case 'credits':
+          showCredits();
           return;
         case 'options':
           screen.style.visibility = 'hidden';

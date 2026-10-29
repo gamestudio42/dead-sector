@@ -2,7 +2,8 @@ import type { GameState, NoiseCategory, NoiseEvent, Squad, Vec2 } from '../model
 import type { World } from '../model/World';
 import { emit, nextId } from '../engine/EventBus';
 import type { TickContext } from '../engine/TickContext';
-import { acousticTile, inBounds } from '../spatial/Grid';
+import { barrierFingerprint, barrierGrids, cachedField, storeField } from '../spatial/BarrierCache';
+import { inBounds } from '../spatial/Grid';
 import { MinHeap } from '../spatial/Heap';
 import { copy } from '../spatial/vec';
 import { updateAlarm } from './Hordes';
@@ -21,23 +22,28 @@ const heap = new MinHeap();
 
 /**
  * Intensity-budgeted Dijkstra: remaining(next) = remaining(cur) - stepDistance*attenuation - absorption(next).
- * Returns the remaining intensity per cell (0 where the sound never reached).
+ * Returns the remaining intensity per cell (0 where the sound never reached). The result is
+ * memoised per origin cell, intensity and barrier state, so callers must treat it as read-only.
  */
 export function propagateNoise(
   world: World,
   state: GameState,
   origin: Vec2,
   intensity: number,
+  barrierKey?: string,
 ): Float32Array {
   const W = world.width;
-  const field = new Float32Array(world.width * world.height);
   const ox = Math.floor(origin.x);
   const oy = Math.floor(origin.y);
-  if (!inBounds(world, ox, oy) || intensity <= 0) return field;
+  if (!inBounds(world, ox, oy) || intensity <= 0)
+    return new Float32Array(world.width * world.height);
+  const grids = barrierGrids(world, state, barrierKey);
+  const hit = cachedField(grids, oy * W + ox, intensity);
+  if (hit) return hit;
+  const field = new Float32Array(world.width * world.height);
   const atten = world.rules.noise.attenuationPerMeter;
-  const absorption = world.rules.noise.absorption;
-  const absorb = (cx: number, cy: number): number =>
-    absorption[acousticTile(world, state, cx, cy)] ?? 0;
+  const absorb = grids.absorb;
+  const H = world.height;
   heap.clear();
   field[oy * W + ox] = intensity;
   heap.push(-intensity, oy * W + ox);
@@ -49,19 +55,21 @@ export function propagateNoise(
     for (const [dx, dy] of DIRS) {
       const nx = cx + dx;
       const ny = cy + dy;
-      if (!inBounds(world, nx, ny)) continue;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
       const diag = dx !== 0 && dy !== 0;
       // sound does not squeeze diagonally between two solid corners
-      if (diag && (absorb(cx + dx, cy) >= 10 || absorb(cx, cy + dy) >= 10)) continue;
-      const remaining = value - (diag ? Math.SQRT2 : 1) * atten - absorb(nx, ny);
-      if (remaining <= 0) continue;
+      if (diag && ((absorb[cy * W + nx] as number) >= 10 || (absorb[ny * W + cx] as number) >= 10))
+        continue;
       const ni = ny * W + nx;
+      const remaining = value - (diag ? Math.SQRT2 : 1) * atten - (absorb[ni] as number);
+      if (remaining <= 0) continue;
       if (remaining > (field[ni] as number) + 1e-6) {
         field[ni] = remaining;
         heap.push(-remaining, ni);
       }
     }
   }
+  storeField(grids, oy * W + ox, intensity, field);
   return field;
 }
 
@@ -100,8 +108,9 @@ export function updateNoise(world: World, state: GameState, ctx: TickContext): v
   const pending = state.pendingNoises;
   state.pendingNoises = [];
   const hearingMul = world.difficulty.zombieHearingMultiplier;
+  const barrierKey = pending.length ? barrierFingerprint(state) : '';
   for (const noise of pending) {
-    const field = propagateNoise(world, state, noise.position, noise.intensity);
+    const field = propagateNoise(world, state, noise.position, noise.intensity, barrierKey);
     for (const z of state.zombies) {
       if (!z.alive) continue;
       const type = world.content.zombieTypes[z.typeId];

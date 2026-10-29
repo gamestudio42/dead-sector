@@ -44,8 +44,17 @@ export function traverseSupercover(
   }
 }
 
-/** Line of sight between two world positions; the endpoint cells themselves never occlude. */
-export function hasLineOfSight(world: World, state: GameState, a: Vec2, b: Vec2): boolean {
+/**
+ * Line of sight between two world positions; the endpoint cells themselves never occlude.
+ * `opaque` is an optional precomputed opacity grid for the current barrier state (same result).
+ */
+export function hasLineOfSight(
+  world: World,
+  state: GameState,
+  a: Vec2,
+  b: Vec2,
+  opaque?: Uint8Array,
+): boolean {
   const sx = Math.floor(a.x);
   const sy = Math.floor(a.y);
   const ex = Math.floor(b.x);
@@ -53,7 +62,7 @@ export function hasLineOfSight(world: World, state: GameState, a: Vec2, b: Vec2)
   let clear = true;
   traverseSupercover(a, b, (cx, cy) => {
     if ((cx === sx && cy === sy) || (cx === ex && cy === ey)) return true;
-    if (isOpaque(world, state, cx, cy)) {
+    if (opaque ? opaque[cy * world.width + cx] === 1 : isOpaque(world, state, cx, cy)) {
       clear = false;
       return false;
     }
@@ -70,6 +79,7 @@ export function castVisionRay(
   angle: number,
   range: number,
   mark: (cx: number, cy: number) => void,
+  opaque?: Uint8Array,
 ): void {
   const end = { x: origin.x + Math.cos(angle) * range, y: origin.y + Math.sin(angle) * range };
   const ox = Math.floor(origin.x);
@@ -79,7 +89,11 @@ export function castVisionRay(
     if (cx < 0 || cy < 0 || cx >= world.width || cy >= world.height) return false;
     if ((cx + 0.5 - origin.x) ** 2 + (cy + 0.5 - origin.y) ** 2 > r2) return false;
     mark(cx, cy);
-    if ((cx !== ox || cy !== oy) && isOpaque(world, state, cx, cy)) return false;
+    if (
+      (cx !== ox || cy !== oy) &&
+      (opaque ? opaque[cy * world.width + cx] === 1 : isOpaque(world, state, cx, cy))
+    )
+      return false;
     return true;
   });
 }

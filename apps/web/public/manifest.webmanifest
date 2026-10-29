@@ -1,0 +1,13 @@
+{
+  "name": "Dead Sector",
+  "short_name": "Dead Sector",
+  "description": "Tática em tempo real pausável num surto zumbi. Arte e som originais gerados em código.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0e0f11",
+  "theme_color": "#14171b",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

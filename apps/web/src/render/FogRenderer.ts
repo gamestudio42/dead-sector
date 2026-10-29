@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { GameState, World } from '@dead-sector/sim';
+import { Settings } from '../ui/SaveStore';
 import { CELL, DEPTH } from './constants';
 
 /** Upsampling factor of the displayed fog relative to the cell grid. */
@@ -75,7 +76,8 @@ export class FogRenderer {
     c.clearRect(0, 0, w, h);
     c.save();
     c.imageSmoothingEnabled = true;
-    c.filter = `blur(${UP * 0.7}px)`;
+    // the blur is the costly part; lower qualities rely on bilinear upscaling alone
+    if (Settings.quality === 'high') c.filter = `blur(${UP * 0.7}px)`;
     c.drawImage(this.small, 0, 0, w, h);
     c.restore();
     this.tex.refresh();

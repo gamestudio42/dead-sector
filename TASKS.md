@@ -6,14 +6,21 @@
 
 ## NEXT
 
-- Block 6 — finish: multi-seed balance, GPU/FPS budget on low-end hardware, desktop package.
-- Art upgrade: replace procedural character sheets with a hand-made or CC0 set (keep frame layout: 8 walk, attack, corpse).
+- Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
+  and "Baixa" accordingly.
+- Native desktop package (Electron or Tauri) if an executable is wanted beyond the installable web app.
+- Project licence: choose one (owner's decision) and add `LICENSE`.
+- Art upgrade: replace procedural character sheets with a hand-made or CC0 set (frame layout: 8 walk, attack, corpse).
+- More objective types (defence, scavenging) for future missions; Phase 6 strategic campaign layer.
 
 ## BLOCKED
 
 - (none)
 
 ## DONE
+
+- Block 6 — finish: tick memoisation (identical results, ~2.3× faster), graphics quality + FPS readout, balance report
+  on 10 seeds, installable offline app, loading screen, credits, build id.
 
 - Block 5 — content: maps Pátio da Ferrovia and Centro Velho, missions Sinal Fraco and Plantão Noturno (night), mission
   texts in data, campaign Setor Ferrugem with roster carry-over, interlude, retries and local persistence, contextual

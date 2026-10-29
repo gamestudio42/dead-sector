@@ -331,3 +331,33 @@ test('campaign: losses and progress carry into the next mission', async ({ page 
   await expect(page.getByTestId('btn-campaign')).toContainText('Continuar campanha');
   expect(errors).toEqual([]);
 });
+
+test('installable app: manifest, offline start after the first visit, credits with version', async ({
+  page,
+  context,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto('/');
+  await expect(page.getByTestId('menu')).toBeVisible();
+  const manifest = await page.evaluate(async () => {
+    const href = document.querySelector('link[rel=manifest]')!.getAttribute('href')!;
+    return (await fetch(href)).json();
+  });
+  expect(manifest.name).toBe('Dead Sector');
+  expect(manifest.icons.length).toBeGreaterThan(0);
+  await page.waitForFunction(
+    async () => !!(await navigator.serviceWorker.getRegistration())?.active,
+  );
+  // reload once so the worker controls the page and caches the bundle, then go offline
+  await page.reload();
+  await expect(page.getByTestId('menu')).toBeVisible();
+  await page.waitForTimeout(500);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByTestId('menu')).toBeVisible();
+  await page.getByTestId('btn-credits').click();
+  await expect(page.getByTestId('credits')).toContainText('Phaser');
+  await expect(page.getByTestId('credits')).toContainText(/Versão 0\.1\.0/);
+  await context.setOffline(false);
+  expect(errors.filter((e) => !e.includes('net::ERR_INTERNET_DISCONNECTED'))).toEqual([]);
+});

@@ -14,7 +14,7 @@ import { SeededRng, seedToRngState } from '../engine/SeededRng';
 import { blocksMovement } from '../spatial/Grid';
 import { cellCenter, dist } from '../spatial/vec';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const SURVIVOR_RADIUS = 0.25;
 export const ZOMBIE_RADIUS = 0.28;
 
@@ -145,6 +145,8 @@ export function makeZombie(
     pathIndex: 0,
     pathGoalCell: -1,
     spawnedBy: null,
+    screamReadyTick: 0,
+    hordeId: null,
   };
 }
 
@@ -187,19 +189,34 @@ export function createMissionState(
   if (!map) throw new Error(`Unknown map ${mission.mapId}`);
   const tiles = parseTiles(map);
   const doors: Door[] = [];
+  const windowHp = content.rules.barriers.windowHp;
   tiles.forEach((t, i) => {
+    const x = i % map.width;
+    const y = (i - x) / map.width;
     if (t === 'doorClosed' || t === 'doorOpen' || t === 'doorLocked') {
-      const x = i % map.width;
-      const y = (i - x) / map.width;
       const hp = t === 'doorLocked' ? 220 : 120;
       doors.push({
         id: `door-${x}-${y}`,
+        kind: 'door',
         cell: { x, y },
         open: t === 'doorOpen',
         locked: t === 'doorLocked',
         broken: false,
         hp,
         maxHp: hp,
+        barricade: 0,
+      });
+    } else if (t === 'window') {
+      doors.push({
+        id: `window-${x}-${y}`,
+        kind: 'window',
+        cell: { x, y },
+        open: false,
+        locked: false,
+        broken: false,
+        hp: windowHp,
+        maxHp: windowHp,
+        barricade: 0,
       });
     }
   });
@@ -219,6 +236,7 @@ export function createMissionState(
     survivors: [],
     zombies: [],
     doors,
+    hordes: [],
     fog: { cells: new Array(map.width * map.height).fill(0) },
     contacts: [],
     pendingNoises: [],
@@ -248,6 +266,12 @@ export function createMissionState(
         cooldownUntil: 0,
         lastNoisePos: null,
       })),
+      alarm: 0,
+      alarmLevel: 0,
+      hordesSpawned: 0,
+      nextHordeTick: mission.hordes ? Math.round(mission.hordes.firstAtSeconds * 10) : -1,
+      pendingHorde: null,
+      lastHordeTick: -100000,
     },
     stats: {
       shotsFired: 0,
@@ -280,6 +304,7 @@ export function createMissionState(
       firePolicy: sq.firePolicy,
       moveMode: sq.moveMode,
       waypoints: [],
+      barricadeKits: sq.barricadeKits,
       spawn: { ...sq.spawn },
     };
     sq.memberIds.forEach((memberId, i) => {

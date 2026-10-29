@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buildDebrief, COMBAT_PLAN, GameSimulation, runPlan, STEALTH_PLAN } from '../src';
+import {
+  buildDebrief,
+  COMBAT_PLAN,
+  createPlanRunner,
+  GameSimulation,
+  runPlan,
+  STEALTH_PLAN,
+  tickPlan,
+} from '../src';
 import { field, keepOnly, survivor, testSim } from './helpers';
 
 function extractionScenario() {
@@ -114,14 +122,23 @@ describe('mission flow', () => {
 });
 
 describe('A Última Farmácia acceptance (canonical seed)', () => {
-  it('is completable by the stealth plan through the alley without firing', () => {
+  it('is completable by the stealth plan: no shot until the radio is on, then hold the zone', () => {
     const sim = GameSimulation.create();
-    runPlan(sim, STEALTH_PLAN);
+    const runner = createPlanRunner();
+    let shotsBeforeRadio = 0;
+    while (!sim.ended && sim.tick < 9000) {
+      tickPlan(sim, STEALTH_PLAN, runner);
+      for (const e of sim.step())
+        if (e.type === 'SHOT_FIRED' && !sim.state.mission.extractionActive) shotsBeforeRadio += 1;
+    }
     const d = buildDebrief(sim.state);
     expect(d.outcome).toBe('success');
     expect(d.civilianExtracted).toBe(true);
     expect(d.medicineRecovered).toBe(true);
-    expect(d.shotsFired).toBe(0);
+    // every objective is reached undetected; the radio is meant to draw infected to the hold
+    expect(shotsBeforeRadio).toBe(0);
+    expect(d.shotsFired).toBeLessThan(25);
+    expect(d.reinforcements).toBeLessThan(4);
   });
 
   it('is completable by the combat plan down the avenue, spending ammo and drawing reinforcements', () => {

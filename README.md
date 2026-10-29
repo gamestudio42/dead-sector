@@ -32,6 +32,7 @@ First Playwright run: `pnpm --filter @dead-sector/game exec playwright install c
 | Right click on ground                         | move in the squad's current mode (several squads line up side by side)  |
 | `Shift` + right click                         | queue a waypoint after the current order (up to 8, numbered on map)     |
 | `Ctrl` + right click                          | order menu at that spot: move/sneak/sprint, go and hold, go and hide…   |
+| `B` (cursor on a door/window)                 | barricade it with a plank kit (2 per squad; hammering is loud)          |
 | Right click on a visible infected             | attack order                                                            |
 | Right click on door, cabinet, civilian, radio | interact (open/close/force door, collect, rescue, call extraction)      |
 | `Q` / `W` / `E`                               | sneak / move / sprint (re-issues the current move)                      |
@@ -100,12 +101,20 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   by a new order or a blocked leg, save schema v2 with migration from v1); Ctrl + right-click context menu with the
   consequence of each option; rebindable keyboard (physical keys, conflict swap, reset) shown live on the HUD buttons.
 
+- **Tactical depth (block 4)**: windows are breakable barriers (transparent, glass noise when smashed); plank
+  barricades on any door/window (kits per squad, loud hammering, planks absorb damage first, removable); only infected
+  with a reason break through (wanderers walk around); bites progress exposed → infected → critical → **turned**, a
+  squad medic nearby halves the pace; **Brutamontes** (260 HP, barely staggers, smashes doors) and **Gritador** (shriek
+  that draws everything around, with cooldown); a 4-level neighbourhood **alarm** (Calmo → Caçada) fed by loud noise,
+  doubling runner reinforcements at Alerta; **hordes** of 7 (1 heavy) announced 20 s ahead, entering at the far edge and
+  patrolling the avenues, on a timer or early at Caçada. Save schema v3 with migration.
+
 ## Verification evidence (this build)
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **78/78** ✓ (the performance gate passed again at
-  p95 11 ms with load average ≈ 14; on an idle machine it measured 7.2 ms).
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **91/91** ✓ (performance p95 9.8–10.1 ms/tick with
+  the new systems — right at the spec's 10 ms target, to be optimised in block 6).
 - `pnpm e2e`: **7/7** Playwright ✓ — full critical flow (menu → briefing → mission → graded debriefing), stealth run
-  without shots, save/load, HUD + minimap fit at 1280×720 and 1920×1080, options pause/apply/persist and minimap camera
+  (no shots until the radio), save/load, HUD + minimap fit at 1280×720 and 1920×1080, options pause/apply/persist and minimap camera
   control, controls (drag box, Shift waypoints, Ctrl menu, rebound key), no console errors. The suite serves on a dedicated port (4317, `strictPort`, never reusing another server).
 - Headless Chromium uses software GL; there the dusk lighting and soft fog are the main per-frame costs (≈ 4.7 FPS
   with both, ≈ 16 FPS without, under the same machine load). Real-GPU frame budget is block 6 work.
@@ -120,8 +129,10 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   score beyond the adaptive drone.
 - Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
 - Route map and timeline are not saved: a mission continued from a quicksave shows only what happened after loading.
-- Infection is tracked and reported (HUD, debriefing) but never turns survivors in battle (as the MVP spec allows).
-- Heavy/screamer infected, night lighting and multiple maps are later phases.
+- Night lighting and multiple maps are later phases.
+- The stealth acceptance is "no shot until the radio is on": the radio draws infected to the final hold by design,
+  and on the canonical seed one walker reaches the zone, so the scripted run fires a few shots there.
+- Survivors cannot climb through broken windows (only infected do), and there is no cure for infection yet.
 - Balance is tuned for the canonical seed (1337); other seeds are playable but scripted bots sometimes lose the civilian there.
 
 ## Next tasks

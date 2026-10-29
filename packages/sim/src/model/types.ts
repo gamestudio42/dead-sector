@@ -11,13 +11,22 @@ export interface Vec2 {
 }
 
 export type OrderType =
-  'move' | 'sneak' | 'sprint' | 'hold' | 'hide' | 'attack' | 'retreat' | 'interact' | 'regroup';
+  | 'move'
+  | 'sneak'
+  | 'sprint'
+  | 'hold'
+  | 'hide'
+  | 'attack'
+  | 'retreat'
+  | 'interact'
+  | 'regroup'
+  | 'barricade';
 
 export type OrderStatus =
   'queued' | 'planning' | 'executing' | 'completed' | 'blocked' | 'interrupted' | 'cancelled';
 
 export type BlockReason =
-  'noPath' | 'stuck' | 'locked' | 'invalidTarget' | 'noMembers' | 'requiresMedicine';
+  'noPath' | 'stuck' | 'locked' | 'invalidTarget' | 'noMembers' | 'requiresMedicine' | 'noKits';
 
 export interface SquadOrder {
   id: string;
@@ -74,7 +83,7 @@ export type SurvivorActivity =
   | 'refusing'
   | 'dead';
 
-export type InteractKind = 'door' | 'cabinet' | 'civilian' | 'beacon';
+export type InteractKind = 'door' | 'cabinet' | 'civilian' | 'beacon' | 'barricade';
 
 export interface Interaction {
   kind: InteractKind;
@@ -172,16 +181,34 @@ export interface Zombie extends ActorCore {
   pathIndex: number;
   pathGoalCell: number;
   spawnedBy: string | null;
+  /** Earliest tick a screamer may scream again. */
+  screamReadyTick: Tick;
+  /** Roaming horde this infected walks with, if any. */
+  hordeId: string | null;
 }
 
+export interface Horde {
+  id: string;
+  spawnerId: string;
+  route: Vec2[];
+  /** Index of the waypoint the horde is heading to; patrols back and forth along the route. */
+  index: number;
+  direction: 1 | -1;
+  spawnedAtTick: Tick;
+}
+
+/** A breakable barrier on one cell: a door (opens, locks) or a window (glass, never opens). */
 export interface Door {
   id: string;
+  kind: 'door' | 'window';
   cell: { x: number; y: number };
   open: boolean;
   locked: boolean;
   broken: boolean;
   hp: number;
   maxHp: number;
+  /** Plank barricade HP on top of the barrier; while > 0 the cell blocks everyone. */
+  barricade: number;
 }
 
 export type NoiseCategory =
@@ -242,6 +269,15 @@ export interface MissionState {
   reinforcementsSpawned: number;
   reinforcementBudget: number;
   spawners: SpawnerState[];
+  /** 0–100 escalating alarm driven by loud noises; levels change reinforcements and hordes. */
+  alarm: number;
+  alarmLevel: 0 | 1 | 2 | 3;
+  hordesSpawned: number;
+  /** Next scheduled horde (timed or alarm-triggered) and where it comes from, announced in advance. */
+  nextHordeTick: Tick;
+  /** Tick the last horde was announced (alarm-triggered hordes keep a minimum gap). */
+  lastHordeTick: Tick;
+  pendingHorde: { spawnerId: string; atTick: Tick } | null;
 }
 
 export interface MissionStats {
@@ -285,7 +321,13 @@ export type SimEventType =
   | 'EXTRACTION_READY'
   | 'REINFORCEMENT_SPAWNED'
   | 'MISSION_ENDED'
-  | 'ORDER_QUEUED';
+  | 'ORDER_QUEUED'
+  | 'SURVIVOR_TURNED'
+  | 'ZOMBIE_SCREAMED'
+  | 'BARRICADE_BUILT'
+  | 'ALARM_CHANGED'
+  | 'HORDE_INCOMING'
+  | 'HORDE_SPAWNED';
 
 export interface SimEvent<T = Record<string, unknown>> {
   id: string;
@@ -305,6 +347,7 @@ export interface Squad {
   spawn: Vec2;
   /** Orders queued with Shift; the next one starts when the current order completes. */
   waypoints: QueuedOrder[];
+  barricadeKits: number;
 }
 
 export interface QueuedOrder {
@@ -331,6 +374,7 @@ export interface GameState {
   survivors: Survivor[];
   zombies: Zombie[];
   doors: Door[];
+  hordes: Horde[];
   fog: FogState;
   contacts: Contact[];
   pendingNoises: NoiseEvent[];

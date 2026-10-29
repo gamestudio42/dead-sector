@@ -13,7 +13,10 @@ describe('content validation', () => {
     expect(m.squads.map((s) => s.memberIds.length)).toEqual([4, 4]);
     expect(
       m.zombieZones.filter((z) => z.typeId === 'walker').reduce((a, z) => a + z.count, 0),
-    ).toBe(24);
+    ).toBe(22);
+    for (const special of ['heavy', 'screamer'])
+      expect(m.zombieZones.some((z) => z.typeId === special)).toBe(true);
+    expect(m.hordes?.routes.length).toBe(3);
     expect(
       m.zombieZones.filter((z) => z.typeId === 'runner').reduce((a, z) => a + z.count, 0),
     ).toBe(6);

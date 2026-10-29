@@ -36,7 +36,7 @@ function followPath(world: World, state: GameState, a: Agent, speed: number): vo
       const door = doorAt(world, state, wx, wy);
       if (door && isDoorClosed(door) && dist(a.position, wp) < 1.35) {
         if (a.kind === 'survivor') {
-          if (door.locked) {
+          if (door.locked || door.kind === 'window' || door.barricade > 0) {
             a.path = [];
             a.pathIndex = 0;
             return;

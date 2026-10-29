@@ -5,6 +5,7 @@ import type { TickContext } from '../engine/TickContext';
 import { acousticTile, inBounds } from '../spatial/Grid';
 import { MinHeap } from '../spatial/Heap';
 import { copy } from '../spatial/vec';
+import { updateAlarm } from './Hordes';
 
 const DIRS: ReadonlyArray<readonly [number, number]> = [
   [1, 0],
@@ -129,6 +130,7 @@ export function updateNoise(world: World, state: GameState, ctx: TickContext): v
     }
     state.recentNoises.push(noise);
   }
+  updateAlarm(world, state, pending);
   const keepAfter = state.tick - world.rules.noise.recentNoiseSeconds * 10;
   state.recentNoises = state.recentNoises.filter((n) => n.tick >= keepAfter);
   void ctx;

@@ -39,9 +39,31 @@ export function targetAt(world: World, state: GameState, p: Vec2): ClickTarget {
   let label = INTERACT_LABELS[target.i.kind] ?? 'Interagir';
   if (target.i.kind === 'door') {
     const door = state.doors.find((d) => d.id === target.i.id);
-    label = door?.locked ? 'Arrombar a porta' : door?.open ? 'Fechar a porta' : 'Abrir a porta';
+    label =
+      door && door.barricade > 0
+        ? 'Remover a barricada'
+        : door?.locked
+          ? 'Arrombar a porta'
+          : door?.open
+            ? 'Fechar a porta'
+            : 'Abrir a porta';
   }
   return { kind: 'interact', id: target.i.id, label, interactKind: target.i.kind };
+}
+
+/** Door or window near `p` that could take a barricade (none on it yet). */
+export function barrierAt(state: GameState, p: Vec2): { id: string; label: string } | null {
+  let best: { id: string; label: string } | null = null;
+  let bestD = 0.9;
+  for (const d of state.doors) {
+    if (d.barricade > 0) continue;
+    const dd = Math.hypot(d.cell.x + 0.5 - p.x, d.cell.y + 0.5 - p.y);
+    if (dd < bestD) {
+      bestD = dd;
+      best = { id: d.id, label: d.kind === 'window' ? 'Barricar a janela' : 'Barricar a porta' };
+    }
+  }
+  return best;
 }
 
 /**

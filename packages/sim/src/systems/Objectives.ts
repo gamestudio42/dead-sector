@@ -13,7 +13,7 @@ import { emit } from '../engine/EventBus';
 import type { TickContext } from '../engine/TickContext';
 import { dist } from '../spatial/vec';
 import { emitNoise } from './Noise';
-import { BEACON_ID, CABINET_ID, listInteractables, pathMemberTo } from './Orders';
+import { BEACON_ID, CABINET_ID, orderTarget, pathMemberTo } from './Orders';
 import { pathDone } from './SurvivorAI';
 
 export const inRect = (p: Vec2, r: Rect): boolean =>
@@ -36,8 +36,12 @@ function interactionTicks(
 ): number {
   const i = world.rules.interaction;
   switch (kind) {
+    case 'barricade':
+      return Math.round(Math.max(3, world.rules.barriers.barricadeSeconds - s.mechanics / 40) * 10);
     case 'door': {
       const door = state.doors.find((d) => d.id === targetId);
+      if (door && door.barricade > 0)
+        return Math.round(world.rules.barriers.removeBarricadeSeconds * 10);
       if (door?.locked)
         return Math.round(
           Math.max(i.doorForceSecondsMin, i.doorForceSecondsBase - s.mechanics / 25) * 10,
@@ -62,8 +66,35 @@ function applyInteraction(
   kind: string,
   targetId: string,
 ): boolean {
+  if (kind === 'barricade') {
+    const door = state.doors.find((d) => d.id === targetId);
+    if (!door || door.barricade > 0 || squad.barricadeKits <= 0) return false;
+    const occupied = [...state.survivors, ...state.zombies].some(
+      (a) =>
+        a.alive &&
+        Math.floor(a.position.x) === door.cell.x &&
+        Math.floor(a.position.y) === door.cell.y,
+    );
+    if (occupied) return false;
+    door.barricade = world.rules.barriers.barricadeHp;
+    if (door.kind === 'door') door.open = false;
+    squad.barricadeKits -= 1;
+    emit(state, 'BARRICADE_BUILT', {
+      doorId: door.id,
+      squadId: squad.id,
+      byId: s.id,
+      kitsLeft: squad.barricadeKits,
+    });
+    emit(state, 'DOOR_CHANGED', { doorId: door.id, barricade: door.barricade, byId: s.id });
+    return true;
+  }
   if (kind === 'door') {
     const door = state.doors.find((d) => d.id === targetId);
+    if (door && door.barricade > 0) {
+      door.barricade = 0;
+      emit(state, 'DOOR_CHANGED', { doorId: door.id, barricade: 0, removed: true, byId: s.id });
+      return true;
+    }
     if (!door || door.broken) return false;
     if (door.locked) {
       door.locked = false;
@@ -131,10 +162,15 @@ function applyInteraction(
 export function updateInteractions(world: World, state: GameState, ctx: TickContext): void {
   for (const squad of state.squads) {
     const order = squad.order;
-    if (!order || order.type !== 'interact' || order.status !== 'executing' || !order.interactorId)
+    if (
+      !order ||
+      (order.type !== 'interact' && order.type !== 'barricade') ||
+      order.status !== 'executing' ||
+      !order.interactorId
+    )
       continue;
     const s = ctx.survivorsById.get(order.interactorId);
-    const target = listInteractables(world, state).find((i) => i.id === order.targetEntityId);
+    const target = orderTarget(world, state, order);
     if (!s || !s.alive || !target) {
       order.status = 'interrupted';
       continue;
@@ -192,6 +228,9 @@ export function updateInteractions(world: World, state: GameState, ctx: TickCont
     }
     s.interaction.progressTicks += 1;
     s.activity = 'interacting';
+    // hammering planks is loud: every second of work is heard around the block
+    if (target.kind === 'barricade' && s.interaction.progressTicks % 10 === 0)
+      emitNoise(state, target.position, world.rules.barriers.hammerNoise, 'door', s.id);
     s.facing = Math.atan2(target.position.y - s.position.y, target.position.x - s.position.x);
     if (s.interaction.progressTicks >= s.interaction.totalTicks) {
       const ok = applyInteraction(world, state, ctx, squad, s, target.kind, target.id);

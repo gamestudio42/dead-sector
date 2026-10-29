@@ -20,4 +20,20 @@ Routes:
 - **Door play**: the back door is the barricade/interaction route; any door can be closed (interact) to hold infected,
   who will bash it and make noise while doing so.
 
+Threats added in block 4:
+
+- **Gritador** on the east avenue: if it sees a squad it shrieks (intensity 95, every 14 s), pulling every infected in
+  earshot and pushing the alarm up. Kill it first, from range, or avoid its sight line.
+- **Brutamontes** on the south avenue: 260 HP, ignores most stagger, breaks doors in a few blows. Do not let it reach a
+  door you are holding; focus fire or reroute.
+- **Windows** break when motivated infected push through them (glass is loud). Wanderers never break in.
+- **Barricades**: 2 plank kits per squad. Barricading the pharmacy front door or the storeroom window buys time during
+  the rescue, but each second of hammering makes noise.
+- **Alarm** (Calmo/Inquieto/Alerta/Caçada) grows with shots, doors, glass, screams and the radio, and decays slowly.
+  At Alerta reinforcements bring twice as many runners; at Caçada a horde is called early.
+- **Hordes** (7 infected, 1 heavy): first at 8:00 or earlier on Caçada, then every 4:00, at most 3, always announced
+  20 s ahead from the entry farthest from the squads, patrolling the avenues back and forth.
+- **Infection**: a bite exposes (85 %): 1:30 to infected, 2:30 to critical, 1:00 to turning — about 5 minutes; a squad
+  medic within 4 m halves the pace.
+
 Canonical seed 1337. Infected placement is drawn from zone rectangles with the mission seed.

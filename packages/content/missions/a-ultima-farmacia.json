@@ -11,24 +11,36 @@
     {
       "id": "alfa",
       "displayName": "Alfa",
-      "memberIds": ["alfa-leader", "alfa-marksman", "alfa-medic", "alfa-civilian"],
+      "memberIds": [
+        "alfa-leader",
+        "alfa-marksman",
+        "alfa-medic",
+        "alfa-civilian"
+      ],
       "spawn": {
         "x": 7.5,
         "y": 5.5
       },
       "firePolicy": "returnFire",
-      "moveMode": "move"
+      "moveMode": "move",
+      "barricadeKits": 2
     },
     {
       "id": "bravo",
       "displayName": "Bravo",
-      "memberIds": ["bravo-leader", "bravo-scout", "bravo-mechanic", "bravo-volunteer"],
+      "memberIds": [
+        "bravo-leader",
+        "bravo-scout",
+        "bravo-mechanic",
+        "bravo-volunteer"
+      ],
       "spawn": {
         "x": 15.5,
         "y": 5.5
       },
       "firePolicy": "returnFire",
-      "moveMode": "move"
+      "moveMode": "move",
+      "barricadeKits": 2
     }
   ],
   "civilian": {
@@ -64,7 +76,17 @@
     },
     {
       "typeId": "walker",
-      "count": 3,
+      "count": 2,
+      "rect": {
+        "x0": 58,
+        "y0": 44,
+        "x1": 93,
+        "y1": 51
+      }
+    },
+    {
+      "typeId": "screamer",
+      "count": 1,
       "rect": {
         "x0": 58,
         "y0": 44,
@@ -114,7 +136,17 @@
     },
     {
       "typeId": "walker",
-      "count": 3,
+      "count": 2,
+      "rect": {
+        "x0": 44,
+        "y0": 56,
+        "x1": 51,
+        "y1": 93
+      }
+    },
+    {
+      "typeId": "heavy",
+      "count": 1,
       "rect": {
         "x0": 44,
         "y0": 56,
@@ -213,6 +245,87 @@
       }
     }
   ],
+  "hordes": {
+    "firstAtSeconds": 480,
+    "intervalSeconds": 240,
+    "max": 3,
+    "size": 7,
+    "heavyPerHorde": 1,
+    "warningSeconds": 20,
+    "routes": [
+      {
+        "spawnerId": "spawn-north",
+        "waypoints": [
+          {
+            "x": 47,
+            "y": 14
+          },
+          {
+            "x": 47,
+            "y": 40
+          },
+          {
+            "x": 30,
+            "y": 47
+          },
+          {
+            "x": 10,
+            "y": 47
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-east",
+        "waypoints": [
+          {
+            "x": 80,
+            "y": 48
+          },
+          {
+            "x": 60,
+            "y": 48
+          },
+          {
+            "x": 48,
+            "y": 48
+          },
+          {
+            "x": 48,
+            "y": 70
+          },
+          {
+            "x": 48,
+            "y": 88
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-south",
+        "waypoints": [
+          {
+            "x": 48,
+            "y": 82
+          },
+          {
+            "x": 48,
+            "y": 60
+          },
+          {
+            "x": 48,
+            "y": 48
+          },
+          {
+            "x": 70,
+            "y": 48
+          },
+          {
+            "x": 88,
+            "y": 48
+          }
+        ]
+      }
+    ]
+  },
   "reinforcements": {
     "budget": 30,
     "maxConcurrent": 60,

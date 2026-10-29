@@ -13,6 +13,10 @@ const MIN_INTERVAL: Partial<Record<CueKind, number>> = {
   blocked: 0.3,
   horde: 1.5,
   zombieDeath: 0.06,
+  glass: 0.08,
+  hammer: 0.25,
+  bash: 0.2,
+  scream: 0.5,
 };
 
 /** Distance (cells) at which a cue drops to half volume; loud events carry further. */
@@ -23,6 +27,11 @@ const HALF_DISTANCE: Partial<Record<CueKind, number>> = {
   shriek: 26,
   groan: 16,
   footstep: 9,
+  scream: 70,
+  hordeWarning: 90,
+  glass: 30,
+  bash: 22,
+  hammer: 22,
 };
 
 /** Reverb send per kind: open-air slap for shots, little for close foley. */
@@ -37,6 +46,10 @@ const WET: Partial<Record<CueKind, number>> = {
   panic: 0.35,
   victory: 0.4,
   defeat: 0.5,
+  scream: 0.7,
+  hordeWarning: 0.7,
+  glass: 0.4,
+  turn: 0.5,
 };
 
 const MAX_VOICES = 40;
@@ -348,10 +361,63 @@ export class AudioEngine {
         this.thump(out, t, 110, 60, 0.1, 0.6);
         return 0.12;
       case 'groan': {
-        const d = r(0.8, 1.5);
-        this.voice(out, t, d, r(62, 92), r(48, 70), r(380, 560), 0.45, r(2, 5));
+        const heavy = cue.variant === 'heavy';
+        const d = r(0.8, 1.5) * (heavy ? 1.4 : 1);
+        const f = heavy ? 0.62 : 1;
+        this.voice(
+          out,
+          t,
+          d,
+          r(62, 92) * f,
+          r(48, 70) * f,
+          r(380, 560) * f,
+          heavy ? 0.6 : 0.45,
+          r(2, 5),
+        );
         return d;
       }
+      case 'scream': {
+        // rising, ragged shriek with a bright noise edge, long enough to carry
+        const d = r(1.3, 1.7);
+        this.voice(out, t, d, r(420, 480), r(700, 820), 1900, 0.6, 30);
+        this.voice(out, t + 0.05, d * 0.9, r(300, 340), r(520, 600), 1300, 0.35, 22);
+        this.noiseHit(out, t, d, 0.3, 'highpass', 2600);
+        return d;
+      }
+      case 'glass': {
+        this.noiseHit(out, t, 0.18, 0.55, 'highpass', 4200);
+        for (let i = 0; i < 7; i++)
+          this.tone(out, 'sine', t + 0.02 + i * r(0.02, 0.06), r(2600, 5200), 0.12, 0.08);
+        this.thump(out, t, 120, 60, 0.08, 0.3);
+        return 0.5;
+      }
+      case 'hammer':
+        this.thump(out, t, 220, 110, 0.06, 0.55);
+        this.noiseHit(out, t, 0.05, 0.35, 'bandpass', 1600, 2);
+        return 0.1;
+      case 'bash':
+        this.thump(out, t, 95, 45, 0.18, 0.75);
+        this.noiseHit(out, t, 0.12, 0.4, 'lowpass', 900);
+        return 0.2;
+      case 'hordeWarning':
+        for (let i = 0; i < 6; i++)
+          this.voice(
+            out,
+            t + i * r(0.15, 0.4),
+            r(1.4, 2.2),
+            r(50, 75),
+            r(40, 55),
+            r(320, 460),
+            0.4,
+            4,
+          );
+        this.tone(out, 'sine', t, 41.2, 3, 0.25);
+        return 3.2;
+      case 'turn':
+        this.voice(out, t, 1.4, 160, 60, 600, 0.5, 6);
+        this.tone(out, 'sawtooth', t + 0.2, 55, 2, 0.12);
+        this.tone(out, 'sawtooth', t + 0.2, 58.3, 2, 0.12);
+        return 2.2;
       case 'shriek': {
         const d = r(0.5, 0.75);
         this.voice(out, t, d, r(360, 420), r(240, 300), 1500, 0.4, 18);

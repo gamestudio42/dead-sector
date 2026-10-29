@@ -6,13 +6,15 @@ import {
   inBounds,
   isDoorClosed,
   isDoorTile,
+  tileAt,
   moveCost,
 } from '../spatial/Grid';
 import { MinHeap } from '../spatial/Heap';
 import { traverseSupercover } from '../spatial/Raycast';
 import { cellCenter } from '../spatial/vec';
 
-export type PathAgent = 'survivor' | 'zombie';
+/** `zombieCalm`: a wandering infected walks around barriers instead of breaking them. */
+export type PathAgent = 'survivor' | 'zombie' | 'zombieCalm';
 
 export interface PathOptions {
   agent: PathAgent;
@@ -45,9 +47,15 @@ export function enterCost(
   if (!Number.isFinite(base)) return Infinity;
   if (isDoorTile(world, cx, cy)) {
     const door = doorAt(world, state, cx, cy);
-    if (door && isDoorClosed(door)) {
-      if (agent === 'survivor') return door.locked ? Infinity : base + 1.5;
-      return base + (door.locked ? 10 : 6);
+    if (!door) return tileAt(world, cx, cy) === 'window' ? Infinity : base;
+    if (isDoorClosed(door)) {
+      // survivors only path through doors they can open themselves
+      if (agent === 'survivor')
+        return door.locked || door.kind === 'window' || door.barricade > 0 ? Infinity : base + 1.5;
+      if (agent === 'zombieCalm') return Infinity;
+      // infected path through anything they can break; barricades make the detour more attractive
+      const extra = door.kind === 'window' ? 4 : door.locked ? 10 : 6;
+      return base + extra + Math.min(12, door.barricade / 20);
     }
   }
   return base;

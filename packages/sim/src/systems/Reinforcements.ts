@@ -30,7 +30,9 @@ export function updateReinforcements(world: World, state: GameState, ctx: TickCo
     )
       continue;
     if (state.zombies.some((z) => z.alive && dist(z.position, pos) < 0.7)) continue;
-    const typeId = ctx.rng.chance(cfg.runnerChance) ? 'runner' : 'walker';
+    // an alerted neighbourhood sends more of its fast infected
+    const runnerChance = Math.min(1, cfg.runnerChance * (m.alarmLevel >= 2 ? 2 : 1));
+    const typeId = ctx.rng.chance(runnerChance) ? 'runner' : 'walker';
     const id = nextId(state, 'zr');
     const z = makeZombie(world, id, typeId, pos, 0, 'investigate', state.tick);
     z.spawnedBy = sp.id;

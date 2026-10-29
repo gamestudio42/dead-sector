@@ -45,7 +45,8 @@ export class ContentValidationError extends Error {
   }
 }
 
-function parse<T>(schema: z.ZodType<T>, data: unknown, source: string): T {
+/** Parses with defaults applied; returns the schema's output type. */
+function parse<S extends z.ZodTypeAny>(schema: S, data: unknown, source: string): z.output<S> {
   const result = schema.safeParse(data);
   if (!result.success) {
     throw new ContentValidationError(
@@ -136,6 +137,19 @@ export function validateContent(raw: RawContent): ContentBundle {
           issues.push(`spawner ${sp.id} outside map`);
         }
       }
+      const blocked = new Set(['wall', 'window', 'wreck', 'cabinet']);
+      for (const r of m.hordes?.routes ?? []) {
+        if (!m.spawners.some((sp) => sp.id === r.spawnerId))
+          issues.push(`horde route uses unknown spawner ${r.spawnerId}`);
+        for (const w of r.waypoints) {
+          const ch = map.rows[w.y]?.[w.x];
+          const tile = ch === undefined ? undefined : map.legend[ch];
+          if (!tile || blocked.has(tile))
+            issues.push(`horde route waypoint ${w.x},${w.y} is not walkable`);
+        }
+      }
+      if (m.hordes && m.hordes.heavyPerHorde > 0 && !bundle.zombieTypes['heavy'])
+        issues.push(`mission ${m.id} hordes need the heavy infected type`);
     }
   }
   if (issues.length) throw new ContentValidationError('cross-references', issues);

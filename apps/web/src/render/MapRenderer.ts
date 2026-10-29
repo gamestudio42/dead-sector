@@ -696,10 +696,41 @@ export class MapRenderer {
     this.doorLayer = scene.add.graphics().setDepth(DEPTH.doors);
   }
 
+  /** Crossed boards over a barricaded door or window; fewer boards as the barricade is worn down. */
+  private drawPlanks(
+    g: Phaser.GameObjects.Graphics,
+    d: GameState['doors'][number],
+    px: number,
+    py: number,
+    vertical: boolean,
+  ): void {
+    if (d.barricade <= 0) return;
+    const boards = Math.max(
+      1,
+      Math.ceil((d.barricade / this.world.rules.barriers.barricadeHp) * 3),
+    );
+    for (let i = 0; i < boards; i++) {
+      const off = 3 + i * 4.5;
+      const tilt = i % 2 === 0 ? 2.5 : -2.5;
+      g.lineStyle(3.2, 0x2a1d12, 1);
+      if (vertical) g.lineBetween(px + 2, py + off - tilt, px + CELL - 2, py + off + tilt);
+      else g.lineBetween(px + off - tilt, py + 2, px + off + tilt, py + CELL - 2);
+      g.lineStyle(2.2, i % 2 ? 0x9a7448 : 0x8a6238, 1);
+      if (vertical) g.lineBetween(px + 2, py + off - tilt, px + CELL - 2, py + off + tilt);
+      else g.lineBetween(px + off - tilt, py + 2, px + off + tilt, py + CELL - 2);
+    }
+    g.fillStyle(0xc8c8c8, 0.9);
+    if (vertical) g.fillRect(px + 3, py + 3, 1, 1).fillRect(px + CELL - 4, py + CELL - 4, 1, 1);
+    else g.fillRect(px + 3, py + 3, 1, 1).fillRect(px + CELL - 4, py + CELL - 4, 1, 1);
+  }
+
   /** Redraws doors only when any door state changed. */
   update(state: GameState): void {
     const key = state.doors
-      .map((d) => `${d.open ? 1 : 0}${d.locked ? 1 : 0}${d.broken ? 1 : 0}`)
+      .map(
+        (d) =>
+          `${d.open ? 1 : 0}${d.locked ? 1 : 0}${d.broken ? 1 : 0}${Math.ceil(d.barricade / 40)}`,
+      )
       .join('');
     if (key === this.doorKey) return;
     this.doorKey = key;
@@ -710,6 +741,19 @@ export class MapRenderer {
       const vertical =
         tileAt(this.world, d.cell.x, d.cell.y - 1) === 'wall' ||
         tileAt(this.world, d.cell.x, d.cell.y + 1) === 'wall';
+      if (d.kind === 'window') {
+        // intact glass is part of the painted terrain; only damage and planks are dynamic
+        if (d.broken) {
+          g.fillStyle(0x0d0f12, 0.95);
+          if (vertical) g.fillRect(px + 5, py + 1.5, 6, CELL - 3);
+          else g.fillRect(px + 1.5, py + 5, CELL - 3, 6);
+          g.fillStyle(0xbfe6ff, 0.55)
+            .fillTriangle(px + 5, py + 2, px + 8, py + 2, px + 5, py + 6)
+            .fillTriangle(px + 11, py + 14, px + 8, py + 14, px + 11, py + 10);
+        }
+        this.drawPlanks(g, d, px, py, vertical);
+        continue;
+      }
       // frame posts on both wall sides
       g.fillStyle(0x2a2420);
       if (vertical) g.fillRect(px + 4, py, 8, 2).fillRect(px + 4, py + CELL - 2, 8, 2);
@@ -744,6 +788,7 @@ export class MapRenderer {
           g.lineStyle(1, 0xe3b341).strokeCircle(px + 8, py + 7, 1.6);
         }
       }
+      this.drawPlanks(g, d, px, py, vertical);
     }
   }
 }

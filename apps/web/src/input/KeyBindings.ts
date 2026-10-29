@@ -15,6 +15,7 @@ export type Action =
   | 'retreat'
   | 'regroup'
   | 'firePolicy'
+  | 'barricade'
   | 'pause'
   | 'speed'
   | 'quicksave'
@@ -39,6 +40,7 @@ export const DEFAULT_BINDINGS: Record<Action, string> = {
   retreat: 'KeyR',
   regroup: 'KeyG',
   firePolicy: 'KeyF',
+  barricade: 'KeyB',
   pause: 'Space',
   speed: 'Tab',
   quicksave: 'F5',
@@ -64,6 +66,7 @@ export const ACTION_LABELS: Record<Action, string> = {
   retreat: 'Retirada',
   regroup: 'Reagrupar no líder',
   firePolicy: 'Disciplina de fogo',
+  barricade: 'Barricar porta/janela sob o cursor',
   pause: 'Pausar / retomar',
   speed: 'Velocidade 1× / 2×',
   quicksave: 'Salvamento rápido',

@@ -21,7 +21,12 @@ import { captionFor } from '../audio/captions';
 import { cuesForEvents, threatLevel } from '../audio/cues';
 import { CameraController } from '../input/CameraController';
 import { KeyBindings, type Action } from '../input/KeyBindings';
-import { commandsForRightClick, targetAt, type RightClickOptions } from '../input/OrderController';
+import {
+  barrierAt,
+  commandsForRightClick,
+  targetAt,
+  type RightClickOptions,
+} from '../input/OrderController';
 import { squadAt, squadsInRect } from '../input/SelectionController';
 import { barksForEvents } from '../presentation/barks';
 import {
@@ -82,6 +87,8 @@ export class TacticalScene extends Phaser.Scene {
   private drag: { sx: number; sy: number; wx: number; wy: number; active: boolean } | null = null;
   private boxG!: Phaser.GameObjects.Graphics;
   private menu = new ContextMenu();
+  /** Last pointer position in cells (keyboard orders that act on what is under the cursor). */
+  private cursor: Vec2 = { x: 0, y: 0 };
   private prev = new Map<string, Vec2>();
   private endAt = 0;
   private pauseMenu: HTMLDivElement | null = null;
@@ -168,6 +175,7 @@ export class TacticalScene extends Phaser.Scene {
       }
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      this.cursor = toWorld(p);
       if (!this.drag || !p.leftButtonDown()) return;
       if (!this.drag.active && Math.hypot(p.x - this.drag.sx, p.y - this.drag.sy) > DRAG_THRESHOLD)
         this.drag.active = true;
@@ -280,6 +288,21 @@ export class TacticalScene extends Phaser.Scene {
       .map((id) => st.squads.find((s) => s.id === id)?.displayName ?? id)
       .join(' + ');
     const items = [];
+    const barrier = barrierAt(st, p);
+    if (barrier) {
+      const kits = ids.reduce(
+        (n, id) => n + (st.squads.find((s) => s.id === id)?.barricadeKits ?? 0),
+        0,
+      );
+      items.push({
+        label: barrier.label,
+        hint: kits
+          ? `Usa 1 kit (${kits} disponíveis) · martelar faz barulho`
+          : 'Sem kits de barricada',
+        disabled: kits === 0,
+        run: () => this.barricade(barrier.id),
+      });
+    }
     if (target)
       items.push({
         label: target.label,
@@ -331,6 +354,15 @@ export class TacticalScene extends Phaser.Scene {
       },
     );
     this.menu.show(sx, sy, `Ordens — ${names}`, items);
+  }
+
+  /** Barricade with the first selected squad that still has plank kits. */
+  private barricade(targetEntityId: string): void {
+    const id = this.orderable().find(
+      (sq) => (this.sim.state.squads.find((s) => s.id === sq)?.barricadeKits ?? 0) > 0,
+    );
+    if (!id) return this.hud.toast('Sem kits de barricada nos esquadrões selecionados');
+    this.issue({ type: 'issueOrder', squadId: id, payload: { type: 'barricade', targetEntityId } });
   }
 
   private orderFromPanel(type: OrderType): void {
@@ -464,6 +496,11 @@ export class TacticalScene extends Phaser.Scene {
       }
       case 'firePolicy':
         return this.cyclePolicy();
+      case 'barricade': {
+        const b = barrierAt(this.sim.state, this.cursor);
+        if (!b) return this.hud.toast('Aponte o cursor para uma porta ou janela');
+        return this.barricade(b.id);
+      }
       default:
         break;
     }

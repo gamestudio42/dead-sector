@@ -14,6 +14,12 @@ const LABELS: Partial<Record<CueKind, string>> = {
   zombieDeath: 'Infectado abatido',
   radio: 'Rádio chiando',
   dryFire: 'Clique de arma vazia',
+  glass: 'Vidro quebrando',
+  hammer: 'Marteladas',
+  bash: 'Pancadas em barreira',
+  scream: 'GRITO de infectado',
+  hordeWarning: 'Horda se aproximando',
+  turn: 'Alguém se transformou',
 };
 
 const DIRS = ['leste', 'sudeste', 'sul', 'sudoeste', 'oeste', 'noroeste', 'norte', 'nordeste'];

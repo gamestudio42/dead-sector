@@ -31,7 +31,7 @@ export function recordEvents(rec: MissionRecord, events: SimEvent[], state: Game
         add(T.objectives[p['objectiveId'] as string] ?? 'Objetivo concluído', 'good');
         break;
       case 'ACTOR_KILLED':
-        if (p['kind'] === 'survivor') {
+        if (p['kind'] === 'survivor' && p['cause'] !== 'turned') {
           const s = state.survivors.find((m) => m.id === p['actorId']);
           if (s) rec.deaths.push({ x: s.position.x, y: s.position.y, survivor: true });
           add(`${first(state, p['actorId'])} morreu`, 'bad');
@@ -51,6 +51,20 @@ export function recordEvents(rec: MissionRecord, events: SimEvent[], state: Game
         break;
       case 'EXTRACTION_STARTED':
         add('Rádio de extração ativado', 'info');
+        break;
+      case 'SURVIVOR_TURNED':
+        rec.deaths.push({ x: p['x'] as number, y: p['y'] as number, survivor: true });
+        add(`${String(p['name']).split(' ')[0]} se transformou`, 'bad');
+        break;
+      case 'HORDE_SPAWNED':
+        add(`Horda de ${p['size']} infectados chegou`, 'bad');
+        break;
+      case 'ALARM_CHANGED':
+        if ((p['level'] as number) === 3)
+          add('Alerta máximo: o bairro inteiro está caçando', 'bad');
+        break;
+      case 'BARRICADE_BUILT':
+        add('Barricada erguida', 'info');
         break;
       case 'REINFORCEMENT_SPAWNED':
         if (state.mission.reinforcementsSpawned === 1)

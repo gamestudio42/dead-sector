@@ -36,15 +36,39 @@ export function centroid(points: Vec2[]): Vec2 {
   return { x: x / Math.max(1, points.length), y: y / Math.max(1, points.length) };
 }
 
+/** A door or window that could take a plank barricade (any state, as long as it has none yet). */
+export function barricadeTarget(state: GameState, id: string | undefined): Interactable | null {
+  const d = state.doors.find((door) => door.id === id);
+  if (!d) return null;
+  return {
+    id: d.id,
+    kind: 'barricade',
+    position: cellCenter(d.cell.x, d.cell.y),
+    available: d.barricade === 0,
+  };
+}
+
+/** The interactable an interact/barricade order works on. */
+export function orderTarget(
+  world: World,
+  state: GameState,
+  order: { type: string; targetEntityId?: string },
+): Interactable | null {
+  if (order.type === 'barricade') return barricadeTarget(state, order.targetEntityId);
+  return listInteractables(world, state).find((i) => i.id === order.targetEntityId) ?? null;
+}
+
 /** Everything a squad can interact with right now (doors, cabinet, civilian, extraction beacon). */
 export function listInteractables(world: World, state: GameState): Interactable[] {
   const out: Interactable[] = [];
   for (const d of state.doors) {
+    if (d.kind !== 'door') continue; // windows are never opened; they can only be barricaded
     out.push({
       id: d.id,
       kind: 'door',
       position: cellCenter(d.cell.x, d.cell.y),
-      available: !d.broken,
+      // a barricaded door can still be interacted with: that removes the planks
+      available: !d.broken || d.barricade > 0,
     });
   }
   const cab = world.mission.objectives.cabinet.cell;
@@ -250,7 +274,7 @@ export function interactionStandPoint(
   const cells: { x: number; y: number }[] = [];
   const tx = Math.floor(target.position.x);
   const ty = Math.floor(target.position.y);
-  if (target.kind === 'door') {
+  if (target.kind === 'door' || target.kind === 'barricade') {
     for (const [dx, dy] of [
       [1, 0],
       [-1, 0],
@@ -325,9 +349,11 @@ export function planOrder(
     const contact = state.contacts.find((c) => c.zombieId === order.targetEntityId);
     if (!contact) return block(state, squad, order, 'invalidTarget');
     dest = copy(contact.position);
-  } else if (order.type === 'interact') {
-    const target = listInteractables(world, state).find((i) => i.id === order.targetEntityId);
+  } else if (order.type === 'interact' || order.type === 'barricade') {
+    const target = orderTarget(world, state, order);
     if (!target || !target.available) return block(state, squad, order, 'invalidTarget');
+    if (order.type === 'barricade' && squad.barricadeKits <= 0)
+      return block(state, squad, order, 'noKits');
     if (target.kind === 'beacon' && !state.mission.medicineCollected)
       return block(state, squad, order, 'requiresMedicine');
     const candidates = [...members].sort(

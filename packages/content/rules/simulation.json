@@ -100,13 +100,32 @@
     "zombieStaggerSeconds": 0.3
   },
   "infection": {
-    "exposedToInfectedSeconds": 120,
-    "infectedToCriticalSeconds": 600
+    "exposedToInfectedSeconds": 90,
+    "infectedToCriticalSeconds": 150,
+    "criticalToTurnSeconds": 60,
+    "medicSlowFactor": 0.5
   },
   "interaction": {
     "doorForceSecondsBase": 6,
     "doorForceSecondsMin": 2.5,
     "doorToggleSeconds": 0.6,
     "interruptRadius": 1.6
+  },
+  "barriers": {
+    "windowHp": 45,
+    "barricadeHp": 160,
+    "barricadeSeconds": 6,
+    "removeBarricadeSeconds": 4,
+    "hammerNoise": 28,
+    "glassBreakNoise": 45
+  },
+  "alarm": {
+    "perIntensity": 0.012,
+    "decayPerSecond": 0.8,
+    "tiers": [
+      25,
+      50,
+      80
+    ]
   }
 }

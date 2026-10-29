@@ -94,6 +94,13 @@ export class Minimap {
       ) {
         const s = state.survivors.find((m) => m.id === p['actorId']);
         if (s) this.pings.push({ x: s.position.x, y: s.position.y, born: now, color: '#ff6a50' });
+      } else if (e.type === 'HORDE_INCOMING' || e.type === 'HORDE_SPAWNED') {
+        // announced on the radio/log, so the squads know where it comes from
+        const sp = this.world.mission.spawners.find((s) => s.id === p['spawnerId']);
+        if (sp)
+          this.pings.push({ x: sp.cell.x + 0.5, y: sp.cell.y + 0.5, born: now, color: '#ff9a3c' });
+      } else if (e.type === 'ZOMBIE_SCREAMED') {
+        this.pings.push({ x: p['x'] as number, y: p['y'] as number, born: now, color: '#ff4b3a' });
       } else if (e.type === 'EXTRACTION_STARTED') {
         const b = this.world.mission.objectives.extraction.beacon;
         this.pings.push({ x: b.x, y: b.y, born: now, color: '#9fe870' });

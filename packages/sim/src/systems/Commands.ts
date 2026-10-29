@@ -1,4 +1,11 @@
-import type { GameCommand, GameState, OrderType, Squad, SquadOrder } from '../model/types';
+import type {
+  GameCommand,
+  GameState,
+  OrderType,
+  QueuedOrder,
+  Squad,
+  SquadOrder,
+} from '../model/types';
 import type { World } from '../model/World';
 import { emit, nextId } from '../engine/EventBus';
 import type { TickContext } from '../engine/TickContext';
@@ -18,6 +25,8 @@ const ORDER_TYPES = new Set<OrderType>([
   'regroup',
 ]);
 const POSITION_ORDERS = new Set<OrderType>(['move', 'sneak', 'sprint']);
+export const MAX_WAYPOINTS = 8;
+const ACTIVE = new Set(['queued', 'planning', 'executing']);
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 
 function reject(state: GameState, cmd: GameCommand, reason: string): void {
@@ -31,7 +40,10 @@ function issueOrder(
   squad: Squad,
   type: OrderType,
   payload: { targetPosition?: { x: number; y: number }; targetEntityId?: string },
+  opts: { fromQueue?: boolean; keepQueue?: boolean } = {},
 ): void {
+  const fromQueue = !!opts.fromQueue;
+  if (!fromQueue && !opts.keepQueue) squad.waypoints = [];
   const mode =
     type === 'sneak' || type === 'move' || type === 'sprint'
       ? type
@@ -67,8 +79,35 @@ function issueOrder(
     x: order.targetPosition?.x ?? null,
     y: order.targetPosition?.y ?? null,
     targetEntityId: order.targetEntityId ?? null,
+    fromQueue,
   });
   planOrder(world, state, ctx, squad, order);
+}
+
+/**
+ * Starts the next queued waypoint when the current order completed. A blocked or interrupted
+ * order drops the rest of the queue (the plan no longer holds; the player decides again).
+ */
+export function advanceWaypoints(world: World, state: GameState, ctx: TickContext): void {
+  if (state.mission.status !== 'running') return;
+  for (const squad of state.squads) {
+    if (squad.waypoints.length === 0) continue;
+    const o = squad.order;
+    if (o && ACTIVE.has(o.status)) continue;
+    if (o && o.status !== 'completed') {
+      squad.waypoints = [];
+      continue;
+    }
+    if (aliveMembers(state, ctx, squad).length === 0) {
+      squad.waypoints = [];
+      continue;
+    }
+    const next = squad.waypoints.shift() as QueuedOrder;
+    const payload: { targetPosition?: { x: number; y: number }; targetEntityId?: string } = {};
+    if (next.targetPosition) payload.targetPosition = next.targetPosition;
+    if (next.targetEntityId) payload.targetEntityId = next.targetEntityId;
+    issueOrder(world, state, ctx, squad, next.type, payload, { fromQueue: true });
+  }
 }
 
 /** Validates and applies player commands for this tick. Invalid or late commands are rejected with an event. */
@@ -112,7 +151,15 @@ export function applyCommands(
       squad.moveMode = mode;
       const o = squad.order;
       if (o && o.status === 'executing' && POSITION_ORDERS.has(o.type) && o.targetPosition) {
-        issueOrder(world, state, ctx, squad, mode, { targetPosition: o.targetPosition });
+        issueOrder(
+          world,
+          state,
+          ctx,
+          squad,
+          mode,
+          { targetPosition: o.targetPosition },
+          { keepQueue: true },
+        );
       } else if (
         o &&
         o.status === 'executing' &&
@@ -143,6 +190,24 @@ export function applyCommands(
       const payload: { targetPosition?: { x: number; y: number }; targetEntityId?: string } = {};
       if (p.targetPosition) payload.targetPosition = p.targetPosition;
       if (p.targetEntityId) payload.targetEntityId = p.targetEntityId;
+      const busy = !!squad.order && ACTIVE.has(squad.order.status);
+      // any order can be queued; hold/hide never complete, so they naturally end a plan
+      if (p.queue && busy) {
+        if (squad.waypoints.length >= MAX_WAYPOINTS) {
+          reject(state, cmd, 'queueFull');
+          continue;
+        }
+        squad.waypoints.push({ type: p.type, ...payload });
+        emit(state, 'ORDER_QUEUED', {
+          squadId: squad.id,
+          orderType: p.type,
+          x: payload.targetPosition?.x ?? null,
+          y: payload.targetPosition?.y ?? null,
+          targetEntityId: payload.targetEntityId ?? null,
+          index: squad.waypoints.length,
+        });
+        continue;
+      }
       issueOrder(world, state, ctx, squad, p.type, payload);
     }
   }

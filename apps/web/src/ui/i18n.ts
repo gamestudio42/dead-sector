@@ -67,6 +67,7 @@ export const T = {
     requiresMedicine: 'Recolha os medicamentos antes de chamar a extração',
     obstructed: 'Ação impedida: passagem obstruída',
     missionEnded: 'Missão encerrada',
+    queueFull: 'Fila cheia: no máximo 8 pontos por esquadrão',
   } as Record<string, string>,
   policy: {
     weaponsFree: 'Fogo livre',

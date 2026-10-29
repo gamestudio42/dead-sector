@@ -11,10 +11,11 @@ import {
   type World,
 } from '@dead-sector/sim';
 import { fmtTime, T } from './i18n';
+import { KeyBindings, keyLabel, type Action } from '../input/KeyBindings';
 import { Settings } from './SaveStore';
 
 export interface HudActions {
-  selectSquad(id: string): void;
+  selectSquad(id: string, additive: boolean): void;
   order(type: OrderType): void;
   cyclePolicy(): void;
   setMode(mode: MoveMode): void;
@@ -63,6 +64,8 @@ export interface HudView {
   state: GameState;
   world: World;
   selectedSquadId: string | null;
+  /** Every selected squad (primary first). */
+  selectedIds: string[];
   paused: boolean;
   speed: 1 | 2;
   debugText: string | null;
@@ -140,14 +143,14 @@ export class Hud {
           <h4>Ordens — <span data-el="orderSquad">—</span>
             <span class="help" title="Botão direito no chão: mover no modo atual&#10;Sobre infectado visível: atacar&#10;Sobre porta, armário, civil ou rádio: interagir&#10;No minimapa: mover o esquadrão">?</span></h4>
           <div class="grid">
-            <button data-order="move" title="Mover no passo normal (W)"><span class="kbd">W</span>Mover</button>
-            <button data-order="sneak" title="Furtivo: lento e silencioso (Q)"><span class="kbd">Q</span>Furtivo</button>
-            <button data-order="sprint" title="Correr: rápido, barulhento, cansa (E)"><span class="kbd">E</span>Correr</button>
-            <button data-order="hold" title="Manter posição (H)"><span class="kbd">H</span>Manter</button>
-            <button data-order="hide" title="Esconder-se e evitar contato (T)"><span class="kbd">T</span>Esconder</button>
-            <button data-order="retreat" title="Retirada para o ponto seguro (R)"><span class="kbd">R</span>Retirada</button>
-            <button data-order="regroup" title="Reagrupar no líder (G)"><span class="kbd">G</span>Reagrupar</button>
-            <button data-act="policy" data-testid="btn-policy" title="Disciplina de fogo (F)"><span class="kbd">F</span><span data-el="policy"></span></button>
+            <button data-order="move" title="Mover no passo normal (W)"><span class="kbd" data-kbd="modeMove">W</span>Mover</button>
+            <button data-order="sneak" title="Furtivo: lento e silencioso (Q)"><span class="kbd" data-kbd="modeSneak">Q</span>Furtivo</button>
+            <button data-order="sprint" title="Correr: rápido, barulhento, cansa (E)"><span class="kbd" data-kbd="modeSprint">E</span>Correr</button>
+            <button data-order="hold" title="Manter posição (H)"><span class="kbd" data-kbd="hold">H</span>Manter</button>
+            <button data-order="hide" title="Esconder-se e evitar contato (T)"><span class="kbd" data-kbd="hide">T</span>Esconder</button>
+            <button data-order="retreat" title="Retirada para o ponto seguro (R)"><span class="kbd" data-kbd="retreat">R</span>Retirada</button>
+            <button data-order="regroup" title="Reagrupar no líder (G)"><span class="kbd" data-kbd="regroup">G</span>Reagrupar</button>
+            <button data-act="policy" data-testid="btn-policy" title="Disciplina de fogo (F)"><span class="kbd" data-kbd="firePolicy">F</span><span data-el="policy"></span></button>
           </div>
           <div class="context" data-el="context" data-testid="context"></div>
         </div>
@@ -180,7 +183,7 @@ export class Hud {
       );
       if (!t) return;
       if (t.dataset['order']) this.actions.order(t.dataset['order'] as OrderType);
-      if (t.dataset['squad']) this.actions.selectSquad(t.dataset['squad']);
+      if (t.dataset['squad']) this.actions.selectSquad(t.dataset['squad'], ev.shiftKey);
       switch (t.dataset['act']) {
         case 'pause':
           return this.actions.togglePause();
@@ -282,6 +285,12 @@ export class Hud {
         }
         case 'ORDER_REJECTED':
           this.toast(T.blocked[p['reason'] as string] ?? 'Ordem recusada');
+          break;
+        case 'ORDER_QUEUED':
+          this.push(
+            state,
+            `${this.squadName(state, p['squadId'])}: ${T.orders[p['orderType'] as string] ?? p['orderType']} na fila (${p['index']})`,
+          );
           break;
         case 'ORDER_COMPLETED':
           this.push(state, `${this.squadName(state, p['squadId'])}: ordem concluída`);
@@ -461,9 +470,12 @@ export class Hud {
     const alive = members.filter((m) => m.alive);
     const leader = members.find((m) => m.id === sq.leaderId);
     const color = sq.id === 'alfa' ? 'var(--alfa)' : 'var(--bravo)';
-    const order = sq.order
-      ? `${T.orders[sq.order.type]} · ${T.orderStatus[sq.order.status]}`
-      : 'sem ordem';
+    const queued = sq.waypoints.length
+      ? ` · <span class="queued" data-testid="queue-${sq.id}">+${sq.waypoints.length} na fila</span>`
+      : '';
+    const order =
+      (sq.order ? `${T.orders[sq.order.type]} · ${T.orderStatus[sq.order.status]}` : 'sem ordem') +
+      queued;
     return `<div class="squad-card panel ${selected ? 'selected' : ''}" data-squad="${sq.id}" data-testid="squad-${sq.id}" style="border-left-color:${color}">
       <div class="name"><span class="kbd">${index + 1}</span>${esc(sq.displayName)} <span class="small">${alive.length}/${members.length}</span></div>
       <div class="meta">Líder: ${leader && leader.alive ? esc(leader.name) : '—'}</div>
@@ -520,15 +532,22 @@ export class Hud {
     (els['noise'] as HTMLElement).style.width = `${pct(recent, 400)}%`;
     (els['pausedFlag'] as HTMLElement).textContent = view.paused ? 'PAUSADO' : '';
     this.setHtml(els['pauseLabel'], view.paused ? ICONS.play : ICONS.pause);
+    this.root
+      .querySelectorAll<HTMLElement>('[data-kbd]')
+      .forEach((el) => this.setHtml(el, keyLabel(KeyBindings.get(el.dataset['kbd'] as Action))));
     (els['speed'] as HTMLElement).textContent = `${view.speed}×`;
     this.setHtml(
       els['squads'],
       state.squads
-        .map((sq, i) => this.squadCard(state, sq, i, sq.id === view.selectedSquadId))
+        .map((sq, i) => this.squadCard(state, sq, i, view.selectedIds.includes(sq.id)))
         .join(''),
     );
     const sel = state.squads.find((s) => s.id === view.selectedSquadId);
-    (els['orderSquad'] as HTMLElement).textContent = sel?.displayName ?? '—';
+    (els['orderSquad'] as HTMLElement).textContent =
+      view.selectedIds
+        .map((id) => state.squads.find((s) => s.id === id)?.displayName)
+        .filter(Boolean)
+        .join(' + ') || '—';
     (els['policy'] as HTMLElement).textContent = sel ? (T.policy[sel.firePolicy] ?? '') : '';
     this.root.querySelectorAll<HTMLButtonElement>('[data-order]').forEach((b) => {
       b.classList.toggle(

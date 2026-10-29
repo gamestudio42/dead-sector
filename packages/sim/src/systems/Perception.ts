@@ -2,8 +2,15 @@ import type { Contact, GameState, Survivor, Zombie } from '../model/types';
 import type { World } from '../model/World';
 import { emit } from '../engine/EventBus';
 import { isSquadMember, type TickContext } from '../engine/TickContext';
+import { barrierFingerprint, barrierGrids } from '../spatial/BarrierCache';
 import { castVisionRay, hasLineOfSight } from '../spatial/Raycast';
 import { angleDiff, copy, dist } from '../spatial/vec';
+
+/** Per-world memo of each survivor's visible cells (pure function of position, facing and barriers). */
+const fogCaches = new WeakMap<
+  World,
+  Map<string, { x: number; y: number; facing: number; key: string; cells: number[] }>
+>();
 
 export function survivorVisionRange(world: World): number {
   return world.mission.isNight
@@ -17,6 +24,7 @@ export function survivorCanSee(
   state: GameState,
   s: Survivor,
   p: { x: number; y: number },
+  opaque?: Uint8Array,
 ): boolean {
   const d = dist(s.position, p);
   if (d > survivorVisionRange(world)) return false;
@@ -26,7 +34,7 @@ export function survivorCanSee(
     const ang = Math.atan2(p.y - s.position.y, p.x - s.position.x);
     if (angleDiff(ang, s.facing) > half) return false;
   }
-  return hasLineOfSight(world, state, s.position, p);
+  return hasLineOfSight(world, state, s.position, p, opaque);
 }
 
 /** Recomputes fog of war, per-survivor sightings and the player's contact memory. */
@@ -36,9 +44,13 @@ export function updatePerception(world: World, state: GameState, ctx: TickContex
   const range = survivorVisionRange(world);
   const half = ((world.rules.vision.fovDegrees / 2) * Math.PI) / 180;
   const peripheral = world.rules.vision.peripheralRange;
-  const mark = (cx: number, cy: number) => {
-    fog[cy * world.width + cx] = 2;
-  };
+  const key = barrierFingerprint(state);
+  const opaque = barrierGrids(world, state, key).opaque;
+  let cache = fogCaches.get(world);
+  if (!cache) {
+    cache = new Map();
+    fogCaches.set(world, cache);
+  }
   const squadSeen = new Set<string>();
 
   for (const s of state.survivors) {
@@ -46,17 +58,36 @@ export function updatePerception(world: World, state: GameState, ctx: TickContex
     if (!s.alive || s.extracted) continue;
     const eye = s.position;
     if (isSquadMember(s)) {
-      const step = 0.5 / range;
-      for (let a = -half; a <= half + 1e-9; a += step)
-        castVisionRay(world, state, eye, s.facing + a, range, mark);
-      if (peripheral > 0) {
-        const pStep = 0.5 / peripheral;
-        for (let a = 0; a < Math.PI * 2; a += pStep)
-          castVisionRay(world, state, eye, a, peripheral, mark);
+      // a survivor who neither moved nor turned sees exactly what they saw last tick
+      const prev = cache.get(s.id);
+      let cells: number[];
+      if (
+        prev &&
+        prev.x === eye.x &&
+        prev.y === eye.y &&
+        prev.facing === s.facing &&
+        prev.key === key
+      ) {
+        cells = prev.cells;
+      } else {
+        cells = [];
+        const mark = (cx: number, cy: number) => {
+          cells.push(cy * world.width + cx);
+        };
+        const step = 0.5 / range;
+        for (let a = -half; a <= half + 1e-9; a += step)
+          castVisionRay(world, state, eye, s.facing + a, range, mark, opaque);
+        if (peripheral > 0) {
+          const pStep = 0.5 / peripheral;
+          for (let a = 0; a < Math.PI * 2; a += pStep)
+            castVisionRay(world, state, eye, a, peripheral, mark, opaque);
+        }
+        cache.set(s.id, { x: eye.x, y: eye.y, facing: s.facing, key, cells });
       }
+      for (const i of cells) fog[i] = 2;
     }
     for (const z of ctx.zombieHash.query(eye, range)) {
-      if (survivorCanSee(world, state, s, z.position)) {
+      if (survivorCanSee(world, state, s, z.position, opaque)) {
         s.seenZombieIds.push(z.id);
         if (isSquadMember(s)) squadSeen.add(z.id);
       }

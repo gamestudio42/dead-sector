@@ -59,6 +59,7 @@ function writeStored(key: string, value: string): void {
 }
 
 export type LightingMode = 'dusk' | 'day';
+export type Quality = 'high' | 'medium' | 'low';
 
 const unit = (key: string, fallback: number) => ({
   get(): number {
@@ -92,6 +93,7 @@ const logOpen = flag('logOpen', true);
 const unitsOpen = flag('unitsOpen', true);
 const minimapOpen = flag('minimapOpen', true);
 const tips = flag('tips', true);
+const showFps = flag('showFps', false);
 
 /** Per-viewer preferences (localStorage, falls back to defaults when unavailable). */
 export const Settings = {
@@ -180,6 +182,20 @@ export const Settings = {
   },
   set unitsOpen(v: boolean) {
     unitsOpen.set(v);
+  },
+  /** Graphics quality: high = everything; medium = lighting at half rate, lighter fog; low = no dynamic light. */
+  get quality(): Quality {
+    const v = readStored('quality');
+    return v === 'medium' || v === 'low' ? v : 'high';
+  },
+  set quality(v: Quality) {
+    writeStored('quality', v);
+  },
+  get showFps(): boolean {
+    return showFps.get();
+  },
+  set showFps(v: boolean) {
+    showFps.set(v);
   },
   /** Contextual tutorial hints. */
   get tips(): boolean {

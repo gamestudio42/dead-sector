@@ -16,13 +16,19 @@ Requirements: Node 22+, pnpm 10+.
 ```bash
 pnpm install
 pnpm dev            # http://localhost:5173  (add ?debug=1 for the debug overlay)
-pnpm test           # 47 unit/integration tests (Vitest, Node only — no DOM)
-pnpm e2e            # Playwright: builds, serves on :4317 and plays the mission in Chromium
+pnpm test           # unit/integration tests (Vitest, Node only — no DOM)
+pnpm e2e            # Playwright: builds, serves on :4317 and plays the missions in Chromium
+pnpm balance        # multi-seed balance report → docs/testing/balance.md (opt-in, ~2 min)
 pnpm check          # typecheck + lint + unit tests + production build
 pnpm build          # static build in apps/web/dist (DS_BASE=/sub/path/ pnpm build for GitHub Pages)
 ```
 
 First Playwright run: `pnpm --filter @dead-sector/game exec playwright install chromium`.
+
+**Install as an app (desktop, offline)**: serve the production build (`pnpm build && pnpm preview`, or any static
+host over HTTPS), open it in Chrome/Edge and use "Instalar Dead Sector" in the address bar. It runs full-screen in its
+own window and starts offline after the first visit (service worker, no server needed). Reproducible build:
+`pnpm install --frozen-lockfile && pnpm build`; the menu shows the version and commit (`0.1.0+<sha>`).
 
 ## How to play
 
@@ -118,20 +124,29 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   lighting; contextual tutorial (each hint once, when its situation first happens; can be turned off or replayed).
   Rescued civilians in panic now cling to a calm escort instead of freezing or following someone fleeing.
 
+- **Finish pass (block 6)**: tick optimisation by pure memoisation (sound-absorption and opacity grids per barrier
+  state, cached sound fields per origin/intensity, per-survivor field-of-view reuse) — final-state hashes of five full
+  scripted missions are **bit-identical** before and after, average tick 7.1 → 3.0 ms; graphics quality option
+  (Alta/Média/Baixa) and an FPS readout; multi-seed balance report; installable offline app (web manifest + service
+  worker), loading screen, credits with the libraries and their licences, build id in the menu.
+
 ## Verification evidence (this build)
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **101/102** — all functional tests pass, including both
-  new missions completed by their scripted routes and the whole campaign won by chaining them. The one failure is the
-  performance gate, measured while the machine was saturated by other apps (load average 15–18: p50 4.9 ms vs 1.0 ms
-  idle earlier today). The last idle measurement (block 4) was p95 9.8–10.1 ms/tick, at the spec's 10 ms target;
-  block 5 adds no per-tick cost beyond a trivial escort check. Optimisation and an idle re-measurement are block 6.
-- `pnpm e2e`: **10/10** Playwright ✓ — including the campaign flow (mission 1 → interlude → mission 2 briefing with the
-  roster's condition → deploys only the survivors → campaign survives a reload) and both new missions loading cleanly; — full critical flow (menu → briefing → mission → graded debriefing), stealth run
-  (no shots until the radio), save/load, HUD + minimap fit at 1280×720 and 1920×1080, options pause/apply/persist and minimap camera
-  control, controls (drag box, Shift waypoints, Ctrl menu, rebound key), no console errors. The suite serves on a dedicated port (4317, `strictPort`, never reusing another server).
-- Headless Chromium uses software GL; there the dusk lighting and soft fog are the main per-frame costs (≈ 4.7 FPS
-  with both, ≈ 16 FPS without, under the same machine load). Real-GPU frame budget is block 6 work.
-- Performance (Node, combat run, 8 survivors + up to 30 live infected): p50 0.85 ms, **p95 7.2 ms/tick** (spec target < 10 ms).
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **102/102** ✓ (plus the opt-in balance report).
+- `pnpm e2e`: **11/11** Playwright ✓ — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
+  at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
+  installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
+  serves on a dedicated port (4317, `strictPort`, never reusing another server).
+- **Determinism of the optimisation**: final-state hashes of five complete scripted missions (three maps, four routes)
+  are bit-identical before and after block 6.
+- **Tick performance** (Node, combat route, 8 survivors + up to 30 live infected), same machine, both measured with
+  load average ≈ 10 from other apps: p95 **30 ms → 9.3–10.3 ms**, p50 3.3 → 2.2–2.4 ms; per-system average 7.1 → 3.0 ms.
+  An idle machine was not available today; earlier idle runs were ~3× faster than loaded ones.
+- **Balance** (scripted routes, 10 seeds each): [`docs/testing/balance.md`](docs/testing/balance.md) — 70–100 % wins;
+  every loss is the escorted person dying, which a human protects better than a fixed script.
+- **Frame rate**: headless Chromium only has software GL (SwiftShader, ≈ 5 FPS on Alta, ≈ 8 FPS on Baixa — not
+  representative). The in-app browser could not open a WebGL context while hidden, so real-GPU FPS is unmeasured:
+  use Opções → Vídeo → "Mostrar FPS" on the target machine.
 - Screenshots: [`docs/testing/screenshots/`](docs/testing/screenshots/).
 - Test ↔ requirement map: [`docs/testing/README.md`](docs/testing/README.md).
 

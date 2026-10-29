@@ -1,7 +1,7 @@
 import { AudioEngine } from '../audio/AudioEngine';
 import { ACTION_LABELS, KeyBindings, keyLabel, type Action } from '../input/KeyBindings';
 import { uiRoot } from './dom';
-import { Settings, type LightingMode } from './SaveStore';
+import { Settings, type LightingMode, type Quality } from './SaveStore';
 
 /** Mouse controls are fixed; keyboard shortcuts are rebindable below them. */
 const MOUSE: [string, string][] = [
@@ -80,6 +80,9 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     <section data-pane="video" hidden>
       <label class="opt"><span>Iluminação<small>Vale a partir da próxima missão</small></span>
         <select data-opt="lighting"><option value="dusk">Crepúsculo</option><option value="day">Dia</option></select></label>
+      <label class="opt"><span>Qualidade gráfica<small>Baixa desliga a luz dinâmica — vale a partir da próxima missão</small></span>
+        <select data-opt="quality"><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label>
+      ${check('showFps', 'Mostrar FPS', Settings.showFps)}
       ${check('blood', 'Sangue', Settings.blood)}
       <label class="opt"><span>Escala da interface</span>
         <select data-opt="hudScale"><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></label>
@@ -102,6 +105,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
   const q = <T extends HTMLElement>(sel: string) => m.querySelector(sel) as T;
   q<HTMLSelectElement>('[data-opt=lighting]').value = Settings.lighting;
   q<HTMLSelectElement>('[data-opt=hudScale]').value = String(Settings.hudScale);
+  q<HTMLSelectElement>('[data-opt=quality]').value = Settings.quality;
 
   const close = () => {
     m.remove();
@@ -193,12 +197,14 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       if (key === 'contrast') Settings.contrast = v;
       if (key === 'shake') Settings.shake = v;
       if (key === 'tips') Settings.tips = v;
+      if (key === 'showFps') Settings.showFps = v;
       audio.applySettings();
       audio.uiClick();
       return;
     }
     if (key === 'lighting') Settings.lighting = el.value as LightingMode;
     if (key === 'hudScale') Settings.hudScale = Number(el.value);
+    if (key === 'quality') Settings.quality = el.value as Quality;
   });
   uiRoot().appendChild(m);
   q<HTMLButtonElement>('[data-tab=audio]').focus();

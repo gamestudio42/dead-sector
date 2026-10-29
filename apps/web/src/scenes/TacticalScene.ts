@@ -147,7 +147,13 @@ export class TacticalScene extends Phaser.Scene {
     const world = this.sim.world;
     this.mapR = new MapRenderer(this, world);
     this.fogR = new FogRenderer(this, world);
-    this.lightR = new LightingRenderer(this, world, this.mapR.burning, Settings.lighting);
+    this.lightR = new LightingRenderer(
+      this,
+      world,
+      this.mapR.burning,
+      Settings.lighting,
+      Settings.quality,
+    );
     this.entR = new EntityRenderer(this, world);
     this.fxR = new EffectsRenderer(this, world, this.lightR);
     this.barkR = new BarkRenderer(this);
@@ -628,7 +634,9 @@ export class TacticalScene extends Phaser.Scene {
         speed: this.clock.speed,
         debugText: this.dbgR
           ? `FPS ${this.game.loop.actualFps.toFixed(0)} · tick ${st.tick} · ${this.tickMsAvg.toFixed(2)} ms/tick\nzumbis vivos ${st.zombies.filter((z) => z.alive).length} · reforços ${st.mission.reinforcementsSpawned}/${st.mission.reinforcementBudget}\nseed ${st.seed} · contatos ${st.contacts.length}`
-          : null,
+          : Settings.showFps
+            ? `FPS ${this.game.loop.actualFps.toFixed(0)} · ${this.tickMsAvg.toFixed(1)} ms/tick`
+            : null,
       },
       time,
     );

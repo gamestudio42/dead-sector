@@ -35,3 +35,12 @@ function boot(): void {
 }
 
 boot();
+
+// Installed app: cache the static bundle for offline play (production builds only).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* offline support is optional */
+    });
+  });
+}

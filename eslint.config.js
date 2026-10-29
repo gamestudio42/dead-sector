@@ -19,6 +19,13 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
   {
+    // service worker: runs in the worker global scope
+    files: ['apps/web/public/sw.js'],
+    languageOptions: {
+      globals: { self: 'readonly', caches: 'readonly', fetch: 'readonly', URL: 'readonly' },
+    },
+  },
+  {
     files: ['scripts/**/*.mjs'],
     languageOptions: { globals: { URL: 'readonly', console: 'readonly', process: 'readonly' } },
   },

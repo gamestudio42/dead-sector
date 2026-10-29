@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { GameState, Vec2, World } from '@dead-sector/sim';
-import type { LightingMode } from '../ui/SaveStore';
+import type { LightingMode, Quality } from '../ui/SaveStore';
 import { CELL, DEPTH } from './constants';
 
 /** Lighting buffer resolution relative to world pixels (lights are soft, so 1/4 is plenty). */
@@ -29,23 +29,39 @@ export class LightingRenderer {
   private glows: Phaser.GameObjects.Image[] = [];
   private flashes: Flash[] = [];
   private smoke: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
+  private frame = 0;
 
   constructor(
     private scene: Phaser.Scene,
     private world: World,
     private burning: Vec2[],
     mode: LightingMode,
+    private quality: Quality = 'high',
   ) {
     this.light = scene.make.image({ key: 'fx-light', add: false });
     this.cone = scene.make.image({ key: 'fx-cone', add: false });
-    if (mode === 'dusk' || world.mission.isNight) {
+    const dark = mode === 'dusk' || world.mission.isNight;
+    if (dark && quality === 'low') {
+      // no dynamic light on low quality: a flat grade keeps the mood at almost no cost
+      scene.add
+        .rectangle(
+          0,
+          0,
+          world.width * CELL,
+          world.height * CELL,
+          0x05070c,
+          world.mission.isNight ? 0.45 : 0.25,
+        )
+        .setOrigin(0, 0)
+        .setDepth(DEPTH.lighting);
+    } else if (dark) {
       this.rt = scene.add
         .renderTexture(0, 0, (world.width * CELL) / RES, (world.height * CELL) / RES)
         .setOrigin(0, 0)
         .setScale(RES)
         .setDepth(DEPTH.lighting);
     }
-    for (const b of burning) {
+    for (const b of quality === 'low' ? [] : burning) {
       this.glows.push(
         scene.add
           .image(b.x * CELL, b.y * CELL, 'fx-glow')
@@ -97,6 +113,9 @@ export class LightingRenderer {
     this.flashes = this.flashes.filter((f) => now - f.born < f.ttl);
     const rt = this.rt;
     if (!rt) return;
+    // medium quality redraws the light map every other frame (flashes still show)
+    this.frame += 1;
+    if (this.quality === 'medium' && this.frame % 2 === 1 && this.flashes.length === 0) return;
 
     rt.clear();
     // night missions are much darker: only lanterns, flashes and fires cut through

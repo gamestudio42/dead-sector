@@ -4,6 +4,12 @@ import { BootScene } from './scenes/BootScene';
 import { DebriefScene } from './scenes/DebriefScene';
 import { MenuScene } from './scenes/MenuScene';
 import { TacticalScene } from './scenes/TacticalScene';
+import { AudioEngine } from './audio/AudioEngine';
+
+// Browsers only allow audio after a user gesture; unlock on the first one.
+const unlockAudio = (): void => AudioEngine.get().unlock();
+window.addEventListener('pointerdown', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
 
 // Booting WebGL while the viewport is 0×0 (hidden tab/pane) fails with an incomplete framebuffer,
 // so wait until the page has a real size.

@@ -36,6 +36,7 @@ First Playwright run: `pnpm --filter @dead-sector/game exec playwright install c
 | `F`                                           | fire discipline: return fire → weapons free → hold fire              |
 | `Space` / `Tab` / `Esc`                       | pause (orders given while paused run on resume) / 1×–2× / pause menu |
 | Arrows, mouse wheel, middle drag              | camera                                                               |
+| `M`                                           | mute / unmute (volume, blood and lighting in the main menu)          |
 | `` ` `` or `?debug=1`                         | debug overlay                                                        |
 
 Mission: enter the pharmacy perimeter → collect medicine (5 s) → rescue the civilian (3 s, she then follows on foot) →
@@ -68,9 +69,21 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   debriefing (duration, extracted, dead, wounded, ammo, total noise, supplies, outcome), menu, quicksave/load
   (IndexedDB, versioned + validated), replay/state hash, E2E.
 
+- **Presentation pass (block 1 of the quality roadmap)**: procedurally painted terrain at 2× (asphalt cracks,
+  curbs, sidewalk slabs, grass, rubble, checkered interiors, brick walls with height and soft drop shadows, cars,
+  puddles, litter, per-pixel weathering and grain); original top-down character sprites generated at boot (per-template
+  outfits and weapons, 8-frame walk cycle, attack and corpse frames) with facing smoothing, hit flash, fade-in/out and
+  death fall with blood pool; soft fog of war (eased, upscaled and blurred); dusk lighting (survivor lanterns and
+  flashlight cones, muzzle flashes, radio beacon, smouldering wrecks with smoke); particles (dust, sparks, ichor/blood,
+  door debris), ground blood decals, camera shake, damage vignette, order markers; procedural WebAudio sound (weapon
+  shots with reverb, groans/shrieks, footsteps per surface, doors, reloads, injuries, radio, stingers, wind bed and an
+  adaptive tension drone), spatialized by camera and muffled outside the field of view; PT-BR survivor barks.
+  Everything is presentation-only: cues and barks are derived from sim events and covered by tests that check they
+  never change the state.
+
 ## Verification evidence (this build)
 
-- `pnpm check`: typecheck ✓, ESLint ✓, **47/47** Vitest ✓, production build ✓.
+- `pnpm check`: typecheck ✓, ESLint ✓, **54/54** Vitest ✓, production build ✓.
 - `pnpm e2e`: **5/5** Playwright ✓ — full critical flow to debriefing, stealth run without shots, save/load,
   HUD fits at 1280×720 and 1920×1080, no console errors.
 - Performance (Node, combat run, 8 survivors + up to 30 live infected): p50 0.85 ms, **p95 7.2 ms/tick** (spec target < 10 ms).
@@ -79,8 +92,10 @@ Two proven ways to win on the canonical seed (automated tests replay both):
 
 ## Known issues / limitations (honest list)
 
-- Art is **placeholder** vector shapes drawn in code; no sprites/animations yet. **No audio** yet (all sounds are
-  simulated events with visual rings and log captions).
+- Art and audio are **original but procedural** (drawn/synthesized in code). Characters are small top-down
+  silhouettes with a simple walk cycle; a hand-made or licensed (CC0) sprite set would raise fidelity further. No music
+  score beyond the adaptive drone.
+- Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
 - No minimap (spec §13.1) and no drag-box selection; shift-queued waypoints not implemented.
 - Infection is tracked and reported (HUD, debriefing) but never turns survivors in battle (as the MVP spec allows).
 - Heavy/screamer infected, night lighting and multiple maps are later phases.
@@ -88,8 +103,9 @@ Two proven ways to win on the canonical seed (automated tests replay both):
 
 ## Next tasks
 
-See [`TASKS.md`](TASKS.md). Short version: minimap, original sprites + audio, more ordering UX (waypoints, drag
-select), heavy infected and barricade building, more missions/maps (Phase 5).
+See [`TASKS.md`](TASKS.md). Short version: premium HUD + minimap + options/accessibility (block 2), full controls
+(waypoints, drag select, context menu), tactical depth (barricades, turning infected, heavy/screamer, hordes), more
+missions/maps (Phase 5).
 
 ## Layout
 

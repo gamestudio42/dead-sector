@@ -16,18 +16,23 @@ import {
   type PlanStep,
   type Vec2,
 } from '@dead-sector/sim';
+import { AudioEngine } from '../audio/AudioEngine';
+import { cuesForEvents, threatLevel } from '../audio/cues';
 import { CameraController } from '../input/CameraController';
 import { commandForRightClick } from '../input/OrderController';
 import { squadAt } from '../input/SelectionController';
+import { barksForEvents } from '../presentation/barks';
+import { BarkRenderer } from '../render/BarkRenderer';
 import { CELL } from '../render/constants';
 import { DebugRenderer } from '../render/DebugRenderer';
 import { EffectsRenderer } from '../render/EffectsRenderer';
 import { EntityRenderer } from '../render/EntityRenderer';
 import { FogRenderer } from '../render/FogRenderer';
+import { LightingRenderer } from '../render/LightingRenderer';
 import { MapRenderer } from '../render/MapRenderer';
 import { clearUi, uiRoot } from '../ui/dom';
 import { Hud, POLICY_CYCLE } from '../ui/Hud';
-import { SaveStore } from '../ui/SaveStore';
+import { SaveStore, Settings } from '../ui/SaveStore';
 import { MISSION_ID, QUICKSAVE } from './MenuScene';
 
 const ORDER_KEYS: Record<string, OrderType> = { h: 'hold', t: 'hide', r: 'retreat', g: 'regroup' };
@@ -41,6 +46,10 @@ export class TacticalScene extends Phaser.Scene {
   private fogR!: FogRenderer;
   private entR!: EntityRenderer;
   private fxR!: EffectsRenderer;
+  private lightR!: LightingRenderer;
+  private barkR!: BarkRenderer;
+  private audio = AudioEngine.get();
+  private nextTensionAt = 0;
   private dbgR: DebugRenderer | null = null;
   private hud!: Hud;
   private selected: string | null = 'alfa';
@@ -79,8 +88,12 @@ export class TacticalScene extends Phaser.Scene {
     const world = this.sim.world;
     this.mapR = new MapRenderer(this, world);
     this.fogR = new FogRenderer(this, world);
+    this.lightR = new LightingRenderer(this, world, this.mapR.burning, Settings.lighting);
     this.entR = new EntityRenderer(this, world);
-    this.fxR = new EffectsRenderer(this, world);
+    this.fxR = new EffectsRenderer(this, world, this.lightR);
+    this.barkR = new BarkRenderer(this);
+    this.audio.unlock();
+    this.audio.startAmbience();
     if (new URLSearchParams(location.search).get('debug') === '1') this.toggleDebug();
     this.camCtl = new CameraController(this, world.width, world.height);
     const alfa = this.sim.state.survivors.find((s) => s.squadId === 'alfa');
@@ -116,6 +129,9 @@ export class TacticalScene extends Phaser.Scene {
 
   private teardown(): void {
     window.removeEventListener('keydown', this.onKey);
+    this.audio.stopAmbience();
+    this.fxR.destroy();
+    this.lightR.destroy();
     this.camCtl.destroy();
     this.hud.destroy();
     this.pauseMenu?.remove();
@@ -227,6 +243,10 @@ export class TacticalScene extends Phaser.Scene {
     if (e.key === ' ') return this.togglePause();
     if (e.key === 'Tab') return this.toggleSpeed();
     if (e.key === '`') return this.toggleDebug();
+    if (k === 'm') {
+      this.audio.unlock();
+      return this.hud.toast(this.audio.toggleMute() ? 'Som desligado (M)' : 'Som ligado (M)');
+    }
     if (['1', '2', '3', '4'].includes(e.key)) {
       const sq = this.sim.state.squads[Number(e.key) - 1];
       if (sq) this.select(sq.id);
@@ -255,7 +275,11 @@ export class TacticalScene extends Phaser.Scene {
       const key = e.type === 'ZOMBIE_ALERTED' ? `ZOMBIE_ALERTED:${e.payload['cause']}` : e.type;
       this.eventCounts[key] = (this.eventCounts[key] ?? 0) + 1;
     }
-    this.fxR.ingest(events, this.sim.state, this.time.now);
+    const now = this.time.now;
+    this.fxR.ingest(events, this.sim.state, now);
+    this.entR.ingest(events, now);
+    for (const cue of cuesForEvents(events, this.sim.state, this.sim.world)) this.audio.play(cue);
+    this.barkR.push(barksForEvents(events, this.sim.state), now);
     this.hud.ingest(events, this.sim.state, this.sim.world);
     if (this.dbgR && this.sim.tick % 100 === 0)
       console.debug(`[dead-sector] tick ${this.sim.tick} hash ${hashState(this.sim.state)}`);
@@ -280,9 +304,18 @@ export class TacticalScene extends Phaser.Scene {
       return p ? { x: p.x + (cur.x - p.x) * alpha, y: p.y + (cur.y - p.y) * alpha } : cur;
     };
     this.mapR.update(this.sim.state);
-    this.fogR.update(this.sim.state);
+    this.fogR.update(this.sim.state, delta);
     this.entR.draw(this.sim.state, lookup, this.selected, !!this.dbgR, time);
+    this.lightR.update(this.sim.state, time, (cb) => this.entR.forEachSurvivorView(cb));
     this.fxR.draw(time);
+    this.barkR.draw(this.sim.state, lookup, time);
+    const view = this.cameras.main.worldView;
+    this.audio.setListener(view.centerX / CELL, view.centerY / CELL);
+    if (time >= this.nextTensionAt) {
+      this.nextTensionAt = time + 400;
+      this.audio.setTension(this.sim.ended ? 0 : threatLevel(this.sim.state));
+      this.audio.setRadio(this.sim.state.mission.extractionActive && !this.sim.ended);
+    }
     this.dbgR?.draw(this.sim.state);
     const st = this.sim.state;
     this.hud.update(

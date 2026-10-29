@@ -30,4 +30,22 @@ export const COLORS = {
   extraction: 0x7fbf6a,
   perimeter: 0xc9a74a,
 };
+/** Render order, back to front. Lighting and fog sit above actors; bright effects and labels above fog. */
+export const DEPTH = {
+  map: 0,
+  doors: 1,
+  decals: 2,
+  areas: 4,
+  shadows: 6,
+  corpses: 6.5,
+  groundOverlay: 7,
+  actors: 10,
+  particles: 12,
+  lighting: 14,
+  fog: 15,
+  glow: 16,
+  topOverlay: 18,
+  debug: 19,
+  labels: 20,
+} as const;
 export const SQUAD_COLORS: Record<string, number> = { alfa: COLORS.alfa, bravo: COLORS.bravo };

@@ -42,13 +42,58 @@ export const SaveStore = {
   },
 };
 
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(`dead-sector:${key}`);
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, value: string): void {
+  try {
+    localStorage.setItem(`dead-sector:${key}`, value);
+  } catch {
+    /* settings are a convenience; private mode simply keeps defaults */
+  }
+}
+
+export type LightingMode = 'dusk' | 'day';
+
 export const Settings = {
   get hudScale(): number {
-    const v = Number(localStorage.getItem('dead-sector:hudScale') ?? '1');
+    const v = Number(readStored('hudScale') ?? '1');
     return v >= 1 && v <= 1.5 ? v : 1;
   },
   set hudScale(v: number) {
-    localStorage.setItem('dead-sector:hudScale', String(v));
+    writeStored('hudScale', String(v));
     document.documentElement.style.setProperty('--hud-scale', String(v));
+  },
+  /** Master volume 0..1. */
+  get volume(): number {
+    const v = Number(readStored('volume') ?? '0.8');
+    return Number.isFinite(v) && v >= 0 && v <= 1 ? v : 0.8;
+  },
+  set volume(v: number) {
+    writeStored('volume', String(Math.max(0, Math.min(1, v))));
+  },
+  get muted(): boolean {
+    return readStored('muted') === '1';
+  },
+  set muted(v: boolean) {
+    writeStored('muted', v ? '1' : '0');
+  },
+  /** Stylized blood decals and particles (spec 14: configurable intensity). */
+  get blood(): boolean {
+    return readStored('blood') !== '0';
+  },
+  set blood(v: boolean) {
+    writeStored('blood', v ? '1' : '0');
+  },
+  get lighting(): LightingMode {
+    return readStored('lighting') === 'day' ? 'day' : 'dusk';
+  },
+  set lighting(v: LightingMode) {
+    writeStored('lighting', v);
   },
 };

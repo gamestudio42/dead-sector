@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { loadContent } from '@dead-sector/content';
 import { clearUi, uiRoot } from '../ui/dom';
-import { SaveStore, Settings } from '../ui/SaveStore';
+import { AudioEngine } from '../audio/AudioEngine';
+import { SaveStore, Settings, type LightingMode } from '../ui/SaveStore';
 
 export const MISSION_ID = 'a-ultima-farmacia';
 export const QUICKSAVE = 'quicksave';
@@ -36,6 +37,12 @@ export class MenuScene extends Phaser.Scene {
           <span style="margin-left:auto">Escala do HUD</span>
           <select data-el="scale"><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option></select>
         </div>
+        <div class="settings-row small">
+          <label>Volume <input type="range" min="0" max="100" step="5" data-el="volume" /></label>
+          <label><input type="checkbox" data-el="muted" /> Sem som</label>
+          <label><input type="checkbox" data-el="blood" /> Sangue</label>
+          <label>Iluminação <select data-el="lighting"><option value="dusk">Crepúsculo</option><option value="day">Dia</option></select></label>
+        </div>
         <div data-el="controls" style="display:none; margin-top:14px">
           <div class="controls-grid">
             <span class="kbd">Clique esq.</span><span>Selecionar esquadrão (ou cartão à esquerda)</span>
@@ -49,6 +56,7 @@ export class MenuScene extends Phaser.Scene {
             <span class="kbd">Tab</span><span>Velocidade 1× / 2×</span>
             <span class="kbd">Setas · roda</span><span>Mover câmera · zoom (botão do meio arrasta)</span>
             <span class="kbd">Esc</span><span>Menu de pausa</span>
+            <span class="kbd">M</span><span>Ligar/desligar som</span>
             <span class="kbd">\`</span><span>Alternar sobreposição de depuração (ou ?debug=1)</span>
           </div>
           <p class="small">Tiros são ouvidos longe e atraem reforços pelas entradas do mapa. Furtividade e portas fechadas reduzem o ruído.</p>
@@ -60,6 +68,24 @@ export class MenuScene extends Phaser.Scene {
     scale.value = String(Settings.hudScale);
     document.documentElement.style.setProperty('--hud-scale', String(Settings.hudScale));
     scale.onchange = () => (Settings.hudScale = Number(scale.value));
+    const volume = q<HTMLInputElement>('[data-el=volume]');
+    volume.value = String(Math.round(Settings.volume * 100));
+    volume.oninput = () => {
+      Settings.volume = Number(volume.value) / 100;
+      AudioEngine.get().applySettings();
+    };
+    const muted = q<HTMLInputElement>('[data-el=muted]');
+    muted.checked = Settings.muted;
+    muted.onchange = () => {
+      Settings.muted = muted.checked;
+      AudioEngine.get().applySettings();
+    };
+    const blood = q<HTMLInputElement>('[data-el=blood]');
+    blood.checked = Settings.blood;
+    blood.onchange = () => (Settings.blood = blood.checked);
+    const lighting = q<HTMLSelectElement>('[data-el=lighting]');
+    lighting.value = Settings.lighting;
+    lighting.onchange = () => (Settings.lighting = lighting.value as LightingMode);
     const setSeed = (s: number, canon: boolean) => {
       seed = s;
       q('[data-el=seed]').textContent = String(s);

@@ -14,7 +14,7 @@ import { SeededRng, seedToRngState } from '../engine/SeededRng';
 import { blocksMovement } from '../spatial/Grid';
 import { cellCenter, dist } from '../spatial/vec';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const SURVIVOR_RADIUS = 0.25;
 export const ZOMBIE_RADIUS = 0.28;
 
@@ -279,6 +279,7 @@ export function createMissionState(
       order: null,
       firePolicy: sq.firePolicy,
       moveMode: sq.moveMode,
+      waypoints: [],
       spawn: { ...sq.spawn },
     };
     sq.memberIds.forEach((memberId, i) => {

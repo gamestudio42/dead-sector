@@ -3,8 +3,15 @@ import { SCHEMA_VERSION } from '../mission/createMission';
 
 type Migration = (state: Record<string, unknown>) => Record<string, unknown>;
 
-/** Ordered migrations keyed by the version they upgrade FROM. None needed yet (v1 is the first). */
-const MIGRATIONS: Record<number, Migration> = {};
+/** Ordered migrations keyed by the version they upgrade FROM. */
+const MIGRATIONS: Record<number, Migration> = {
+  // v2: squads gained a queue of Shift-click waypoints
+  1: (state) => {
+    for (const sq of (state['squads'] as Record<string, unknown>[] | undefined) ?? [])
+      if (!Array.isArray(sq['waypoints'])) sq['waypoints'] = [];
+    return state;
+  },
+};
 
 export class SaveVersionError extends Error {}
 

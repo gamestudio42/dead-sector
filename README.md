@@ -25,21 +25,25 @@ First Playwright run: `pnpm --filter @dead-sector/game exec playwright install c
 
 ## How to play
 
-| Input                                         | Action                                                               |
-| --------------------------------------------- | -------------------------------------------------------------------- |
-| Left click / `1`–`4` / squad card             | select squad (Alfa, Bravo)                                           |
-| Right click on ground                         | move in the squad's current mode                                     |
-| Right click on a visible infected             | attack order                                                         |
-| Right click on door, cabinet, civilian, radio | interact (open/close/force door, collect, rescue, call extraction)   |
-| `Q` / `W` / `E`                               | sneak / move / sprint (re-issues the current move)                   |
-| `H` / `T` / `R` / `G`                         | hold / hide / retreat / regroup on leader                            |
-| `F`                                           | fire discipline: return fire → weapons free → hold fire              |
-| `Space` / `Tab` / `Esc`                       | pause (orders given while paused run on resume) / 1×–2× / pause menu |
-| `F5` / `F9`                                   | quicksave / quickload                                                |
-| Minimap: left click / right click             | move camera / send the selected squad there                          |
-| Arrows, mouse wheel, middle drag              | camera                                                               |
-| `M`                                           | mute / unmute (all settings in **Opções**: menu or ⚙ in the HUD)     |
-| `` ` `` or `?debug=1`                         | debug overlay                                                        |
+| Input                                         | Action                                                                  |
+| --------------------------------------------- | ----------------------------------------------------------------------- |
+| Left click / `1`–`4` / squad card             | select squad (Alfa, Bravo); with `Shift`: add/remove                    |
+| Left drag                                     | box-select every squad inside (`Shift`: add)                            |
+| Right click on ground                         | move in the squad's current mode (several squads line up side by side)  |
+| `Shift` + right click                         | queue a waypoint after the current order (up to 8, numbered on map)     |
+| `Ctrl` + right click                          | order menu at that spot: move/sneak/sprint, go and hold, go and hide…   |
+| Right click on a visible infected             | attack order                                                            |
+| Right click on door, cabinet, civilian, radio | interact (open/close/force door, collect, rescue, call extraction)      |
+| `Q` / `W` / `E`                               | sneak / move / sprint (re-issues the current move)                      |
+| `H` / `T` / `R` / `G`                         | hold / hide / retreat / regroup on leader                               |
+| `F`                                           | fire discipline: return fire → weapons free → hold fire                 |
+| `Space` / `Tab` / `Esc`                       | pause (orders given while paused run on resume) / 1×–2× / pause menu    |
+| `F5` / `F9`                                   | quicksave / quickload                                                   |
+| Minimap: left click / right click             | move camera / send the selected squads there                            |
+| Any key above                                 | rebindable in **Opções → Controles** (physical keys, swaps on conflict) |
+| Arrows, mouse wheel, middle drag              | camera                                                                  |
+| `M`                                           | mute / unmute (all settings in **Opções**: menu or ⚙ in the HUD)        |
+| `` ` `` or `?debug=1`                         | debug overlay                                                           |
 
 Mission: enter the pharmacy perimeter → collect medicine (5 s) → rescue the civilian (3 s, she then follows on foot) →
 activate the radio in the south parking lot → hold the extraction zone 20 s with at least one survivor **and** the
@@ -91,14 +95,18 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   contrast, camera shake/flash toggle, controls list); debriefing with S–F grade and reasons, stat tiles, timeline of
   key moments and a route map with each survivor's path and losses.
 
+- **Controls pass (block 3)**: multi-squad selection (click, Shift, number keys, drag box); orders go to every
+  selected squad, moves spread side by side; Shift-click waypoints (simulation-side queue, saved, replayable, cleared
+  by a new order or a blocked leg, save schema v2 with migration from v1); Ctrl + right-click context menu with the
+  consequence of each option; rebindable keyboard (physical keys, conflict swap, reset) shown live on the HUD buttons.
+
 ## Verification evidence (this build)
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **59/60** — the one failure is the lenient
-  performance gate, run while the dev machine was saturated by other apps (load average ≈ 22 on 16 cores): p50 4.0 ms /
-  p95 31 ms vs 0.85 / 7.2 ms for the same, unchanged simulation code on an idle machine. Re-run on an idle machine.
-- `pnpm e2e`: **6/6** Playwright ✓ — full critical flow (menu → briefing → mission → graded debriefing), stealth run
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **78/78** ✓ (the performance gate passed again at
+  p95 11 ms with load average ≈ 14; on an idle machine it measured 7.2 ms).
+- `pnpm e2e`: **7/7** Playwright ✓ — full critical flow (menu → briefing → mission → graded debriefing), stealth run
   without shots, save/load, HUD + minimap fit at 1280×720 and 1920×1080, options pause/apply/persist and minimap camera
-  control, no console errors. The suite serves on a dedicated port (4317, `strictPort`, never reusing another server).
+  control, controls (drag box, Shift waypoints, Ctrl menu, rebound key), no console errors. The suite serves on a dedicated port (4317, `strictPort`, never reusing another server).
 - Headless Chromium uses software GL; there the dusk lighting and soft fog are the main per-frame costs (≈ 4.7 FPS
   with both, ≈ 16 FPS without, under the same machine load). Real-GPU frame budget is block 6 work.
 - Performance (Node, combat run, 8 survivors + up to 30 live infected): p50 0.85 ms, **p95 7.2 ms/tick** (spec target < 10 ms).
@@ -111,7 +119,6 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   silhouettes with a simple walk cycle; a hand-made or licensed (CC0) sprite set would raise fidelity further. No music
   score beyond the adaptive drone.
 - Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
-- No drag-box selection, shift-queued waypoints, context menu or key rebinding yet (block 3).
 - Route map and timeline are not saved: a mission continued from a quicksave shows only what happened after loading.
 - Infection is tracked and reported (HUD, debriefing) but never turns survivors in battle (as the MVP spec allows).
 - Heavy/screamer infected, night lighting and multiple maps are later phases.

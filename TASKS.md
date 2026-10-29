@@ -6,7 +6,6 @@
 
 ## NEXT
 
-- Block 3 — controls: shift-queued waypoints, drag-box selection, right-click context menu, rebindable keys.
 - Block 4 — tactical depth: barricades and breakable windows with HP, infection that turns survivors, heavy and
   screamer infected, roaming hordes and an escalating alarm.
 - Block 5 — content: contextual tutorial, two more maps, three linked missions with persistent losses (Phase 5).
@@ -18,6 +17,9 @@
 - (none)
 
 ## DONE
+
+- Block 3 — controls: multi-squad selection (Shift, drag box), Shift-click waypoint queue in the simulation (save v2
+  - migration), Ctrl + right-click order menu, rebindable physical keys with conflict swap.
 
 - Block 2 — premium interface: title screen with live backdrop, briefing (map, objectives, intel, roster, seed),
   compact collapsible HUD with tooltips, minimap, options (audio buses, captions, high contrast, reduced motion,

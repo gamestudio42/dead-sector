@@ -284,7 +284,8 @@ export type SimEventType =
   | 'EXTRACTION_STARTED'
   | 'EXTRACTION_READY'
   | 'REINFORCEMENT_SPAWNED'
-  | 'MISSION_ENDED';
+  | 'MISSION_ENDED'
+  | 'ORDER_QUEUED';
 
 export interface SimEvent<T = Record<string, unknown>> {
   id: string;
@@ -302,6 +303,14 @@ export interface Squad {
   firePolicy: FirePolicy;
   moveMode: MoveMode;
   spawn: Vec2;
+  /** Orders queued with Shift; the next one starts when the current order completes. */
+  waypoints: QueuedOrder[];
+}
+
+export interface QueuedOrder {
+  type: OrderType;
+  targetPosition?: Vec2;
+  targetEntityId?: EntityId;
 }
 
 export interface FogState {
@@ -339,7 +348,13 @@ export type GameCommand =
       scheduledTick: Tick;
       type: 'issueOrder';
       squadId: SquadId;
-      payload: { type: OrderType; targetPosition?: Vec2; targetEntityId?: EntityId };
+      payload: {
+        type: OrderType;
+        targetPosition?: Vec2;
+        targetEntityId?: EntityId;
+        /** Append after the current order instead of replacing it (Shift-click). */
+        queue?: boolean;
+      };
     }
   | {
       id: string;

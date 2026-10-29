@@ -6,6 +6,7 @@ type Hooks = {
   tick: () => number;
   paused: () => boolean;
   selected: () => string | null;
+  selection: () => string[];
   worldToScreen: (x: number, y: number) => { x: number; y: number };
   centerOn: (x: number, y: number) => void;
   fastForward: (n: number) => number;
@@ -208,5 +209,74 @@ test('options pause the mission, apply settings and persist panel layout', async
   });
   expect(after.x).toBeGreaterThan(before.x);
   expect(after.y).toBeGreaterThan(before.y);
+  expect(errors).toEqual([]);
+});
+
+test('controls: drag-select, Shift waypoints, Ctrl context menu and rebound keys', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await startMission(page);
+  await page.keyboard.press('Space'); // pause: orders queue up while paused
+  await expect(page.getByTestId('paused-flag')).toHaveText('PAUSADO');
+
+  // drag a box around both squads (spawned at y≈5.5, x 6–17), starting clear of the left HUD
+  await hook(page, (h) => h.centerOn(12, 7));
+  await page.waitForTimeout(150);
+  const a = await hook(page, (h) => h.worldToScreen(5.4, 3));
+  const b = await hook(page, (h) => h.worldToScreen(19, 9));
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 });
+  await page.mouse.move(b.x, b.y, { steps: 4 });
+  await page.mouse.up();
+  expect(await page.evaluate(() => (window as any).__DEAD_SECTOR__.selection())).toEqual([
+    'alfa',
+    'bravo',
+  ]);
+  await expect(page.getByTestId('squad-bravo')).toHaveClass(/selected/);
+
+  // plain click narrows the selection back to one squad
+  await page.keyboard.press('1');
+  expect(await page.evaluate(() => (window as any).__DEAD_SECTOR__.selection())).toEqual(['alfa']);
+
+  // move, then Shift + right click adds a waypoint after it
+  const p1 = await hook(page, (h) => h.worldToScreen(20.5, 8.5));
+  await page.mouse.click(p1.x, p1.y, { button: 'right' });
+  const p2 = await hook(page, (h) => h.worldToScreen(25.5, 9.5));
+  await page.keyboard.down('Shift');
+  await page.mouse.click(p2.x, p2.y, { button: 'right' });
+  await page.keyboard.up('Shift');
+  await page.keyboard.press('Space');
+  await expect.poll(() => hook(page, (h) => h.state().squads[0].waypoints.length)).toBe(1);
+  await expect(page.getByTestId('queue-alfa')).toHaveText('+1 na fila');
+  await page.keyboard.press('Space');
+
+  // Ctrl + right click opens the order menu; choose sneak
+  const p3 = await hook(page, (h) => h.worldToScreen(10.5, 10.5));
+  await page.keyboard.down('Control');
+  await page.mouse.click(p3.x, p3.y, { button: 'right' });
+  await page.keyboard.up('Control');
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.getByRole('menuitem', { name: /Furtivo até aqui/ }).click();
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+  await page.keyboard.press('Space');
+  await expect.poll(() => hook(page, (h) => h.state().squads[0].order?.type)).toBe('sneak');
+  // a normal order dropped the old queue
+  expect(await hook(page, (h) => h.state().squads[0].waypoints.length)).toBe(0);
+  await page.keyboard.press('Space');
+
+  // rebind "hold" to J and use it
+  await page.getByTestId('btn-options').click();
+  await page.getByRole('button', { name: 'Controles' }).click();
+  await page.getByTestId('bind-hold').click();
+  await page.keyboard.press('j');
+  await expect(page.getByTestId('bind-hold')).toHaveText('J');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('options')).toHaveCount(0);
+  await page.keyboard.press('j');
+  await page.keyboard.press('Space');
+  await expect.poll(() => hook(page, (h) => h.state().squads[0].order?.type)).toBe('hold');
+  await page.screenshot({ path: `${SHOTS}/controls-1280x720.png` });
   expect(errors).toEqual([]);
 });

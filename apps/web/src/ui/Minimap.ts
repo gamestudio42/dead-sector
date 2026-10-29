@@ -101,7 +101,7 @@ export class Minimap {
     }
   }
 
-  draw(state: GameState, view: MinimapView, selectedSquadId: string | null, now: number): void {
+  draw(state: GameState, view: MinimapView, selectedIds: string[], now: number): void {
     if (!Settings.minimapOpen || now - this.lastDraw < 120) return;
     this.lastDraw = now;
     const g = this.g;
@@ -153,7 +153,7 @@ export class Minimap {
         g.stroke();
         continue;
       }
-      const r = s.squadId === selectedSquadId ? 3.2 : 2.5;
+      const r = s.squadId !== null && selectedIds.includes(s.squadId) ? 3.2 : 2.5;
       g.fillStyle = s.isObjectiveCivilian ? '#f0e6d6' : (SQUAD_CSS[s.squadId ?? ''] ?? '#fff');
       g.strokeStyle = '#0b0c0e';
       g.lineWidth = 1;

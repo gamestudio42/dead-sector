@@ -2,7 +2,7 @@ import { loadContent, type ContentBundle } from '@dead-sector/content';
 import type { GameCommand, GameCommandInput, GameState, SimEvent } from '../model/types';
 import { createWorld, type World } from '../model/World';
 import { createMissionState } from '../mission/createMission';
-import { applyCommands } from '../systems/Commands';
+import { advanceWaypoints, applyCommands } from '../systems/Commands';
 import { resolveCombat } from '../systems/Combat';
 import { resolveDamageAndInfection } from '../systems/Infection';
 import { moveActors } from '../systems/Movement';
@@ -41,6 +41,7 @@ export function advanceTick(
   updateInteractions(world, state, ctx);
   updatePsychology(world, state, ctx);
   evaluateObjectives(world, state);
+  advanceWaypoints(world, state, ctx);
   state.tick += 1;
 }
 

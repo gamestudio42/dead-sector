@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
 import { CELL } from '../render/constants';
+import { KeyBindings } from './KeyBindings';
 
-/** Arrow-key pan, mouse wheel zoom, middle-button drag. Camera is presentation only. */
+/** Rebindable key pan (arrows by default), mouse wheel zoom, middle-button drag. Presentation only. */
 export class CameraController {
   private keys: Record<string, boolean> = {};
   private dragging: { x: number; y: number } | null = null;
-  private onKeyDown = (e: KeyboardEvent) => (this.keys[e.key] = true);
-  private onKeyUp = (e: KeyboardEvent) => (this.keys[e.key] = false);
+  private onKeyDown = (e: KeyboardEvent) => (this.keys[e.code] = true);
+  private onKeyUp = (e: KeyboardEvent) => (this.keys[e.code] = false);
+  private onBlur = () => (this.keys = {});
 
   constructor(
     private scene: Phaser.Scene,
@@ -35,6 +37,7 @@ export class CameraController {
     });
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('blur', this.onBlur);
   }
 
   centerOn(x: number, y: number): void {
@@ -44,14 +47,15 @@ export class CameraController {
   update(deltaMs: number): void {
     const cam = this.scene.cameras.main;
     const speed = (700 / cam.zoom) * (deltaMs / 1000);
-    if (this.keys['ArrowLeft']) cam.scrollX -= speed;
-    if (this.keys['ArrowRight']) cam.scrollX += speed;
-    if (this.keys['ArrowUp']) cam.scrollY -= speed;
-    if (this.keys['ArrowDown']) cam.scrollY += speed;
+    if (this.keys[KeyBindings.get('panLeft')]) cam.scrollX -= speed;
+    if (this.keys[KeyBindings.get('panRight')]) cam.scrollX += speed;
+    if (this.keys[KeyBindings.get('panUp')]) cam.scrollY -= speed;
+    if (this.keys[KeyBindings.get('panDown')]) cam.scrollY += speed;
   }
 
   destroy(): void {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('blur', this.onBlur);
   }
 }

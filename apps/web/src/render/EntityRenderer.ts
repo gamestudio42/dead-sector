@@ -4,6 +4,7 @@ import {
   CABINET_ID,
   type GameState,
   type SimEvent,
+  type Squad,
   type Survivor,
   type Vec2,
   type World,
@@ -203,7 +204,7 @@ export class EntityRenderer {
   draw(
     state: GameState,
     pos: PositionLookup,
-    selectedSquadId: string | null,
+    selectedIds: string[],
     showAllZombies: boolean,
     timeMs: number,
   ): void {
@@ -308,28 +309,9 @@ export class EntityRenderer {
       }
     }
 
-    const selectedSquad = state.squads.find((s) => s.id === selectedSquadId);
-    if (selectedSquad?.order && selectedSquad.order.status === 'executing') {
-      const color = SQUAD_COLORS[selectedSquad.id] ?? 0xffffff;
-      for (const id of selectedSquad.memberIds) {
-        const s = state.survivors.find((m) => m.id === id);
-        if (!s || !s.alive || s.pathIndex >= s.path.length) continue;
-        const p = pos(s.id, s.position);
-        g.lineStyle(1, color, 0.45)
-          .beginPath()
-          .moveTo(p.x * CELL, p.y * CELL);
-        for (let i = s.pathIndex; i < s.path.length; i++) {
-          const w = s.path[i] as Vec2;
-          g.lineTo(w.x * CELL, w.y * CELL);
-        }
-        g.strokePath();
-        if (s.slot) g.lineStyle(1, 0xffffff, 0.5).strokeCircle(s.slot.x * CELL, s.slot.y * CELL, 3);
-      }
-      const t = selectedSquad.order.targetPosition;
-      if (t) {
-        const r = 7 + Math.sin(timeMs / 200) * 1.2;
-        g.lineStyle(1.5, color, 0.85).strokeCircle(t.x * CELL, t.y * CELL, r);
-      }
+    for (const sq of state.squads) {
+      if (!selectedIds.includes(sq.id)) continue;
+      this.drawPlan(g, top, state, sq, pos, timeMs);
     }
 
     for (const s of state.survivors) {
@@ -350,7 +332,7 @@ export class EntityRenderer {
         top,
         s,
         p,
-        s.squadId === selectedSquadId && s.squadId !== null,
+        s.squadId !== null && selectedIds.includes(s.squadId),
         timeMs,
       );
     }
@@ -406,6 +388,94 @@ export class EntityRenderer {
       const f = 1 - s.weapon.reloadRemaining / Math.max(1, s.weapon.reloadTicks);
       top.fillStyle(0x000000, 0.7).fillRect(x - 10, y + 11, 20, 3);
       top.fillStyle(0x5b8fc9).fillRect(x - 10, y + 11, 20 * f, 3);
+    }
+  }
+
+  /** Current route, destination and Shift-queued waypoints (numbered) of a selected squad. */
+  private drawPlan(
+    g: Phaser.GameObjects.Graphics,
+    top: Phaser.GameObjects.Graphics,
+    state: GameState,
+    sq: Squad,
+    pos: PositionLookup,
+    timeMs: number,
+  ): void {
+    const color = SQUAD_COLORS[sq.id] ?? 0xffffff;
+    const o = sq.order;
+    const active = !!o && o.status === 'executing';
+    if (active) {
+      for (const id of sq.memberIds) {
+        const s = state.survivors.find((m) => m.id === id);
+        if (!s || !s.alive || s.pathIndex >= s.path.length) continue;
+        const p = pos(s.id, s.position);
+        g.lineStyle(1, color, 0.45)
+          .beginPath()
+          .moveTo(p.x * CELL, p.y * CELL);
+        for (let i = s.pathIndex; i < s.path.length; i++) {
+          const w = s.path[i] as Vec2;
+          g.lineTo(w.x * CELL, w.y * CELL);
+        }
+        g.strokePath();
+        if (s.slot) g.lineStyle(1, 0xffffff, 0.5).strokeCircle(s.slot.x * CELL, s.slot.y * CELL, 3);
+      }
+    }
+    const t = active ? this.orderPoint(state, o) : null;
+    if (t) {
+      const r = 7 + Math.sin(timeMs / 200) * 1.2;
+      g.lineStyle(1.5, color, 0.85).strokeCircle(t.x * CELL, t.y * CELL, r);
+    }
+    // queued waypoints: dashed legs between numbered markers
+    let from = t;
+    sq.waypoints.forEach((w, i) => {
+      const p = w.targetPosition ?? this.orderPoint(state, w);
+      if (!p) return;
+      if (from) this.dashed(g, from, p, color);
+      const x = p.x * CELL;
+      const y = p.y * CELL;
+      g.fillStyle(0x0b0c0e, 0.85).fillCircle(x, y, 5);
+      g.lineStyle(1.2, color, 0.95).strokeCircle(x, y, 5);
+      this.label(`wp-${sq.id}-${i}`, String(i + 1), x, y + 4.5, '#ffffff');
+      if (w.type === 'hold' || w.type === 'hide')
+        top.fillStyle(color, 0.95).fillRect(x - 3, y - 11, 6, 3);
+      from = p;
+    });
+  }
+
+  /** Where an order or queued order points: its position, or its target entity. */
+  private orderPoint(
+    state: GameState,
+    o: { targetPosition?: Vec2; targetEntityId?: string } | null | undefined,
+  ): Vec2 | null {
+    if (!o) return null;
+    if (o.targetPosition) return o.targetPosition;
+    if (!o.targetEntityId) return null;
+    const door = state.doors.find((d) => d.id === o.targetEntityId);
+    if (door) return { x: door.cell.x + 0.5, y: door.cell.y + 0.5 };
+    const c = state.contacts.find((k) => k.zombieId === o.targetEntityId);
+    if (c) return c.position;
+    const s = state.survivors.find((m) => m.id === o.targetEntityId);
+    if (s) return s.position;
+    if (o.targetEntityId === CABINET_ID) {
+      const cell = this.world.mission.objectives.cabinet.cell;
+      return { x: cell.x + 1, y: cell.y + 0.5 };
+    }
+    if (o.targetEntityId === BEACON_ID) return this.world.mission.objectives.extraction.beacon;
+    return null;
+  }
+
+  private dashed(g: Phaser.GameObjects.Graphics, a: Vec2, b: Vec2, color: number): void {
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    const steps = Math.max(1, Math.floor((len * CELL) / 6));
+    g.lineStyle(1.2, color, 0.75);
+    for (let i = 0; i < steps; i += 2) {
+      const t0 = i / steps;
+      const t1 = Math.min(1, (i + 1) / steps);
+      g.lineBetween(
+        (a.x + (b.x - a.x) * t0) * CELL,
+        (a.y + (b.y - a.y) * t0) * CELL,
+        (a.x + (b.x - a.x) * t1) * CELL,
+        (a.y + (b.y - a.y) * t1) * CELL,
+      );
     }
   }
 

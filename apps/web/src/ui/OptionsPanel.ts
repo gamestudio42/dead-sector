@@ -1,27 +1,53 @@
 import { AudioEngine } from '../audio/AudioEngine';
+import { ACTION_LABELS, KeyBindings, keyLabel, type Action } from '../input/KeyBindings';
 import { uiRoot } from './dom';
 import { Settings, type LightingMode } from './SaveStore';
 
-const CONTROLS: [string, string][] = [
-  ['Clique esq.', 'Selecionar esquadrão (ou cartão à esquerda)'],
+/** Mouse controls are fixed; keyboard shortcuts are rebindable below them. */
+const MOUSE: [string, string][] = [
+  ['Clique esq.', 'Selecionar esquadrão (Shift: adicionar/remover)'],
+  ['Arrastar esq.', 'Caixa de seleção: todos os esquadrões dentro (Shift: somar)'],
   [
     'Clique dir.',
     'Mover no modo atual · sobre infectado: atacar · sobre porta, armário, civil ou rádio: interagir',
   ],
-  ['Minimapa', 'Clique: mover câmera · botão direito: mover o esquadrão selecionado'],
-  ['1–4', 'Selecionar esquadrão'],
-  ['Q / W / E', 'Modo furtivo / normal / correr'],
-  ['H / T', 'Manter posição / esconder'],
-  ['R / G', 'Retirada / reagrupar no líder'],
-  ['F', 'Disciplina de fogo: responder → livre → cessar'],
-  ['Espaço', 'Pausar (ordens dadas em pausa executam ao retomar)'],
-  ['Tab', 'Velocidade 1× / 2×'],
-  ['F5 / F9', 'Salvamento rápido / carregar'],
-  ['M', 'Ligar/desligar som'],
-  ['Setas · roda', 'Mover câmera · zoom (botão do meio arrasta)'],
-  ['Esc', 'Menu de pausa'],
-  ['`', 'Sobreposição de depuração'],
+  ['Shift + dir.', 'Adicionar ponto à fila (executa quando a ordem atual termina)'],
+  ['Ctrl + dir.', 'Menu de ordens no local (mover, furtivo, correr, ir e manter, ir e esconder…)'],
+  ['Minimapa', 'Clique: mover câmera · botão direito: mover os esquadrões selecionados'],
+  ['Roda · botão do meio', 'Zoom · arrastar a câmera'],
+  ['Esc', 'Menu de pausa (fixo)'],
 ];
+
+const ACTION_ORDER: Action[] = [
+  'squad1',
+  'squad2',
+  'squad3',
+  'squad4',
+  'modeMove',
+  'modeSneak',
+  'modeSprint',
+  'hold',
+  'hide',
+  'retreat',
+  'regroup',
+  'firePolicy',
+  'pause',
+  'speed',
+  'quicksave',
+  'quickload',
+  'mute',
+  'panUp',
+  'panDown',
+  'panLeft',
+  'panRight',
+  'debug',
+];
+
+const bindingRows = () =>
+  ACTION_ORDER.map(
+    (a) =>
+      `<div class="bind-row"><span>${ACTION_LABELS[a]}</span><button class="bind" data-bind="${a}" data-testid="bind-${a}" title="Clique e pressione a nova tecla">${keyLabel(KeyBindings.get(a))}</button></div>`,
+  ).join('');
 
 const TABS = [
   ['audio', 'Áudio'],
@@ -64,7 +90,10 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       <p class="small">Cores sempre vêm acompanhadas de ícones ou texto. Pausa e velocidade nunca penalizam o jogador.</p>
     </section>
     <section data-pane="controls" hidden>
-      <div class="controls-grid">${CONTROLS.map(([k, v]) => `<span class="kbd">${k}</span><span>${v}</span>`).join('')}</div>
+      <div class="controls-grid">${MOUSE.map(([k, v]) => `<span class="kbd">${k}</span><span>${v}</span>`).join('')}</div>
+      <h4 class="bind-head">Teclado <button data-act="resetKeys" class="small-btn">Restaurar padrão</button></h4>
+      <div class="bindings" data-el="bindings">${bindingRows()}</div>
+      <p class="small" data-el="bindNote">Clique numa tecla e pressione a nova. Se ela já estiver em uso, as duas ações trocam de tecla.</p>
     </section>
   </div>`;
   const q = <T extends HTMLElement>(sel: string) => m.querySelector(sel) as T;
@@ -76,7 +105,29 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     window.removeEventListener('keydown', onKey, true);
     onClose();
   };
+  let capturing: Action | null = null;
+  const refreshBindings = () => {
+    q('[data-el=bindings]').innerHTML = bindingRows();
+  };
   const onKey = (e: KeyboardEvent) => {
+    if (capturing) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      const action = capturing;
+      capturing = null;
+      const note = q('[data-el=bindNote]');
+      if (e.code === 'Escape') {
+        note.textContent = 'Troca cancelada.';
+      } else {
+        const swapped = KeyBindings.set(action, e.code);
+        note.textContent = swapped
+          ? `${ACTION_LABELS[action]}: ${keyLabel(e.code)} · ${ACTION_LABELS[swapped]} passou para ${keyLabel(KeyBindings.get(swapped))}.`
+          : `${ACTION_LABELS[action]}: ${keyLabel(e.code)}.`;
+        audio.uiClick();
+      }
+      refreshBindings();
+      return;
+    }
     if (e.key !== 'Escape') return;
     e.stopImmediatePropagation();
     e.preventDefault();
@@ -87,6 +138,22 @@ export function openOptions(onClose: () => void): HTMLDivElement {
   m.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
     if (t === m || t.closest('[data-act=close]')) return close();
+    const bind = t.closest<HTMLElement>('[data-bind]');
+    if (bind) {
+      capturing = bind.dataset['bind'] as Action;
+      refreshBindings();
+      const btn = q(`[data-bind=${capturing}]`);
+      btn.classList.add('capturing');
+      btn.textContent = 'Pressione…';
+      return;
+    }
+    if (t.closest('[data-act=resetKeys]')) {
+      KeyBindings.reset();
+      capturing = null;
+      refreshBindings();
+      q('[data-el=bindNote]').textContent = 'Teclas restauradas para o padrão.';
+      return;
+    }
     const tab = t.closest<HTMLElement>('[data-tab]');
     if (tab) {
       m.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('active', b === tab));

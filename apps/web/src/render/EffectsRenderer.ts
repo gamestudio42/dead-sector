@@ -149,10 +149,11 @@ export class EffectsRenderer {
   }
 
   private shake(ms: number, intensity: number): void {
-    this.scene.cameras.main.shake(ms, intensity, false);
+    if (Settings.shake) this.scene.cameras.main.shake(ms, intensity, false);
   }
 
   private hitVignette(strong: boolean): void {
+    if (!Settings.shake) return;
     this.vignette.classList.remove('hit', 'bite');
     void this.vignette.offsetWidth; // restart the CSS animation
     this.vignette.classList.add(strong ? 'bite' : 'hit');

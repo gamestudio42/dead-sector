@@ -16,7 +16,7 @@ Requirements: Node 22+, pnpm 10+.
 pnpm install
 pnpm dev            # http://localhost:5173  (add ?debug=1 for the debug overlay)
 pnpm test           # 47 unit/integration tests (Vitest, Node only — no DOM)
-pnpm e2e            # Playwright: builds, serves on :4173 and plays the mission in Chromium
+pnpm e2e            # Playwright: builds, serves on :4317 and plays the mission in Chromium
 pnpm check          # typecheck + lint + unit tests + production build
 pnpm build          # static build in apps/web/dist (DS_BASE=/sub/path/ pnpm build for GitHub Pages)
 ```
@@ -35,8 +35,10 @@ First Playwright run: `pnpm --filter @dead-sector/game exec playwright install c
 | `H` / `T` / `R` / `G`                         | hold / hide / retreat / regroup on leader                            |
 | `F`                                           | fire discipline: return fire → weapons free → hold fire              |
 | `Space` / `Tab` / `Esc`                       | pause (orders given while paused run on resume) / 1×–2× / pause menu |
+| `F5` / `F9`                                   | quicksave / quickload                                                |
+| Minimap: left click / right click             | move camera / send the selected squad there                          |
 | Arrows, mouse wheel, middle drag              | camera                                                               |
-| `M`                                           | mute / unmute (volume, blood and lighting in the main menu)          |
+| `M`                                           | mute / unmute (all settings in **Opções**: menu or ⚙ in the HUD)     |
 | `` ` `` or `?debug=1`                         | debug overlay                                                        |
 
 Mission: enter the pharmacy perimeter → collect medicine (5 s) → rescue the civilian (3 s, she then follows on foot) →
@@ -81,11 +83,24 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   Everything is presentation-only: cues and barks are derived from sim events and covered by tests that check they
   never change the state.
 
+- **Interface pass (block 2)**: title screen over a live, decorative view of the map; briefing with map, objectives,
+  intel, roster and seed choice; compact HUD with icon top bar, collapsible objectives/log/unit strip (remembered),
+  tooltips that explain orders and each survivor's state; minimap (explored terrain, own units, visible and last-known
+  contacts only, mission areas, camera frame, event pings; click to pan, right-click to move the squad); options
+  (master/effects/ambience volume, mute, lighting, blood, HUD scale, sound captions with direction and distance, high
+  contrast, camera shake/flash toggle, controls list); debriefing with S–F grade and reasons, stat tiles, timeline of
+  key moments and a route map with each survivor's path and losses.
+
 ## Verification evidence (this build)
 
-- `pnpm check`: typecheck ✓, ESLint ✓, **54/54** Vitest ✓, production build ✓.
-- `pnpm e2e`: **5/5** Playwright ✓ — full critical flow to debriefing, stealth run without shots, save/load,
-  HUD fits at 1280×720 and 1920×1080, no console errors.
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **59/60** — the one failure is the lenient
+  performance gate, run while the dev machine was saturated by other apps (load average ≈ 22 on 16 cores): p50 4.0 ms /
+  p95 31 ms vs 0.85 / 7.2 ms for the same, unchanged simulation code on an idle machine. Re-run on an idle machine.
+- `pnpm e2e`: **6/6** Playwright ✓ — full critical flow (menu → briefing → mission → graded debriefing), stealth run
+  without shots, save/load, HUD + minimap fit at 1280×720 and 1920×1080, options pause/apply/persist and minimap camera
+  control, no console errors. The suite serves on a dedicated port (4317, `strictPort`, never reusing another server).
+- Headless Chromium uses software GL; there the dusk lighting and soft fog are the main per-frame costs (≈ 4.7 FPS
+  with both, ≈ 16 FPS without, under the same machine load). Real-GPU frame budget is block 6 work.
 - Performance (Node, combat run, 8 survivors + up to 30 live infected): p50 0.85 ms, **p95 7.2 ms/tick** (spec target < 10 ms).
 - Screenshots: [`docs/testing/screenshots/`](docs/testing/screenshots/).
 - Test ↔ requirement map: [`docs/testing/README.md`](docs/testing/README.md).
@@ -96,7 +111,8 @@ Two proven ways to win on the canonical seed (automated tests replay both):
   silhouettes with a simple walk cycle; a hand-made or licensed (CC0) sprite set would raise fidelity further. No music
   score beyond the adaptive drone.
 - Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
-- No minimap (spec §13.1) and no drag-box selection; shift-queued waypoints not implemented.
+- No drag-box selection, shift-queued waypoints, context menu or key rebinding yet (block 3).
+- Route map and timeline are not saved: a mission continued from a quicksave shows only what happened after loading.
 - Infection is tracked and reported (HUD, debriefing) but never turns survivors in battle (as the MVP spec allows).
 - Heavy/screamer infected, night lighting and multiple maps are later phases.
 - Balance is tuned for the canonical seed (1337); other seeds are playable but scripted bots sometimes lose the civilian there.

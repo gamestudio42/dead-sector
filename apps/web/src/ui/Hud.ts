@@ -11,6 +11,7 @@ import {
   type World,
 } from '@dead-sector/sim';
 import { fmtTime, T } from './i18n';
+import { Settings } from './SaveStore';
 
 export interface HudActions {
   selectSquad(id: string): void;
@@ -23,7 +24,40 @@ export interface HudActions {
   load(): void;
   confirmExtraction(): void;
   openMenu(): void;
+  openOptions(): void;
+  toggleMinimap(): void;
 }
+
+const svg = (body: string): string =>
+  `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="currentColor">${body}</svg>`;
+const ICONS = {
+  pause: svg(
+    '<rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/>',
+  ),
+  play: svg('<path d="M4 2.5v11l9-5.5z"/>'),
+  save: svg(
+    '<path d="M2 2h9l3 3v9H2z" opacity=".9"/><rect x="4.5" y="3" width="5" height="3.5" fill="#1b1e22"/><rect x="4" y="9" width="8" height="4" fill="#1b1e22"/>',
+  ),
+  load: svg('<path d="M8 2.5a5.5 5.5 0 1 1-5.2 3.7l1.8.6A3.6 3.6 0 1 0 8 4.4V6.5L4.6 3.6 8 .7z"/>'),
+  gear: svg(
+    '<path d="M7 1h2l.4 1.9 1.4.6 1.6-1.1 1.4 1.4-1.1 1.6.6 1.4L15 7v2l-1.9.4-.6 1.4 1.1 1.6-1.4 1.4-1.6-1.1-1.4.6L9 15H7l-.4-1.9-1.4-.6-1.6 1.1-1.4-1.4 1.1-1.6-.6-1.4L1 9V7l1.9-.4.6-1.4-1.1-1.6 1.4-1.4 1.6 1.1 1.4-.6zM8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/>',
+  ),
+  menu: svg(
+    '<rect x="2" y="3" width="12" height="2" rx="1"/><rect x="2" y="7" width="12" height="2" rx="1"/><rect x="2" y="11" width="12" height="2" rx="1"/>',
+  ),
+  sound: svg(
+    '<path d="M2 6h3l4-3v10L5 10H2z"/><path d="M11 5.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" fill="none" stroke-width="1.4"/>',
+  ),
+};
+
+const PANEL_FLAGS = {
+  objectives: {
+    get: () => Settings.objectivesOpen,
+    set: (v: boolean) => (Settings.objectivesOpen = v),
+  },
+  log: { get: () => Settings.logOpen, set: (v: boolean) => (Settings.logOpen = v) },
+  units: { get: () => Settings.unitsOpen, set: (v: boolean) => (Settings.unitsOpen = v) },
+};
 
 export interface HudView {
   state: GameState;
@@ -63,6 +97,7 @@ export class Hud {
   private context = '';
   private lastRender = 0;
   private htmlCache = new Map<HTMLElement, string>();
+  private captionSeen = new Map<string, number>();
 
   /** Writes markup only when it changed, avoiding DOM churn (and detached-element races). */
   private setHtml(el: HTMLElement | undefined, html: string): void {
@@ -79,39 +114,53 @@ export class Hud {
     this.root.className = 'hud';
     this.root.innerHTML = `
       <div class="topbar panel" data-testid="topbar">
-        <span class="objective" data-el="objective"></span>
+        <span class="objective" data-el="objective" data-testid="current-objective"></span>
         <span class="clock" data-el="clock" data-testid="clock"></span>
-        <span title="Ruído recente">Ruído <span class="meter"><i data-el="noise" style="width:0%"></i></span></span>
+        <span class="noise" title="Ruído recente: quanto mais alto, mais infectados ouvem e mais reforços chegam">${ICONS.sound}<span class="meter"><i data-el="noise" style="width:0%"></i></span></span>
         <span class="paused-flag" data-el="pausedFlag" data-testid="paused-flag"></span>
-        <button data-act="pause" data-testid="btn-pause"><span class="kbd">Espaço</span><span data-el="pauseLabel">Pausar</span></button>
-        <button data-act="speed" data-testid="btn-speed"><span class="kbd">Tab</span><span data-el="speed">1×</span></button>
-        <button data-act="save" data-testid="btn-save">Salvar</button>
-        <button data-act="load" data-testid="btn-load">Carregar</button>
-        <button data-act="menu"><span class="kbd">Esc</span>Menu</button>
+        <span class="tools">
+          <button data-act="pause" data-testid="btn-pause" title="Pausar / retomar (Espaço)" aria-label="Pausar"><span data-el="pauseLabel">${ICONS.pause}</span></button>
+          <button data-act="speed" data-testid="btn-speed" title="Velocidade (Tab)"><span data-el="speed">1×</span></button>
+          <button data-act="save" data-testid="btn-save" title="Salvamento rápido (F5)" aria-label="Salvar">${ICONS.save}</button>
+          <button data-act="load" data-testid="btn-load" title="Carregar salvamento rápido (F9)" aria-label="Carregar">${ICONS.load}</button>
+          <button data-act="options" data-testid="btn-options" title="Opções" aria-label="Opções">${ICONS.gear}</button>
+          <button data-act="menu" title="Menu de pausa (Esc)" aria-label="Menu">${ICONS.menu}</button>
+        </span>
       </div>
       <div class="left">
         <div data-el="squads"></div>
-        <div class="objectives panel"><h4>Objetivos</h4><ul data-el="objectives" data-testid="objectives"></ul></div>
+        <div class="objectives panel" data-panel="objectives">
+          <h4 class="collapsible" data-toggle="objectives">Objetivos <span class="chev"></span></h4>
+          <ul data-el="objectives" data-testid="objectives"></ul>
+        </div>
       </div>
+      <div class="minimap-slot" data-el="minimapSlot"></div>
       <div class="right">
         <div class="orders panel">
-          <h4>Ordens — <span data-el="orderSquad">—</span></h4>
+          <h4>Ordens — <span data-el="orderSquad">—</span>
+            <span class="help" title="Botão direito no chão: mover no modo atual&#10;Sobre infectado visível: atacar&#10;Sobre porta, armário, civil ou rádio: interagir&#10;No minimapa: mover o esquadrão">?</span></h4>
           <div class="grid">
-            <button data-order="move"><span class="kbd">W</span>Mover</button>
-            <button data-order="sneak"><span class="kbd">Q</span>Furtivo</button>
-            <button data-order="sprint"><span class="kbd">E</span>Correr</button>
-            <button data-order="hold"><span class="kbd">H</span>Manter</button>
-            <button data-order="hide"><span class="kbd">T</span>Esconder</button>
-            <button data-order="retreat"><span class="kbd">R</span>Retirada</button>
-            <button data-order="regroup"><span class="kbd">G</span>Reagrupar</button>
-            <button data-act="policy" data-testid="btn-policy"><span class="kbd">F</span><span data-el="policy"></span></button>
+            <button data-order="move" title="Mover no passo normal (W)"><span class="kbd">W</span>Mover</button>
+            <button data-order="sneak" title="Furtivo: lento e silencioso (Q)"><span class="kbd">Q</span>Furtivo</button>
+            <button data-order="sprint" title="Correr: rápido, barulhento, cansa (E)"><span class="kbd">E</span>Correr</button>
+            <button data-order="hold" title="Manter posição (H)"><span class="kbd">H</span>Manter</button>
+            <button data-order="hide" title="Esconder-se e evitar contato (T)"><span class="kbd">T</span>Esconder</button>
+            <button data-order="retreat" title="Retirada para o ponto seguro (R)"><span class="kbd">R</span>Retirada</button>
+            <button data-order="regroup" title="Reagrupar no líder (G)"><span class="kbd">G</span>Reagrupar</button>
+            <button data-act="policy" data-testid="btn-policy" title="Disciplina de fogo (F)"><span class="kbd">F</span><span data-el="policy"></span></button>
           </div>
-          <div class="legend">Botão direito: mover no modo atual · sobre infectado: atacar · sobre porta/armário/civil/rádio: interagir</div>
           <div class="context" data-el="context" data-testid="context"></div>
         </div>
-        <div class="log panel"><h4>Registro</h4><ul data-el="log" data-testid="event-log"></ul></div>
+        <div class="log panel" data-panel="log">
+          <h4 class="collapsible" data-toggle="log">Registro <span class="chev"></span></h4>
+          <ul data-el="log" data-testid="event-log"></ul>
+        </div>
       </div>
-      <div class="bottom" data-el="units" data-testid="units"></div>
+      <div class="bottom-wrap" data-panel="units">
+        <button class="units-toggle" data-toggle="units" title="Mostrar/ocultar detalhes da equipe"><span class="chev"></span></button>
+        <div class="captions" data-el="captions" aria-live="polite"></div>
+        <div class="bottom" data-el="units" data-testid="units"></div>
+      </div>
       <div class="banner panel" data-el="banner" style="display:none"></div>
       <div class="toast" data-el="toast" style="opacity:0"></div>
       <div class="debug panel" data-el="debug" style="display:none"></div>`;
@@ -119,7 +168,13 @@ export class Hud {
     this.root
       .querySelectorAll<HTMLElement>('[data-el]')
       .forEach((el) => (this.els[el.dataset['el'] as string] = el));
+    for (const key of ['objectives', 'log', 'units'] as const)
+      this.root
+        .querySelector(`[data-panel=${key}]`)
+        ?.classList.toggle('collapsed', !PANEL_FLAGS[key].get());
     this.root.addEventListener('click', (ev) => {
+      const toggle = (ev.target as HTMLElement).closest<HTMLElement>('[data-toggle]');
+      if (toggle) return this.togglePanel(toggle.dataset['toggle'] as string);
       const t = (ev.target as HTMLElement).closest<HTMLElement>(
         '[data-act],[data-order],[data-squad]',
       );
@@ -137,6 +192,8 @@ export class Hud {
           return this.actions.load();
         case 'menu':
           return this.actions.openMenu();
+        case 'options':
+          return this.actions.openOptions();
         case 'policy':
           return this.actions.cyclePolicy();
         case 'confirmExtraction':
@@ -146,7 +203,34 @@ export class Hud {
   }
 
   destroy(): void {
+    window.clearTimeout(this.toastTimer);
     this.root.remove();
+  }
+
+  /** Collapses/expands a HUD panel and remembers the choice. */
+  togglePanel(key: string): void {
+    if (key === 'minimap') return this.actions.toggleMinimap();
+    const flag = PANEL_FLAGS[key as keyof typeof PANEL_FLAGS];
+    if (!flag) return;
+    flag.set(!flag.get());
+    this.root.querySelector(`[data-panel=${key}]`)?.classList.toggle('collapsed', !flag.get());
+  }
+
+  mountMinimap(el: HTMLElement): void {
+    this.els['minimapSlot']?.appendChild(el);
+  }
+
+  /** Subtitle line for an important sound (accessibility); short-lived, newest at the bottom. */
+  caption(text: string): void {
+    const host = this.els['captions'] as HTMLElement;
+    const now = performance.now();
+    if ((this.captionSeen.get(text) ?? -1e9) > now - 1800) return;
+    this.captionSeen.set(text, now);
+    const line = document.createElement('div');
+    line.textContent = text;
+    host.appendChild(line);
+    while (host.childElementCount > 3) host.firstElementChild?.remove();
+    window.setTimeout(() => line.remove(), 3200);
   }
 
   toast(msg: string): void {
@@ -403,15 +487,20 @@ export class Hud {
         : s.bitten
           ? '<span class="tag warn">mordido</span>'
           : '';
-    return `<div class="unit panel ${s.alive ? '' : 'dead'}" data-testid="unit-${s.id}">
-      <div class="n">${s.isLeader ? '★ ' : ''}${esc(s.name)}</div>
-      <div class="r">${esc(s.role)} · ${esc(w.displayName)}</div>
-      <div class="line"><span>Vida ${Math.max(0, Math.round(s.health))}</span><span>${inf}</span></div>
-      <div class="bar hp"><i style="width:${pct(s.health, s.maxHealth)}%"></i></div>
-      <div class="line"><span>Estresse ${Math.round(s.stress)}</span><span>${T.bands[s.band]}</span></div>
-      <div class="bar st"><i style="width:${pct(s.stress)}%"></i></div>
-      <div class="line"><span>Fôlego</span><span>Munição ${ammo}</span></div>
-      <div class="bar sta"><i style="width:${pct(s.stamina)}%"></i></div>
+    const hp = Math.max(0, Math.round(s.health));
+    const lowAmmo =
+      w.kind !== 'melee' &&
+      s.weapon.magazineRounds + s.weapon.reserveRounds <= s.weapon.magazineCapacity;
+    const band = s.panicked ? 'bad' : s.band === 'calm' ? 'ok' : 'warn';
+    const tip = `${s.name} — ${s.role}\nArma: ${w.displayName} (${ammo})\nVida ${hp}/${s.maxHealth} · Estresse ${Math.round(s.stress)} (${T.bands[s.band]}) · Fôlego ${Math.round(s.stamina)}\n${act}`;
+    return `<div class="unit panel ${s.alive ? '' : 'dead'} ${s.panicked ? 'panicking' : ''}" data-testid="unit-${s.id}" title="${esc(tip)}">
+      <div class="head"><span class="n">${s.isLeader ? '★ ' : ''}${esc(s.name)}</span><span class="ammo ${lowAmmo ? 'low' : ''}">${ammo}</span></div>
+      <div class="r">${esc(s.role)} · ${esc(w.displayName)} ${inf}</div>
+      <div class="bars">
+        <span class="lbl" title="Vida">♥</span><div class="bar hp ${hp < s.maxHealth * 0.35 ? 'crit' : ''}"><i style="width:${pct(s.health, s.maxHealth)}%"></i></div><span class="num">${hp}</span>
+        <span class="lbl" title="Estresse">⚡</span><div class="bar st"><i style="width:${pct(s.stress)}%"></i></div><span class="num tag-${band}">${T.bands[s.band]}</span>
+        <span class="lbl" title="Fôlego">≋</span><div class="bar sta"><i style="width:${pct(s.stamina)}%"></i></div><span class="num">${Math.round(s.stamina)}</span>
+      </div>
       <div class="act">${act}</div>
     </div>`;
   }
@@ -430,7 +519,7 @@ export class Hud {
     const recent = state.recentNoises.reduce((a, n) => a + n.intensity, 0);
     (els['noise'] as HTMLElement).style.width = `${pct(recent, 400)}%`;
     (els['pausedFlag'] as HTMLElement).textContent = view.paused ? 'PAUSADO' : '';
-    (els['pauseLabel'] as HTMLElement).textContent = view.paused ? 'Retomar' : 'Pausar';
+    this.setHtml(els['pauseLabel'], view.paused ? ICONS.play : ICONS.pause);
     (els['speed'] as HTMLElement).textContent = `${view.speed}×`;
     this.setHtml(
       els['squads'],

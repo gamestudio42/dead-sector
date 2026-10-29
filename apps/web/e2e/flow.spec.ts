@@ -28,6 +28,8 @@ function trackErrors(page: Page): string[] {
 async function startMission(page: Page): Promise<void> {
   await page.goto('/');
   await page.getByTestId('btn-new-mission').click();
+  await expect(page.getByTestId('briefing')).toBeVisible();
+  await page.getByTestId('btn-deploy').click();
   await expect(page.getByTestId('topbar')).toBeVisible();
   await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
 }
@@ -99,6 +101,7 @@ test('critical flow: menu → orders → pause/resume → fight → collect → 
   expect(counts.objectives).toBe(5);
   await expect(page.getByTestId('debrief')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId('debrief-outcome')).toHaveText('Missão cumprida');
+  await expect(page.getByTestId('debrief-grade')).toHaveText(/^[SABCD]$/);
   await page.screenshot({ path: `${SHOTS}/debrief-1280x720.png` });
   await page.getByTestId('btn-menu').click();
   await expect(page.getByTestId('menu')).toBeVisible();
@@ -156,6 +159,8 @@ for (const size of [
       'squad-bravo',
       'btn-pause',
       'btn-save',
+      'btn-options',
+      'minimap',
     ]) {
       const box = await page.getByTestId(id).boundingBox();
       expect(box, id).not.toBeNull();
@@ -167,3 +172,41 @@ for (const size of [
     await page.screenshot({ path: `${SHOTS}/hud-${size.width}x${size.height}.png` });
   });
 }
+
+test('options pause the mission, apply settings and persist panel layout', async ({ page }) => {
+  const errors = trackErrors(page);
+  await startMission(page);
+  expect(await hook(page, (h) => h.paused())).toBe(false);
+  await page.getByTestId('btn-options').click();
+  await expect(page.getByTestId('options')).toBeVisible();
+  expect(await hook(page, (h) => h.paused())).toBe(true);
+  await page.getByRole('button', { name: 'Acessibilidade' }).click();
+  await page.locator('[data-opt=captions]').check();
+  await page.locator('[data-opt=contrast]').check();
+  await expect(page.locator('html')).toHaveClass(/high-contrast/);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('options')).toHaveCount(0);
+  expect(await hook(page, (h) => h.paused())).toBe(false);
+  // collapse the event log; the choice survives a reload
+  await page.locator('[data-toggle=log]').click();
+  await expect(page.locator('[data-panel=log]')).toHaveClass(/collapsed/);
+  await page.goto('/');
+  await page.getByTestId('btn-new-mission').click();
+  await page.getByTestId('btn-deploy').click();
+  await expect(page.locator('[data-panel=log]')).toHaveClass(/collapsed/);
+  await expect(page.locator('html')).toHaveClass(/high-contrast/);
+  // minimap click recentres the camera
+  const before = await page.evaluate(() => {
+    const cam = (window as any).__PHASER_GAME__.scene.getScene('Tactical').cameras.main;
+    return { x: cam.scrollX, y: cam.scrollY };
+  });
+  const box = (await page.getByTestId('minimap').locator('canvas').boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.75, box.y + box.height * 0.75);
+  const after = await page.evaluate(() => {
+    const cam = (window as any).__PHASER_GAME__.scene.getScene('Tactical').cameras.main;
+    return { x: cam.scrollX, y: cam.scrollY };
+  });
+  expect(after.x).toBeGreaterThan(before.x);
+  expect(after.y).toBeGreaterThan(before.y);
+  expect(errors).toEqual([]);
+});

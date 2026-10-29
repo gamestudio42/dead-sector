@@ -1,5 +1,13 @@
 import { AudioEngine } from '../audio/AudioEngine';
-import { ACTION_LABELS, KeyBindings, keyLabel, type Action } from '../input/KeyBindings';
+import {
+  ACTION_LABELS,
+  KeyBindings,
+  keyLabel,
+  keyName,
+  PRESETS,
+  type Action,
+  type PresetId,
+} from '../input/KeyBindings';
 import { uiRoot } from './dom';
 import { Settings, type LightingMode, type Quality } from './SaveStore';
 
@@ -14,6 +22,7 @@ const MOUSE: [string, string][] = [
   ['Shift + dir.', 'Adicionar ponto à fila (executa quando a ordem atual termina)'],
   ['Ctrl + dir.', 'Menu de ordens no local (mover, furtivo, correr, ir e manter, ir e esconder…)'],
   ['Minimapa', 'Clique: mover câmera · botão direito: mover os esquadrões selecionados'],
+  ['Shift + câmera', 'Câmera rápida (segure Shift enquanto move a câmera pelo teclado)'],
   ['Roda · botão do meio', 'Zoom · arrastar a câmera'],
   ['Esc', 'Menu de pausa (fixo)'],
 ];
@@ -45,10 +54,12 @@ const ACTION_ORDER: Action[] = [
 ];
 
 const bindingRows = () =>
-  ACTION_ORDER.map(
-    (a) =>
-      `<div class="bind-row"><span>${ACTION_LABELS[a]}</span><button class="bind" data-bind="${a}" data-testid="bind-${a}" title="Clique e pressione a nova tecla">${keyLabel(KeyBindings.get(a))}</button></div>`,
-  ).join('');
+  ACTION_ORDER.map((a) => {
+    const alt = KeyBindings.getSecondary(a);
+    return `<div class="bind-row"><span>${ACTION_LABELS[a]}</span>
+      <button class="bind" data-bind="${a}" data-slot="0" data-testid="bind-${a}" title="Tecla principal: clique e pressione a nova tecla">${keyLabel(KeyBindings.get(a))}</button>
+      <button class="bind alt ${alt ? '' : 'empty'}" data-bind="${a}" data-slot="1" data-testid="bind-${a}-alt" title="Tecla alternativa: clique e pressione uma tecla (Delete limpa)">${alt ? keyLabel(alt) : '—'}</button></div>`;
+  }).join('');
 
 const TABS = [
   ['audio', 'Áudio'],
@@ -75,7 +86,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       ${range('volume', 'Volume geral', Settings.volume)}
       ${range('sfxVolume', 'Efeitos', Settings.sfxVolume)}
       ${range('ambienceVolume', 'Ambiente e tensão', Settings.ambienceVolume)}
-      ${check('muted', 'Sem som', Settings.muted, 'Tecla M durante a missão')}
+      ${check('muted', 'Sem som', Settings.muted, `Tecla ${keyName('mute')} durante a missão`)}
     </section>
     <section data-pane="video" hidden>
       <label class="opt"><span>Iluminação<small>Vale a partir da próxima missão</small></span>
@@ -97,9 +108,18 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     </section>
     <section data-pane="controls" hidden>
       <div class="controls-grid">${MOUSE.map(([k, v]) => `<span class="kbd">${k}</span><span>${v}</span>`).join('')}</div>
-      <h4 class="bind-head">Teclado <button data-act="resetKeys" class="small-btn">Restaurar padrão</button></h4>
+      <label class="opt"><span>Velocidade da câmera<small>Segure Shift para mover 2,5× mais rápido</small></span>
+        <input type="range" min="50" max="200" step="10" data-opt="cameraSpeed" value="${Math.round(Settings.cameraSpeed * 100)}" /><output>${Math.round(Settings.cameraSpeed * 100)}%</output></label>
+      <h4 class="bind-head">Teclado
+        <span class="presets">${(Object.keys(PRESETS) as PresetId[])
+          .map(
+            (id) =>
+              `<button data-preset="${id}" data-testid="preset-${id}" class="small-btn">${PRESETS[id].label}</button>`,
+          )
+          .join('')}</span></h4>
+      <div class="bind-cols small"><span></span><span>Principal</span><span>Alternativa</span></div>
       <div class="bindings" data-el="bindings">${bindingRows()}</div>
-      <p class="small" data-el="bindNote">Clique numa tecla e pressione a nova. Se ela já estiver em uso, as duas ações trocam de tecla.</p>
+      <p class="small" data-el="bindNote">Clique numa tecla e pressione a nova. Se ela já estiver em uso, as duas ações trocam de tecla. Delete limpa uma tecla alternativa.</p>
     </section>
   </div>`;
   const q = <T extends HTMLElement>(sel: string) => m.querySelector(sel) as T;
@@ -112,7 +132,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     window.removeEventListener('keydown', onKey, true);
     onClose();
   };
-  let capturing: Action | null = null;
+  let capturing: { action: Action; slot: 0 | 1 } | null = null;
   const refreshBindings = () => {
     q('[data-el=bindings]').innerHTML = bindingRows();
   };
@@ -120,16 +140,21 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     if (capturing) {
       e.stopImmediatePropagation();
       e.preventDefault();
-      const action = capturing;
+      const { action, slot } = capturing;
       capturing = null;
       const note = q('[data-el=bindNote]');
       if (e.code === 'Escape') {
         note.textContent = 'Troca cancelada.';
+      } else if (slot === 1 && (e.code === 'Delete' || e.code === 'Backspace')) {
+        KeyBindings.clearSecondary(action);
+        note.textContent = `${ACTION_LABELS[action]}: sem tecla alternativa.`;
       } else {
-        const swapped = KeyBindings.set(action, e.code);
-        note.textContent = swapped
-          ? `${ACTION_LABELS[action]}: ${keyLabel(e.code)} · ${ACTION_LABELS[swapped]} passou para ${keyLabel(KeyBindings.get(swapped))}.`
-          : `${ACTION_LABELS[action]}: ${keyLabel(e.code)}.`;
+        const r = KeyBindings.set(action, e.code, slot);
+        note.textContent = r.refused
+          ? `${keyLabel(e.code)} não pode ser usada aqui: deixaria uma ação sem tecla.`
+          : r.swapped
+            ? `${ACTION_LABELS[action]}: ${keyLabel(e.code)} · ${ACTION_LABELS[r.swapped]} ficou com ${KeyBindings.codes(r.swapped).map(keyLabel).join(' / ')}.`
+            : `${ACTION_LABELS[action]}: ${keyLabel(e.code)}.`;
         audio.uiClick();
       }
       refreshBindings();
@@ -147,9 +172,12 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     if (t === m || t.closest('[data-act=close]')) return close();
     const bind = t.closest<HTMLElement>('[data-bind]');
     if (bind) {
-      capturing = bind.dataset['bind'] as Action;
+      capturing = {
+        action: bind.dataset['bind'] as Action,
+        slot: bind.dataset['slot'] === '1' ? 1 : 0,
+      };
       refreshBindings();
-      const btn = q(`[data-bind=${capturing}]`);
+      const btn = q(`[data-bind=${capturing.action}][data-slot="${capturing.slot}"]`);
       btn.classList.add('capturing');
       btn.textContent = 'Pressione…';
       return;
@@ -160,11 +188,14 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       (q('[data-opt=tips]') as HTMLInputElement).checked = true;
       return;
     }
-    if (t.closest('[data-act=resetKeys]')) {
-      KeyBindings.reset();
+    const preset = t.closest<HTMLElement>('[data-preset]');
+    if (preset) {
+      const id = preset.dataset['preset'] as PresetId;
+      KeyBindings.applyPreset(id);
       capturing = null;
       refreshBindings();
-      q('[data-el=bindNote]').textContent = 'Teclas restauradas para o padrão.';
+      q('[data-el=bindNote]').textContent = `Esquema aplicado: ${PRESETS[id].label}.`;
+      audio.uiClick();
       return;
     }
     const tab = t.closest<HTMLElement>('[data-tab]');
@@ -186,6 +217,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       if (key === 'volume') Settings.volume = v;
       if (key === 'sfxVolume') Settings.sfxVolume = v;
       if (key === 'ambienceVolume') Settings.ambienceVolume = v;
+      if (key === 'cameraSpeed') Settings.cameraSpeed = v;
       audio.applySettings();
       return;
     }

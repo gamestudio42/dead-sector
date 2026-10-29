@@ -19,6 +19,10 @@
 
 ## DONE
 
+- Controls from playtest feedback: WASD camera by default (arrows as secondary), Shift pans faster, Q retreat,
+  E hide, Z/X/C modes, V hold; second key per action, WASD/Setas presets, camera speed, migration of saved keys,
+  live key names in tips and tooltips (ADR 0013).
+
 - Block 6 — finish: tick memoisation (identical results, ~2.3× faster), graphics quality + FPS readout, balance report
   on 10 seeds, installable offline app, loading screen, credits, build id.
 

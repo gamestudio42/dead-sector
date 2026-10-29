@@ -89,16 +89,18 @@ explain each mechanic the first time it matters.
 | Select squads                   | left click, drag a box, `1` `2` (`Shift` adds)           |
 | Move / attack / interact        | right click on the ground, an infected, a door or object |
 | Queue a waypoint / order menu   | `Shift` + right click / `Ctrl` + right click             |
-| Sneak / walk / sprint           | `Q` / `W` / `E`                                          |
-| Hold / hide / retreat / regroup | `H` / `T` / `R` / `G`                                    |
+| Sneak / walk / sprint           | `Z` / `X` / `C`                                          |
+| Hold / hide / retreat / regroup | `V` / `E` / `Q` / `G`                                    |
 | Fire discipline                 | `F` (return fire → weapons free → hold fire)             |
 | Barricade the door under cursor | `B`                                                      |
 | Pause / speed                   | `Space` / `Tab`                                          |
 | Quick save / load               | `F5` / `F9`                                              |
-| Camera                          | arrows, mouse wheel, middle drag, minimap                |
+| Camera                          | `W` `A` `S` `D` or arrows (`Shift` fast), wheel, minimap |
 | Menu / sound                    | `Esc` / `M`                                              |
 
-Every key can be rebound in Opções → Controles. Games and the campaign save in the browser. In
+Every key can be rebound in Opções → Controles, with a second key per action and a choice
+between the **WASD** layout (default) and the **Setas** classic layout (camera on the arrows,
+`Q`/`W`/`E` modes). Games and the campaign save in the browser. In
 Chrome or Edge the game can be installed as an app that runs full screen and offline.
 
 ## Develop

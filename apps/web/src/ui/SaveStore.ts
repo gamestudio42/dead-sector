@@ -197,6 +197,14 @@ export const Settings = {
   set showFps(v: boolean) {
     showFps.set(v);
   },
+  /** Keyboard camera speed multiplier, 0.5–2 (Shift adds 2.5× on top). */
+  get cameraSpeed(): number {
+    const v = Number(readStored('cameraSpeed') ?? '1');
+    return Number.isFinite(v) && v >= 0.5 && v <= 2 ? v : 1;
+  },
+  set cameraSpeed(v: number) {
+    writeStored('cameraSpeed', String(Math.max(0.5, Math.min(2, v))));
+  },
   /** Contextual tutorial hints. */
   get tips(): boolean {
     return tips.get();

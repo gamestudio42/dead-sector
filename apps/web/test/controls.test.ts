@@ -1,40 +1,115 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { loadContent } from '@dead-sector/content';
 import { GameSimulation } from '@dead-sector/sim';
-import { DEFAULT_BINDINGS, KeyBindings, keyLabel } from '../src/input/KeyBindings';
+import {
+  DEFAULT_BINDINGS,
+  KeyBindings,
+  keyLabel,
+  keyName,
+  migrateV1,
+  PRESETS,
+  type PresetId,
+} from '../src/input/KeyBindings';
 import { commandsForRightClick, spreadTargets, targetAt } from '../src/input/OrderController';
 import { squadsInRect } from '../src/input/SelectionController';
+
+/** Version 1 storage held one key per action, the classic layout. */
+const PRESETS_V1 = Object.fromEntries(
+  Object.entries(PRESETS.arrows.slots).map(([a, [p]]) => [a, p]),
+);
 
 const sim = () => GameSimulation.create('a-ultima-farmacia', 1337, loadContent());
 
 describe('key bindings', () => {
   beforeEach(() => KeyBindings.reset());
 
-  it('defaults map physical keys to actions', () => {
-    expect(KeyBindings.actionFor('KeyQ')).toBe('modeSneak');
+  it('default layout: camera on WASD, Q retreat, E hide, Z/X/C modes, V hold', () => {
+    expect(KeyBindings.codes('panUp')).toEqual(['KeyW', 'ArrowUp']);
+    expect(KeyBindings.actionFor('KeyA')).toBe('panLeft');
+    expect(KeyBindings.actionFor('ArrowRight')).toBe('panRight');
+    expect(KeyBindings.actionFor('KeyQ')).toBe('retreat');
+    expect(KeyBindings.actionFor('KeyE')).toBe('hide');
+    expect(['KeyZ', 'KeyX', 'KeyC', 'KeyV'].map((c) => KeyBindings.actionFor(c))).toEqual([
+      'modeSneak',
+      'modeMove',
+      'modeSprint',
+      'hold',
+    ]);
     expect(KeyBindings.actionFor('Space')).toBe('pause');
-    expect(KeyBindings.actionFor('KeyZ')).toBeNull();
+    expect(KeyBindings.actionFor('KeyH')).toBeNull();
+  });
+
+  it('every key triggers at most one action in both presets', () => {
+    for (const id of Object.keys(PRESETS) as PresetId[]) {
+      KeyBindings.applyPreset(id);
+      const codes = Object.values(PRESETS[id].slots).flat().filter(Boolean);
+      expect(new Set(codes).size).toBe(codes.length);
+    }
   });
 
   it('rebinding to a used key swaps the two actions, so nothing is left unbound', () => {
-    const swapped = KeyBindings.set('hold', 'KeyQ');
-    expect(swapped).toBe('modeSneak');
-    expect(KeyBindings.get('hold')).toBe('KeyQ');
+    const r = KeyBindings.set('hold', 'KeyZ');
+    expect(r.swapped).toBe('modeSneak');
+    expect(KeyBindings.get('hold')).toBe('KeyZ');
     expect(KeyBindings.get('modeSneak')).toBe(DEFAULT_BINDINGS.hold);
     const codes = Object.values(KeyBindings.all());
     expect(new Set(codes).size).toBe(codes.length);
   });
 
-  it('Escape is reserved for menus', () => {
-    expect(KeyBindings.set('pause', 'Escape')).toBeNull();
+  it('secondary keys trigger the action and can be set and cleared', () => {
+    expect(KeyBindings.set('hold', 'KeyJ', 1)).toEqual({});
+    expect(KeyBindings.actionFor('KeyJ')).toBe('hold');
+    expect(KeyBindings.actionFor('KeyV')).toBe('hold');
+    KeyBindings.clearSecondary('hold');
+    expect(KeyBindings.actionFor('KeyJ')).toBeNull();
+  });
+
+  it('taking a primary key from an action promotes its secondary or is refused', () => {
+    // panUp has a secondary: losing W promotes the arrow
+    KeyBindings.clearSecondary('hold');
+    KeyBindings.set('hold', 'KeyW', 1);
+    expect(KeyBindings.codes('panUp')).toEqual(['ArrowUp']);
+    expect(KeyBindings.codes('hold')).toEqual(['KeyV', 'KeyW']);
+    // pause has no secondary: an empty slot cannot be traded for its only key
+    expect(KeyBindings.set('mute', 'Space', 1)).toEqual({ refused: true });
     expect(KeyBindings.get('pause')).toBe('Space');
   });
 
-  it('labels keys for PT-BR players', () => {
+  it('presets switch the whole layout', () => {
+    KeyBindings.applyPreset('arrows');
+    expect(KeyBindings.actionFor('KeyQ')).toBe('modeSneak');
+    expect(KeyBindings.codes('panUp')).toEqual(['ArrowUp']);
+    KeyBindings.reset();
+    expect(KeyBindings.get('modeSneak')).toBe('KeyZ');
+  });
+
+  it('old saved keys move to the new layout but keep what the player chose', () => {
+    const old = { ...DEFAULT_BINDINGS, ...PRESETS_V1, hold: 'KeyJ' };
+    const m = migrateV1(old);
+    expect(m.hold).toEqual(['KeyJ', null]);
+    expect(m.modeSneak[0]).toBe('KeyZ');
+    expect(m.panUp).toEqual(['KeyW', 'ArrowUp']);
+    // a player who put "hide" on W keeps it; the camera falls back to the arrow
+    const m2 = migrateV1({ ...PRESETS_V1, hide: 'KeyW', modeMove: 'KeyH' });
+    expect(m2.hide[0]).toBe('KeyW');
+    expect(m2.panUp[0]).toBe('ArrowUp');
+    const codes = Object.values(m2).flat().filter(Boolean);
+    expect(new Set(codes).size).toBe(codes.length);
+  });
+
+  it('Escape is reserved for menus', () => {
+    expect(KeyBindings.set('pause', 'Escape').refused).toBe(true);
+    expect(KeyBindings.get('pause')).toBe('Space');
+  });
+
+  it('labels keys for PT-BR players and names them live', () => {
     expect(keyLabel('KeyH')).toBe('H');
     expect(keyLabel('Digit2')).toBe('2');
     expect(keyLabel('Space')).toBe('Espaço');
     expect(keyLabel('ArrowLeft')).toBe('←');
+    expect(keyName('panUp', true)).toBe('W / ↑');
+    KeyBindings.set('modeSneak', 'KeyK');
+    expect(keyName('modeSneak')).toBe('K');
   });
 });
 

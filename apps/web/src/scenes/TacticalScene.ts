@@ -17,11 +17,18 @@ import {
   type Vec2,
 } from '@dead-sector/sim';
 import { AudioEngine } from '../audio/AudioEngine';
+import { captionFor } from '../audio/captions';
 import { cuesForEvents, threatLevel } from '../audio/cues';
 import { CameraController } from '../input/CameraController';
 import { commandForRightClick } from '../input/OrderController';
 import { squadAt } from '../input/SelectionController';
 import { barksForEvents } from '../presentation/barks';
+import {
+  emptyRecord,
+  recordEvents,
+  recordTraces,
+  type MissionRecord,
+} from '../presentation/timeline';
 import { BarkRenderer } from '../render/BarkRenderer';
 import { CELL } from '../render/constants';
 import { DebugRenderer } from '../render/DebugRenderer';
@@ -32,6 +39,8 @@ import { LightingRenderer } from '../render/LightingRenderer';
 import { MapRenderer } from '../render/MapRenderer';
 import { clearUi, uiRoot } from '../ui/dom';
 import { Hud, POLICY_CYCLE } from '../ui/Hud';
+import { Minimap } from '../ui/Minimap';
+import { openOptions } from '../ui/OptionsPanel';
 import { SaveStore, Settings } from '../ui/SaveStore';
 import { MISSION_ID, QUICKSAVE } from './MenuScene';
 
@@ -50,6 +59,9 @@ export class TacticalScene extends Phaser.Scene {
   private barkR!: BarkRenderer;
   private audio = AudioEngine.get();
   private nextTensionAt = 0;
+  private minimap!: Minimap;
+  private optionsEl: HTMLDivElement | null = null;
+  private record: MissionRecord = emptyRecord();
   private dbgR: DebugRenderer | null = null;
   private hud!: Hud;
   private selected: string | null = 'alfa';
@@ -82,6 +94,7 @@ export class TacticalScene extends Phaser.Scene {
     this.clock = new FixedStepClock();
     this.clock.paused = !!data.paused;
     this.eventCounts = {};
+    this.record = emptyRecord();
     this.prev.clear();
     this.endAt = 0;
     this.plan = null;
@@ -110,7 +123,15 @@ export class TacticalScene extends Phaser.Scene {
       load: () => void this.loadGame(),
       confirmExtraction: () => this.issue({ type: 'confirmExtraction', payload: {} }),
       openMenu: () => this.togglePauseMenu(),
+      openOptions: () => this.showOptions(),
+      toggleMinimap: () => this.minimap.toggle(),
     });
+    this.minimap = new Minimap(
+      world,
+      (x, y) => this.camCtl.centerOn(x, y),
+      (x, y) => this.rightClick({ x, y }),
+    );
+    this.hud.mountMinimap(this.minimap.el);
 
     this.input.mouse?.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -136,6 +157,8 @@ export class TacticalScene extends Phaser.Scene {
     this.hud.destroy();
     this.pauseMenu?.remove();
     this.pauseMenu = null;
+    this.optionsEl?.remove();
+    this.optionsEl = null;
     this.dbgR?.destroy();
     this.dbgR = null;
   }
@@ -210,6 +233,18 @@ export class TacticalScene extends Phaser.Scene {
     this.scene.restart({ save: data });
   }
 
+  private showOptions(): void {
+    if (this.optionsEl) return;
+    const wasPaused = this.clock.paused;
+    this.clock.paused = true;
+    this.pauseMenu?.style.setProperty('display', 'none');
+    this.optionsEl = openOptions(() => {
+      this.optionsEl = null;
+      if (this.pauseMenu) this.pauseMenu.style.removeProperty('display');
+      else this.clock.paused = wasPaused;
+    });
+  }
+
   private togglePauseMenu(): void {
     if (this.pauseMenu) {
       this.pauseMenu.remove();
@@ -222,12 +257,14 @@ export class TacticalScene extends Phaser.Scene {
     m.className = 'overlay-menu';
     m.innerHTML = `<div class="card panel"><h3>Pausa</h3>
       <button data-a="resume">Retomar</button><button data-a="save">Salvar</button><button data-a="load">Carregar</button>
+      <button data-a="options">Opções</button>
       <button data-a="restart">Reiniciar missão</button><button data-a="menu">Sair para o menu</button></div>`;
     m.addEventListener('click', (e) => {
       const a = (e.target as HTMLElement).dataset['a'];
       if (a === 'resume') this.togglePauseMenu();
       if (a === 'save') void this.saveGame();
       if (a === 'load') void this.loadGame();
+      if (a === 'options') this.showOptions();
       if (a === 'restart') this.scene.restart({ seed: this.sim.state.seed });
       if (a === 'menu') this.scene.start('Menu');
     });
@@ -237,7 +274,10 @@ export class TacticalScene extends Phaser.Scene {
 
   private handleKey(e: KeyboardEvent): void {
     const k = e.key.toLowerCase();
-    if (e.key === ' ' || e.key === 'Tab') e.preventDefault();
+    if (this.optionsEl) return;
+    if (e.key === ' ' || e.key === 'Tab' || e.key === 'F5' || e.key === 'F9') e.preventDefault();
+    if (e.key === 'F5') return void this.saveGame();
+    if (e.key === 'F9') return void this.loadGame();
     if (e.key === 'Escape') return this.togglePauseMenu();
     if (this.pauseMenu) return;
     if (e.key === ' ') return this.togglePause();
@@ -275,10 +315,21 @@ export class TacticalScene extends Phaser.Scene {
       const key = e.type === 'ZOMBIE_ALERTED' ? `ZOMBIE_ALERTED:${e.payload['cause']}` : e.type;
       this.eventCounts[key] = (this.eventCounts[key] ?? 0) + 1;
     }
+    recordEvents(this.record, events, this.sim.state);
+    recordTraces(this.record, this.sim.state);
     const now = this.time.now;
     this.fxR.ingest(events, this.sim.state, now);
     this.entR.ingest(events, now);
-    for (const cue of cuesForEvents(events, this.sim.state, this.sim.world)) this.audio.play(cue);
+    const view = this.cameras.main.worldView;
+    const listener = { x: view.centerX / CELL, y: view.centerY / CELL };
+    for (const cue of cuesForEvents(events, this.sim.state, this.sim.world)) {
+      this.audio.play(cue);
+      if (Settings.captions) {
+        const text = captionFor(cue, listener);
+        if (text) this.hud.caption(text);
+      }
+    }
+    this.minimap.ingest(events, this.sim.state, now);
     this.barkR.push(barksForEvents(events, this.sim.state), now);
     this.hud.ingest(events, this.sim.state, this.sim.world);
     if (this.dbgR && this.sim.tick % 100 === 0)
@@ -294,7 +345,7 @@ export class TacticalScene extends Phaser.Scene {
     if (this.sim.ended) {
       if (!this.endAt) this.endAt = time;
       else if (time - this.endAt > 1500) {
-        this.scene.start('Debrief', { state: this.sim.state });
+        this.scene.start('Debrief', { state: this.sim.state, record: this.record });
         return;
       }
     }
@@ -311,6 +362,12 @@ export class TacticalScene extends Phaser.Scene {
     this.barkR.draw(this.sim.state, lookup, time);
     const view = this.cameras.main.worldView;
     this.audio.setListener(view.centerX / CELL, view.centerY / CELL);
+    this.minimap.draw(
+      this.sim.state,
+      { x: view.x / CELL, y: view.y / CELL, w: view.width / CELL, h: view.height / CELL },
+      this.selected,
+      time,
+    );
     if (time >= this.nextTensionAt) {
       this.nextTensionAt = time + 400;
       this.audio.setTension(this.sim.ended ? 0 : threatLevel(this.sim.state));

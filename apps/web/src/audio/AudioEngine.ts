@@ -99,7 +99,7 @@ export class AudioEngine {
     this.sfx = ctx.createGain();
     this.sfx.connect(this.master);
     this.ambienceBus = ctx.createGain();
-    this.ambienceBus.gain.value = 0.7;
+    this.ambienceBus.gain.value = Settings.ambienceVolume;
     this.ambienceBus.connect(this.master);
 
     const len = ctx.sampleRate * 2;
@@ -123,8 +123,16 @@ export class AudioEngine {
 
   applySettings(): void {
     if (!this.ctx) return;
-    const v = Settings.muted ? 0 : Settings.volume;
-    this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+    const t = this.ctx.currentTime;
+    this.master.gain.setTargetAtTime(Settings.muted ? 0 : Settings.volume, t, 0.05);
+    this.sfx.gain.setTargetAtTime(Settings.sfxVolume, t, 0.05);
+    this.ambienceBus.gain.setTargetAtTime(Settings.ambienceVolume, t, 0.05);
+  }
+
+  /** Short interface sound for menus (not positional, no simulation meaning). */
+  uiClick(): void {
+    if (!this.ready) return;
+    this.play({ kind: 'order', muffled: false });
   }
 
   toggleMute(): boolean {

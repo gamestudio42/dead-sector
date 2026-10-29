@@ -60,6 +60,39 @@ function writeStored(key: string, value: string): void {
 
 export type LightingMode = 'dusk' | 'day';
 
+const unit = (key: string, fallback: number) => ({
+  get(): number {
+    const v = Number(readStored(key) ?? String(fallback));
+    return Number.isFinite(v) && v >= 0 && v <= 1 ? v : fallback;
+  },
+  set(v: number): void {
+    writeStored(key, String(Math.max(0, Math.min(1, v))));
+  },
+});
+const flag = (key: string, fallback: boolean) => ({
+  get(): boolean {
+    const v = readStored(key);
+    return v === null ? fallback : v === '1';
+  },
+  set(v: boolean): void {
+    writeStored(key, v ? '1' : '0');
+  },
+});
+
+const volume = unit('volume', 0.8);
+const sfxVolume = unit('sfxVolume', 1);
+const ambienceVolume = unit('ambienceVolume', 0.7);
+const muted = flag('muted', false);
+const blood = flag('blood', true);
+const shake = flag('shake', true);
+const captions = flag('captions', false);
+const contrast = flag('contrast', false);
+const objectivesOpen = flag('objectivesOpen', true);
+const logOpen = flag('logOpen', true);
+const unitsOpen = flag('unitsOpen', true);
+const minimapOpen = flag('minimapOpen', true);
+
+/** Per-viewer preferences (localStorage, falls back to defaults when unavailable). */
 export const Settings = {
   get hudScale(): number {
     const v = Number(readStored('hudScale') ?? '1');
@@ -71,24 +104,35 @@ export const Settings = {
   },
   /** Master volume 0..1. */
   get volume(): number {
-    const v = Number(readStored('volume') ?? '0.8');
-    return Number.isFinite(v) && v >= 0 && v <= 1 ? v : 0.8;
+    return volume.get();
   },
   set volume(v: number) {
-    writeStored('volume', String(Math.max(0, Math.min(1, v))));
+    volume.set(v);
+  },
+  get sfxVolume(): number {
+    return sfxVolume.get();
+  },
+  set sfxVolume(v: number) {
+    sfxVolume.set(v);
+  },
+  get ambienceVolume(): number {
+    return ambienceVolume.get();
+  },
+  set ambienceVolume(v: number) {
+    ambienceVolume.set(v);
   },
   get muted(): boolean {
-    return readStored('muted') === '1';
+    return muted.get();
   },
   set muted(v: boolean) {
-    writeStored('muted', v ? '1' : '0');
+    muted.set(v);
   },
   /** Stylized blood decals and particles (spec 14: configurable intensity). */
   get blood(): boolean {
-    return readStored('blood') !== '0';
+    return blood.get();
   },
   set blood(v: boolean) {
-    writeStored('blood', v ? '1' : '0');
+    blood.set(v);
   },
   get lighting(): LightingMode {
     return readStored('lighting') === 'day' ? 'day' : 'dusk';
@@ -96,4 +140,56 @@ export const Settings = {
   set lighting(v: LightingMode) {
     writeStored('lighting', v);
   },
+  /** Camera shake and damage vignette (off = reduced motion). */
+  get shake(): boolean {
+    return shake.get();
+  },
+  set shake(v: boolean) {
+    shake.set(v);
+  },
+  /** On-screen captions for important sounds (spec 13.3). */
+  get captions(): boolean {
+    return captions.get();
+  },
+  set captions(v: boolean) {
+    captions.set(v);
+  },
+  /** High-contrast HUD (stronger panels, larger status text, shape-coded markers). */
+  get contrast(): boolean {
+    return contrast.get();
+  },
+  set contrast(v: boolean) {
+    contrast.set(v);
+    applyContrast();
+  },
+  get objectivesOpen(): boolean {
+    return objectivesOpen.get();
+  },
+  set objectivesOpen(v: boolean) {
+    objectivesOpen.set(v);
+  },
+  get logOpen(): boolean {
+    return logOpen.get();
+  },
+  set logOpen(v: boolean) {
+    logOpen.set(v);
+  },
+  get unitsOpen(): boolean {
+    return unitsOpen.get();
+  },
+  set unitsOpen(v: boolean) {
+    unitsOpen.set(v);
+  },
+  get minimapOpen(): boolean {
+    return minimapOpen.get();
+  },
+  set minimapOpen(v: boolean) {
+    minimapOpen.set(v);
+  },
 };
+
+/** Applies document-level presentation settings (HUD scale, contrast). */
+export function applyContrast(): void {
+  document.documentElement.classList.toggle('high-contrast', Settings.contrast);
+  document.documentElement.style.setProperty('--hud-scale', String(Settings.hudScale));
+}

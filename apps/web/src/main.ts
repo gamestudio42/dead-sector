@@ -1,10 +1,14 @@
 import Phaser from 'phaser';
 import './styles/main.css';
 import { BootScene } from './scenes/BootScene';
+import { BriefingScene } from './scenes/BriefingScene';
 import { DebriefScene } from './scenes/DebriefScene';
 import { MenuScene } from './scenes/MenuScene';
 import { TacticalScene } from './scenes/TacticalScene';
 import { AudioEngine } from './audio/AudioEngine';
+import { applyContrast } from './ui/SaveStore';
+
+applyContrast();
 
 // Browsers only allow audio after a user gesture; unlock on the first one.
 const unlockAudio = (): void => AudioEngine.get().unlock();
@@ -24,7 +28,7 @@ function boot(): void {
     backgroundColor: '#0d0e10',
     scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
     render: { antialias: true, pixelArt: false },
-    scene: [BootScene, MenuScene, TacticalScene, DebriefScene],
+    scene: [BootScene, MenuScene, BriefingScene, TacticalScene, DebriefScene],
     banner: false,
   });
   (window as unknown as Record<string, unknown>)['__PHASER_GAME__'] = game;

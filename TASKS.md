@@ -6,8 +6,6 @@
 
 ## NEXT
 
-- Block 2 — premium interface: collapsible/contextual HUD panels, minimap (explored area + known contacts, spec §13.1),
-  options menu (audio buses, keybinds, colour-blind palette, sound captions), title screen and map briefing, richer debrief.
 - Block 3 — controls: shift-queued waypoints, drag-box selection, right-click context menu, rebindable keys.
 - Block 4 — tactical depth: barricades and breakable windows with HP, infection that turns survivors, heavy and
   screamer infected, roaming hordes and an escalating alarm.
@@ -20,6 +18,10 @@
 - (none)
 
 ## DONE
+
+- Block 2 — premium interface: title screen with live backdrop, briefing (map, objectives, intel, roster, seed),
+  compact collapsible HUD with tooltips, minimap, options (audio buses, captions, high contrast, reduced motion,
+  lighting, blood, HUD scale), graded debriefing with timeline and route map; F5/F9 quicksave/load.
 
 - Block 1 — presentation and game feel: procedural terrain, animated character sprites, soft fog, dusk lighting,
   particles/decals/camera shake/damage vignette, order markers, procedural spatial audio + adaptive drone, survivor

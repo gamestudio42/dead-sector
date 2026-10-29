@@ -1,4 +1,5 @@
 import type { GameState, SimEvent } from '@dead-sector/sim';
+import { keyName } from '../input/KeyBindings';
 import { MT } from '../ui/i18n';
 
 /** A contextual hint, shown once per profile the first time its situation happens. */
@@ -11,11 +12,11 @@ export interface Tip {
 const TIPS: Record<string, () => Omit<Tip, 'id'>> = {
   select: () => ({
     title: 'Comando',
-    text: 'Selecione um esquadrão (1/2, clique ou arraste uma caixa) e clique com o botão direito no chão para mover. Espaço pausa a qualquer momento — ordens dadas em pausa são cumpridas ao retomar.',
+    text: `Selecione um esquadrão (${keyName('squad1')}/${keyName('squad2')}, clique ou arraste uma caixa) e clique com o botão direito no chão para mover. A câmera anda com ${['panUp', 'panLeft', 'panDown', 'panRight'].map((a) => keyName(a as 'panUp')).join('')} (Shift acelera). ${keyName('pause')} pausa a qualquer momento. Todas as teclas podem ser trocadas em Opções → Controles.`,
   }),
   sneak: () => ({
     title: 'Silêncio',
-    text: 'Q deixa o esquadrão furtivo: mais lento, muito mais silencioso. Os anéis no chão mostram até onde cada som chega.',
+    text: `${keyName('modeSneak')} deixa o esquadrão furtivo: mais lento, muito mais silencioso. Os anéis no chão mostram até onde cada som chega.`,
   }),
   contact: () => ({
     title: 'Contato',
@@ -23,7 +24,7 @@ const TIPS: Record<string, () => Omit<Tip, 'id'>> = {
   }),
   noise: () => ({
     title: 'Tiros chamam atenção',
-    text: 'Cada disparo é ouvido longe e eleva o alerta do bairro. F troca a disciplina de fogo: responder, livre ou cessar.',
+    text: `Cada disparo é ouvido longe e eleva o alerta do bairro. ${keyName('firePolicy')} troca a disciplina de fogo: responder, livre ou cessar.`,
   }),
   locked: () => ({
     title: 'Porta trancada',
@@ -43,7 +44,7 @@ const TIPS: Record<string, () => Omit<Tip, 'id'>> = {
   }),
   horde: () => ({
     title: 'Horda a caminho',
-    text: 'Evite as avenidas por onde ela vai passar, barrique portas (B com o cursor sobre a porta) ou termine o trabalho depressa.',
+    text: `Evite as avenidas por onde ela vai passar, barrique portas (${keyName('barricade')} com o cursor sobre a porta) ou termine o trabalho depressa.`,
   }),
   rescue: () => ({
     title: 'Escolta',

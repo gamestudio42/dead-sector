@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
 import { CELL } from '../render/constants';
-import { KeyBindings } from './KeyBindings';
+import { Settings } from '../ui/SaveStore';
+import { KeyBindings, type Action } from './KeyBindings';
 
-/** Rebindable key pan (arrows by default), mouse wheel zoom, middle-button drag. Presentation only. */
+export const FAST_FACTOR = 2.5;
+
+/** Rebindable key pan (WASD and arrows by default, Shift for fast), wheel zoom, middle drag. Presentation only. */
 export class CameraController {
   private keys: Record<string, boolean> = {};
   private dragging: { x: number; y: number } | null = null;
@@ -46,11 +49,14 @@ export class CameraController {
 
   update(deltaMs: number): void {
     const cam = this.scene.cameras.main;
-    const speed = (700 / cam.zoom) * (deltaMs / 1000);
-    if (this.keys[KeyBindings.get('panLeft')]) cam.scrollX -= speed;
-    if (this.keys[KeyBindings.get('panRight')]) cam.scrollX += speed;
-    if (this.keys[KeyBindings.get('panUp')]) cam.scrollY -= speed;
-    if (this.keys[KeyBindings.get('panDown')]) cam.scrollY += speed;
+    // Shift is the "fast camera" modifier (playtest request); the base speed is a setting
+    const fast = this.keys['ShiftLeft'] || this.keys['ShiftRight'] ? FAST_FACTOR : 1;
+    const speed = ((700 * Settings.cameraSpeed * fast) / cam.zoom) * (deltaMs / 1000);
+    const held = (action: Action) => KeyBindings.codes(action).some((c) => this.keys[c]);
+    if (held('panLeft')) cam.scrollX -= speed;
+    if (held('panRight')) cam.scrollX += speed;
+    if (held('panUp')) cam.scrollY -= speed;
+    if (held('panDown')) cam.scrollY += speed;
   }
 
   destroy(): void {

@@ -11,7 +11,7 @@ import {
   type World,
 } from '@dead-sector/sim';
 import { fmtTime, MT, T } from './i18n';
-import { KeyBindings, keyLabel, type Action } from '../input/KeyBindings';
+import { KeyBindings, keyLabel, keyName, type Action } from '../input/KeyBindings';
 import type { Tip } from '../presentation/tutorial';
 import { Settings } from './SaveStore';
 
@@ -124,10 +124,10 @@ export class Hud {
         <span class="alarm" data-el="alarm" data-testid="alarm" title="Alerta do bairro: tiros, portas, vidro e gritos acumulam; em Alerta vêm mais corredores, em Caçada uma horda é atraída"></span>
         <span class="paused-flag" data-el="pausedFlag" data-testid="paused-flag"></span>
         <span class="tools">
-          <button data-act="pause" data-testid="btn-pause" title="Pausar / retomar (Espaço)" aria-label="Pausar"><span data-el="pauseLabel">${ICONS.pause}</span></button>
-          <button data-act="speed" data-testid="btn-speed" title="Velocidade (Tab)"><span data-el="speed">1×</span></button>
-          <button data-act="save" data-testid="btn-save" title="Salvamento rápido (F5)" aria-label="Salvar">${ICONS.save}</button>
-          <button data-act="load" data-testid="btn-load" title="Carregar salvamento rápido (F9)" aria-label="Carregar">${ICONS.load}</button>
+          <button data-act="pause" data-testid="btn-pause" title="Pausar / retomar" data-hint="pause" aria-label="Pausar"><span data-el="pauseLabel">${ICONS.pause}</span></button>
+          <button data-act="speed" data-testid="btn-speed" title="Velocidade" data-hint="speed"><span data-el="speed">1×</span></button>
+          <button data-act="save" data-testid="btn-save" title="Salvamento rápido" data-hint="quicksave" aria-label="Salvar">${ICONS.save}</button>
+          <button data-act="load" data-testid="btn-load" title="Carregar salvamento rápido" data-hint="quickload" aria-label="Carregar">${ICONS.load}</button>
           <button data-act="options" data-testid="btn-options" title="Opções" aria-label="Opções">${ICONS.gear}</button>
           <button data-act="menu" title="Menu de pausa (Esc)" aria-label="Menu">${ICONS.menu}</button>
         </span>
@@ -145,14 +145,14 @@ export class Hud {
           <h4>Ordens — <span data-el="orderSquad">—</span>
             <span class="help" title="Botão direito no chão: mover no modo atual&#10;Sobre infectado visível: atacar&#10;Sobre porta, armário, civil ou rádio: interagir&#10;No minimapa: mover o esquadrão">?</span></h4>
           <div class="grid">
-            <button data-order="move" title="Mover no passo normal (W)"><span class="kbd" data-kbd="modeMove">W</span>Mover</button>
-            <button data-order="sneak" title="Furtivo: lento e silencioso (Q)"><span class="kbd" data-kbd="modeSneak">Q</span>Furtivo</button>
-            <button data-order="sprint" title="Correr: rápido, barulhento, cansa (E)"><span class="kbd" data-kbd="modeSprint">E</span>Correr</button>
-            <button data-order="hold" title="Manter posição (H)"><span class="kbd" data-kbd="hold">H</span>Manter</button>
-            <button data-order="hide" title="Esconder-se e evitar contato (T)"><span class="kbd" data-kbd="hide">T</span>Esconder</button>
-            <button data-order="retreat" title="Retirada para o ponto seguro (R)"><span class="kbd" data-kbd="retreat">R</span>Retirada</button>
-            <button data-order="regroup" title="Reagrupar no líder (G)"><span class="kbd" data-kbd="regroup">G</span>Reagrupar</button>
-            <button data-act="policy" data-testid="btn-policy" title="Disciplina de fogo (F)"><span class="kbd" data-kbd="firePolicy">F</span><span data-el="policy"></span></button>
+            <button data-order="move" title="Mover no passo normal" data-hint="modeMove"><span class="kbd" data-kbd="modeMove">${keyName('modeMove')}</span>Mover</button>
+            <button data-order="sneak" title="Furtivo: lento e silencioso" data-hint="modeSneak"><span class="kbd" data-kbd="modeSneak">${keyName('modeSneak')}</span>Furtivo</button>
+            <button data-order="sprint" title="Correr: rápido, barulhento, cansa" data-hint="modeSprint"><span class="kbd" data-kbd="modeSprint">${keyName('modeSprint')}</span>Correr</button>
+            <button data-order="hold" title="Manter posição" data-hint="hold"><span class="kbd" data-kbd="hold">${keyName('hold')}</span>Manter</button>
+            <button data-order="hide" title="Esconder-se e evitar contato" data-hint="hide"><span class="kbd" data-kbd="hide">${keyName('hide')}</span>Esconder</button>
+            <button data-order="retreat" title="Retirada para o ponto seguro" data-hint="retreat"><span class="kbd" data-kbd="retreat">${keyName('retreat')}</span>Retirada</button>
+            <button data-order="regroup" title="Reagrupar no líder" data-hint="regroup"><span class="kbd" data-kbd="regroup">G</span>Reagrupar</button>
+            <button data-act="policy" data-testid="btn-policy" title="Disciplina de fogo" data-hint="firePolicy"><span class="kbd" data-kbd="firePolicy">F</span><span data-el="policy"></span></button>
           </div>
           <div class="context" data-el="context" data-testid="context"></div>
         </div>
@@ -613,6 +613,11 @@ export class Hud {
     (els['noise'] as HTMLElement).style.width = `${pct(recent, 400)}%`;
     (els['pausedFlag'] as HTMLElement).textContent = view.paused ? 'PAUSADO' : '';
     this.setHtml(els['pauseLabel'], view.paused ? ICONS.play : ICONS.pause);
+    this.root.querySelectorAll<HTMLElement>('[data-hint]').forEach((el) => {
+      el.dataset['base'] ??= el.title;
+      const title = `${el.dataset['base']} (${keyName(el.dataset['hint'] as Action)})`;
+      if (el.title !== title) el.title = title;
+    });
     this.root
       .querySelectorAll<HTMLElement>('[data-kbd]')
       .forEach((el) => this.setHtml(el, keyLabel(KeyBindings.get(el.dataset['kbd'] as Action))));

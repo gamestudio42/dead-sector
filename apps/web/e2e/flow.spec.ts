@@ -80,7 +80,7 @@ test('critical flow: menu → orders → pause/resume → fight → collect → 
   await page.keyboard.press('Space');
   await expect(page.getByTestId('paused-flag')).toHaveText('PAUSADO');
   const t0 = await hook(page, (h) => h.tick());
-  await page.keyboard.press('h');
+  await page.keyboard.press('v');
   await page.waitForTimeout(700);
   expect(await hook(page, (h) => h.tick())).toBe(t0);
   expect(await hook(page, (h) => h.state().squads[0].order?.type)).toBe('move');
@@ -284,6 +284,52 @@ test('controls: drag-select, Shift waypoints, Ctrl context menu and rebound keys
   await page.keyboard.press('Space');
   await expect.poll(() => hook(page, (h) => h.state().squads[0].order?.type)).toBe('hold');
   await page.screenshot({ path: `${SHOTS}/controls-1280x720.png` });
+  expect(errors).toEqual([]);
+});
+
+test('default keys: WASD pans the camera, Shift pans faster, orders on Q/E/Z/X/C/V', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await startMission(page);
+  await page.keyboard.press('Space');
+  const screenX = () => hook(page, (h) => h.worldToScreen(40, 40).x);
+  const pan = async (shift: boolean) => {
+    await hook(page, (h) => (h.centerOn(40, 40), null));
+    await page.waitForTimeout(100);
+    const x0 = await screenX();
+    if (shift) await page.keyboard.down('Shift');
+    await page.keyboard.down('d');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('d');
+    if (shift) await page.keyboard.up('Shift');
+    return x0 - (await screenX());
+  };
+  const normal = await pan(false);
+  const fast = await pan(true);
+  expect(normal).toBeGreaterThan(20);
+  expect(fast).toBeGreaterThan(normal * 1.6);
+
+  await page.keyboard.press('Space'); // resume: orders apply on the next tick
+  await page.keyboard.press('1');
+  const order = () => hook(page, (h) => h.state().squads[0].order?.type);
+  const mode = () => hook(page, (h) => h.state().squads[0].moveMode);
+  for (const [key, want] of [
+    ['z', 'sneak'],
+    ['c', 'sprint'],
+    ['x', 'move'],
+  ] as const) {
+    await page.keyboard.press(key);
+    await expect.poll(mode).toBe(want);
+  }
+  for (const [key, want] of [
+    ['v', 'hold'],
+    ['e', 'hide'],
+    ['q', 'retreat'],
+  ] as const) {
+    await page.keyboard.press(key);
+    await expect.poll(order).toBe(want);
+  }
   expect(errors).toEqual([]);
 });
 

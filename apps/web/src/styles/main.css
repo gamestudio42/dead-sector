@@ -1367,3 +1367,25 @@ table.roster tr.fallen td.state {
   padding-top: 24px;
   padding-bottom: 24px;
 }
+.bind-head .presets {
+  display: inline-flex;
+  gap: 6px;
+}
+.bind-cols {
+  display: grid;
+  grid-template-columns: 1fr 72px 72px;
+  gap: 6px;
+  color: var(--muted);
+}
+.bind-row {
+  display: grid !important;
+  grid-template-columns: 1fr 72px 72px;
+  gap: 6px;
+}
+button.bind.alt.empty {
+  color: var(--muted);
+  opacity: 0.6;
+}
+.bindings {
+  grid-template-columns: 1fr !important;
+}

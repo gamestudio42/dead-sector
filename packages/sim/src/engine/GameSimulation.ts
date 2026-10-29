@@ -11,6 +11,7 @@ import { evaluateObjectives, updateInteractions } from '../systems/Objectives';
 import { updatePerception } from '../systems/Perception';
 import { updatePsychology } from '../systems/Psychology';
 import { updateReinforcements } from '../systems/Reinforcements';
+import { updateHordes } from '../systems/Hordes';
 import { decideSurvivors } from '../systems/SurvivorAI';
 import { decideZombies } from '../systems/ZombieAI';
 import { SeededRng } from './SeededRng';
@@ -33,6 +34,7 @@ export function advanceTick(
   updatePerception(world, state, ctx);
   updateNoise(world, state, ctx);
   updateReinforcements(world, state, ctx);
+  updateHordes(world, state, ctx);
   decideZombies(world, state, ctx);
   decideSurvivors(world, state, ctx);
   moveActors(world, state, ctx);

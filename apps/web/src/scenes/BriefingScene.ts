@@ -16,6 +16,10 @@ const INTEL = [
   'Ao transmitir, o rádio de extração atrai infectados até o transporte chegar.',
   'A civil está ferida e não luta: ela segue a equipe a pé depois do resgate.',
   'Furtivo e portas fechadas abafam o ruído. Corredores reagem rápido a qualquer som.',
+  'Infectados atraídos quebram janelas e portas. Cada esquadrão tem 2 kits de tábuas para barricar (Ctrl + clique direito ou B) — martelar faz barulho.',
+  'Há um gritador no leste e um brutamontes na avenida sul. O grito atrai tudo ao redor; o brutamontes aguenta muito tiro.',
+  'Barulho constante eleva o alerta do bairro. Em Caçada, e com o passar do tempo, hordas entram pelas bordas e patrulham as avenidas.',
+  'Mordidas infectam: sem tratamento, o ferido se transforma em poucos minutos. Um socorrista por perto ganha tempo.',
 ];
 
 const pips = (v: number) =>

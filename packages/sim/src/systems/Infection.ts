@@ -1,6 +1,7 @@
 import type { GameState, Squad, Survivor } from '../model/types';
 import type { World } from '../model/World';
-import { emit } from '../engine/EventBus';
+import { emit, nextId } from '../engine/EventBus';
+import { makeZombie } from '../mission/createMission';
 import type { TickContext } from '../engine/TickContext';
 import { dist } from '../spatial/vec';
 import type { DamageEntry } from './Combat';
@@ -18,6 +19,7 @@ function handleSurvivorDeath(
   ctx: TickContext,
   s: Survivor,
   killerId: string,
+  cause: 'wounds' | 'turned' = 'wounds',
 ): void {
   s.alive = false;
   s.health = 0;
@@ -34,6 +36,7 @@ function handleSurvivorDeath(
     killerId,
     name: s.name,
     civilian: s.isObjectiveCivilian,
+    cause,
   });
   const imp = world.rules.stress.impulses;
   for (const other of state.survivors) {
@@ -78,7 +81,9 @@ export function resolveDamageAndInfection(
     if (z) {
       if (!z.alive) continue;
       z.health -= hit.amount;
-      z.staggerUntil = state.tick + Math.round(world.rules.combat.zombieStaggerSeconds * 10);
+      const staggerFactor = world.content.zombieTypes[z.typeId]?.staggerFactor ?? 1;
+      z.staggerUntil =
+        state.tick + Math.round(world.rules.combat.zombieStaggerSeconds * 10 * staggerFactor);
       if (z.health <= 0) {
         z.health = 0;
         z.alive = false;
@@ -125,19 +130,69 @@ export function resolveDamageAndInfection(
     if (s.health <= 0) handleSurvivorDeath(world, state, ctx, s, hit.sourceId);
   }
 
-  // Infection progresses on mission time; MVP shows it in HUD/debrief, no in-battle turning.
+  progressInfection(world, state, ctx);
+}
+
+/** A squad medic close by slows the infection (spec 7.4: treatment buys time, never cures). */
+function medicNearby(state: GameState, ctx: TickContext, s: Survivor): boolean {
+  if (!s.squadId) return false;
+  const squad = state.squads.find((q) => q.id === s.squadId);
+  return !!squad?.memberIds.some((id) => {
+    const m = ctx.survivorsById.get(id);
+    return (
+      !!m &&
+      m !== s &&
+      m.alive &&
+      !m.panicked &&
+      m.medicine >= 50 &&
+      dist(m.position, s.position) <= 4
+    );
+  });
+}
+
+/**
+ * Infection advances on mission time: exposed → infected → critical → turned. Turning kills the
+ * survivor (counted once, like any death) and an infected rises in the same spot.
+ */
+function progressInfection(world: World, state: GameState, ctx: TickContext): void {
   const inf = world.rules.infection;
+  const stages: Record<string, number> = {
+    exposed: inf.exposedToInfectedSeconds * 10,
+    infected: inf.infectedToCriticalSeconds * 10,
+    critical: inf.criticalToTurnSeconds * 10,
+  };
   for (const s of state.survivors) {
-    if (!s.alive || s.infection === 'healthy' || s.infection === 'critical') continue;
-    s.infectionTicks += 1;
-    if (s.infection === 'exposed' && s.infectionTicks >= inf.exposedToInfectedSeconds * 10) {
-      s.infection = 'infected';
-      s.infectionTicks = 0;
-    } else if (
-      s.infection === 'infected' &&
-      s.infectionTicks >= inf.infectedToCriticalSeconds * 10
-    ) {
-      s.infection = 'critical';
-    }
+    if (!s.alive || s.extracted || s.infection === 'healthy') continue;
+    // with a medic nearby the clock only advances on part of the ticks (deterministic, no RNG)
+    const step = medicNearby(state, ctx, s) ? inf.medicSlowFactor : 1;
+    s.infectionTicks += step;
+    const limit = stages[s.infection] ?? Infinity;
+    if (s.infectionTicks < limit) continue;
+    s.infectionTicks = 0;
+    if (s.infection === 'exposed') s.infection = 'infected';
+    else if (s.infection === 'infected') s.infection = 'critical';
+    else turnSurvivor(world, state, ctx, s);
+  }
+}
+
+function turnSurvivor(world: World, state: GameState, ctx: TickContext, s: Survivor): void {
+  const pos = { ...s.position };
+  handleSurvivorDeath(world, state, ctx, s, s.id, 'turned');
+  const id = nextId(state, 'zt');
+  const z = makeZombie(world, id, 'walker', pos, s.facing, 'idle', state.tick + 1);
+  z.spawnedBy = s.id;
+  state.zombies.push(z);
+  ctx.zombiesById.set(z.id, z);
+  emit(state, 'SURVIVOR_TURNED', {
+    survivorId: s.id,
+    zombieId: id,
+    x: pos.x,
+    y: pos.y,
+    name: s.name,
+  });
+  // watching a friend turn is the worst thing that can happen to morale
+  for (const other of state.survivors) {
+    if (other.alive && other !== s && dist(other.position, pos) < 15)
+      addImpulse(other, `turned-${s.id}`, world.rules.stress.impulses.allyDeath * 1.5);
   }
 }

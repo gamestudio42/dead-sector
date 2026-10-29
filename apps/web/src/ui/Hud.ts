@@ -120,6 +120,7 @@ export class Hud {
         <span class="objective" data-el="objective" data-testid="current-objective"></span>
         <span class="clock" data-el="clock" data-testid="clock"></span>
         <span class="noise" title="Ruído recente: quanto mais alto, mais infectados ouvem e mais reforços chegam">${ICONS.sound}<span class="meter"><i data-el="noise" style="width:0%"></i></span></span>
+        <span class="alarm" data-el="alarm" data-testid="alarm" title="Alerta do bairro: tiros, portas, vidro e gritos acumulam; em Alerta vêm mais corredores, em Caçada uma horda é atraída"></span>
         <span class="paused-flag" data-el="pausedFlag" data-testid="paused-flag"></span>
         <span class="tools">
           <button data-act="pause" data-testid="btn-pause" title="Pausar / retomar (Espaço)" aria-label="Pausar"><span data-el="pauseLabel">${ICONS.pause}</span></button>
@@ -386,7 +387,12 @@ export class Hud {
           this.push(state, `${this.name(state, p['survivorId'])} se recompôs`, 'good');
           break;
         case 'DOOR_CHANGED':
-          if (p['broken']) this.push(state, 'Uma porta cedeu aos infectados!', 'bad');
+          if (p['barricadeBroken']) this.push(state, 'Uma barricada cedeu!', 'bad');
+          else if (p['removed'])
+            this.push(state, `${this.name(state, p['byId'])} removeu uma barricada`);
+          else if (p['broken'] && p['window'])
+            this.push(state, 'Vidro quebrado: infectados entrando por uma janela', 'bad');
+          else if (p['broken']) this.push(state, 'Uma porta cedeu aos infectados!', 'bad');
           else if (p['forced'])
             this.push(state, `${this.name(state, p['byId'])} arrombou a porta`, 'warn');
           break;
@@ -396,6 +402,7 @@ export class Hud {
             civilian: 'resgatando a civil',
             beacon: 'ativando o rádio',
             door: 'mexendo na porta',
+            barricade: 'pregando tábuas (barulho!)',
           };
           this.push(
             state,
@@ -429,6 +436,46 @@ export class Hud {
             state,
             `🔊 Movimentação de infectados na entrada ${SPAWNER_NAMES[p['spawnerId'] as string] ?? ''}`,
             'warn',
+          );
+          break;
+        case 'ALARM_CHANGED': {
+          const level = p['level'] as number;
+          const up = level > (p['previous'] as number);
+          this.push(
+            state,
+            `Alerta do bairro: ${T.alarm[level]}`,
+            up ? (level >= 2 ? 'bad' : 'warn') : 'good',
+          );
+          if (up && level >= 2) this.toast(`Alerta: ${T.alarm[level]}`);
+          break;
+        }
+        case 'HORDE_INCOMING': {
+          const msg = `🔊 Horda se aproximando pela entrada ${T.spawner[p['spawnerId'] as string] ?? ''} (${p['inSeconds']} s)`;
+          this.push(state, msg, 'bad');
+          this.toast(msg);
+          break;
+        }
+        case 'HORDE_SPAWNED':
+          this.push(
+            state,
+            `Horda de ${p['size']} infectados entrou pelo ${T.spawner[p['spawnerId'] as string] ?? ''}`,
+            'bad',
+          );
+          break;
+        case 'ZOMBIE_SCREAMED':
+          this.push(state, '🔊 Um gritador berrou — tudo por perto vem ver', 'bad');
+          break;
+        case 'SURVIVOR_TURNED': {
+          const msg = `${esc(String(p['name']).split(' ')[0] ?? '')} se transformou!`;
+          this.push(state, msg, 'bad');
+          this.toast(msg);
+          break;
+        }
+        case 'BARRICADE_BUILT':
+          this.push(
+            state,
+            `${this.squadName(state, p['squadId'])}: barricada pronta (${p['kitsLeft']} ${p['kitsLeft'] === 1 ? 'kit restante' : 'kits restantes'})`,
+            'good',
           );
           break;
         case 'MISSION_ENDED':
@@ -480,7 +527,7 @@ export class Hud {
       <div class="name"><span class="kbd">${index + 1}</span>${esc(sq.displayName)} <span class="small">${alive.length}/${members.length}</span></div>
       <div class="meta">Líder: ${leader && leader.alive ? esc(leader.name) : '—'}</div>
       <div class="meta">${order}</div>
-      <div class="meta">${T.policy[sq.firePolicy]} · ${T.mode[sq.moveMode]}</div>
+      <div class="meta">${T.policy[sq.firePolicy]} · ${T.mode[sq.moveMode]} · <span title="Kits de barricada">🪵 ${sq.barricadeKits}</span></div>
       <div>${alive.length ? this.statusTags(state, alive) : '<span class="tag bad">eliminado</span>'}</div>
     </div>`;
   }
@@ -528,6 +575,8 @@ export class Hud {
       : (T.outcome[state.mission.status] ?? '');
     (els['clock'] as HTMLElement).textContent =
       `${fmtTime(state.tick / 10)} / ${fmtTime(state.mission.timeLimitTicks / 10)}`;
+    const level = state.mission.alarmLevel;
+    this.setHtml(els['alarm'], `<span class="alarm-pip lv${level}"></span>${T.alarm[level]}`);
     const recent = state.recentNoises.reduce((a, n) => a + n.intensity, 0);
     (els['noise'] as HTMLElement).style.width = `${pct(recent, 400)}%`;
     (els['pausedFlag'] as HTMLElement).textContent = view.paused ? 'PAUSADO' : '';

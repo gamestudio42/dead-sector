@@ -6,6 +6,7 @@ import type { TickContext } from '../engine/TickContext';
 import { hasLineOfSight } from '../spatial/Raycast';
 import { angleDiff, copy, dist } from '../spatial/vec';
 import { findPath, nearestStandableCell } from './Pathfinding';
+import { hordeGoal } from './Hordes';
 import { emitNoise } from './Noise';
 
 const THINK_INTERVAL: Record<ZombieStateName, number> = {
@@ -106,6 +107,12 @@ function think(world: World, state: GameState, ctx: TickContext, z: Zombie): voi
       emit(state, 'ZOMBIE_ALERTED', { zombieId: z.id, cause: 'sight', targetId: target.id });
       emitNoise(state, z.position, world.rules.noise.zombieGroan, 'shout', z.id);
     }
+    if (type.screamIntensity > 0 && tick >= z.screamReadyTick) {
+      // a screamer's shriek carries across blocks: everything that hears it comes to look
+      z.screamReadyTick = tick + Math.round(type.screamCooldownSeconds * 10);
+      emitNoise(state, z.position, type.screamIntensity, 'shout', z.id);
+      emit(state, 'ZOMBIE_SCREAMED', { zombieId: z.id, x: z.position.x, y: z.position.y });
+    }
     ai.targetId = target.id;
     ai.lastKnownPos = copy(target.position);
     ai.lastSeenTick = tick;
@@ -165,6 +172,11 @@ function think(world: World, state: GameState, ctx: TickContext, z: Zombie): voi
       }
       break;
     case 'wander':
+      if (z.hordeId) {
+        const horde = state.hordes.find((h) => h.id === z.hordeId);
+        if (horde) ai.goal = hordeGoal(horde, z.id);
+        break;
+      }
       if (arrived) {
         if (ctx.rng.chance(0.45)) {
           setState(z, 'idle');
@@ -176,6 +188,12 @@ function think(world: World, state: GameState, ctx: TickContext, z: Zombie): voi
       }
       break;
     case 'idle':
+      if (z.hordeId) {
+        setState(z, 'wander');
+        const horde = state.hordes.find((h) => h.id === z.hordeId);
+        if (horde) ai.goal = hordeGoal(horde, z.id);
+        break;
+      }
       if (tick >= ai.stateUntil) {
         setState(z, 'wander');
         ai.goal = randomGoalNear(world, state, ctx, z.position, 6);
@@ -195,7 +213,12 @@ function updatePath(world: World, state: GameState, z: Zombie): void {
   const goalCell = Math.floor(goal.y) * world.width + Math.floor(goal.x);
   const exhausted = z.pathIndex >= z.path.length;
   if (goalCell === z.pathGoalCell && !(exhausted && dist(z.position, goal) > 1.2)) return;
-  const path = findPath(world, state, z.position, goal, { agent: 'zombie', maxExpansions: 1800 });
+  // only an infected with a reason (a sound, a sighting, a fresh trail) bothers breaking through
+  const motivated = z.ai.state !== 'wander'; // idle never paths (returned above)
+  const path = findPath(world, state, z.position, goal, {
+    agent: motivated ? 'zombie' : 'zombieCalm',
+    maxExpansions: 1800,
+  });
   z.pathGoalCell = goalCell;
   if (!path) {
     z.path = [];

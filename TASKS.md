@@ -6,8 +6,6 @@
 
 ## NEXT
 
-- Block 4 — tactical depth: barricades and breakable windows with HP, infection that turns survivors, heavy and
-  screamer infected, roaming hordes and an escalating alarm.
 - Block 5 — content: contextual tutorial, two more maps, three linked missions with persistent losses (Phase 5).
 - Block 6 — finish: multi-seed balance, GPU/FPS budget on low-end hardware, desktop package.
 - Art upgrade: replace procedural character sheets with a hand-made or CC0 set (keep frame layout: 8 walk, attack, corpse).
@@ -17,6 +15,10 @@
 - (none)
 
 ## DONE
+
+- Block 4 — tactical depth: breakable windows, plank barricades (kits, hammer noise, removal), infection that turns
+  survivors (medic slows it), heavy and screamer infected, escalating alarm (4 levels, hysteresis) and announced roaming
+  hordes; save schema v3 + migration; stealth acceptance redefined as "no shot until the radio".
 
 - Block 3 — controls: multi-squad selection (Shift, drag box), Shift-click waypoint queue in the simulation (save v2
   - migration), Ctrl + right-click order menu, rebindable physical keys with conflict swap.

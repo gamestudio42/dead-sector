@@ -31,6 +31,10 @@ export interface ZombieLook {
   hair: string;
   lean: number;
   arms: number;
+  /** Torso width multiplier (heavy infected are broad). */
+  bulk?: number;
+  /** Gaping mouth (screamer). */
+  mouth?: boolean;
 }
 
 type Ctx = CanvasRenderingContext2D;
@@ -224,7 +228,8 @@ function drawZombie(c: Ctx, look: ZombieLook, frame: number): void {
   boot(c, cx + fr * 0.7 - 1, cy + 3.2, look.pants);
   // hunched torso, asymmetric shoulders
   c.beginPath();
-  c.ellipse(cx - 0.5 + look.lean, cy + sway * 0.4, 4.4, 7.2, 0.12, 0, Math.PI * 2);
+  const bulk = look.bulk ?? 1;
+  c.ellipse(cx - 0.5 + look.lean, cy + sway * 0.4, 4.4 * bulk, 7.2 * bulk, 0.12, 0, Math.PI * 2);
   c.fillStyle = look.shirt;
   c.fill();
   stroke(c, '#0b0c0e', 1.3);
@@ -256,6 +261,11 @@ function drawZombie(c: Ctx, look: ZombieLook, frame: number): void {
   c.fill();
   ellipse(c, cx + 4.3 + look.lean, cy - 1.2 + sway * 0.3, 0.7, 0.6, '#d9d26a');
   ellipse(c, cx + 4.3 + look.lean, cy + 1.2 + sway * 0.3, 0.7, 0.6, '#d9d26a');
+  if (look.mouth) {
+    // stretched, screaming jaw
+    ellipse(c, cx + 5.4 + look.lean, cy + sway * 0.3, 1.5, 1.9, '#2a0806');
+    ellipse(c, cx + 5.6 + look.lean, cy + sway * 0.3, 0.8, 1.1, '#6a1410');
+  }
 }
 
 /** Body lying on the ground, limbs sprawled. */
@@ -494,8 +504,33 @@ export function survivorTextureKey(templateId: string, civilian: boolean): strin
     : `sv-${SURVIVOR_LOOKS[templateId] ? templateId : 'alfa-civilian'}`;
 }
 
+const HEAVY_LOOK: ZombieLook = {
+  shirt: '#3b3f36',
+  pants: '#1f2123',
+  skin: '#7d8a6c',
+  hair: '#1a1916',
+  lean: 0.3,
+  arms: 1.5,
+  bulk: 1.3,
+};
+const SCREAMER_LOOK: ZombieLook = {
+  shirt: '#8a8478',
+  pants: '#2a2c30',
+  skin: '#b3ae98',
+  hair: '#3a2c22',
+  lean: 1,
+  arms: -0.5,
+  bulk: 0.82,
+  mouth: true,
+};
+
+/** Display scale per infected type relative to a survivor (heavy ones tower over people). */
+export const ZOMBIE_SCALE: Record<string, number> = { heavy: 1.35, screamer: 0.95 };
+
 export function zombieTextureKey(typeId: string, id: string): string {
   if (typeId === 'runner') return 'zb-runner';
+  if (typeId === 'heavy') return 'zb-heavy';
+  if (typeId === 'screamer') return 'zb-screamer';
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return `zb-walker-${Math.abs(h) % ZOMBIE_LOOKS.length}`;
@@ -520,6 +555,8 @@ export function buildSpriteTextures(
     makeSheet(scene, `zb-walker-${i}`, (c, f) => drawZombie(c, look, f)),
   );
   makeSheet(scene, 'zb-runner', (c, f) => drawZombie(c, RUNNER_LOOK, f));
+  makeSheet(scene, 'zb-heavy', (c, f) => drawZombie(c, HEAVY_LOOK, f));
+  makeSheet(scene, 'zb-screamer', (c, f) => drawZombie(c, SCREAMER_LOOK, f));
 
   makeRadial(scene, 'fx-light', 128, [
     [0, 'rgba(255,255,255,1)'],

@@ -23,6 +23,7 @@ const ORDER_TYPES = new Set<OrderType>([
   'retreat',
   'interact',
   'regroup',
+  'barricade',
 ]);
 const POSITION_ORDERS = new Set<OrderType>(['move', 'sneak', 'sprint']);
 export const MAX_WAYPOINTS = 8;
@@ -183,7 +184,10 @@ export function applyCommands(
         reject(state, cmd, 'invalidPayload');
         continue;
       }
-      if ((p.type === 'attack' || p.type === 'interact') && typeof p.targetEntityId !== 'string') {
+      if (
+        (p.type === 'attack' || p.type === 'interact' || p.type === 'barricade') &&
+        typeof p.targetEntityId !== 'string'
+      ) {
         reject(state, cmd, 'invalidPayload');
         continue;
       }

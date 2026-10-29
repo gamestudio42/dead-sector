@@ -3,6 +3,7 @@ import {
   deserializeState,
   GameSimulation,
   MAX_WAYPOINTS,
+  SCHEMA_VERSION,
   serializeState,
   type SimEvent,
 } from '../src';
@@ -110,7 +111,7 @@ describe('queued waypoints (Shift-click)', () => {
     raw.state.schemaVersion = 1;
     for (const sq of raw.state.squads) delete sq.waypoints;
     const restored = deserializeState(JSON.stringify(raw));
-    expect(restored.schemaVersion).toBe(2);
+    expect(restored.schemaVersion).toBe(SCHEMA_VERSION);
     expect(
       restored.squads.every((s) => Array.isArray(s.waypoints) && s.waypoints.length === 0),
     ).toBe(true);

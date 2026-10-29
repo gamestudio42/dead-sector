@@ -18,6 +18,7 @@ import {
   survivorTextureKey,
   WALK_FRAMES,
   zombieTextureKey,
+  ZOMBIE_SCALE,
 } from './SpriteFactory';
 
 export type PositionLookup = (id: string, current: Vec2) => Vec2;
@@ -37,6 +38,8 @@ interface ActorView {
   wasAlive: boolean;
   phase: number;
   survivor: boolean;
+  /** Size relative to a survivor (heavy infected are bigger). */
+  scale: number;
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
@@ -103,10 +106,13 @@ export class EntityRenderer {
     t.setText(text).setPosition(x, y).setVisible(true);
   }
 
-  private view(id: string, texture: string, survivor: boolean): ActorView {
+  private view(id: string, texture: string, survivor: boolean, scale = 1): ActorView {
     let v = this.views.get(id);
     if (!v) {
-      const shadow = this.scene.add.image(0, 0, 'fx-shadow').setDepth(DEPTH.shadows).setScale(0.62);
+      const shadow = this.scene.add
+        .image(0, 0, 'fx-shadow')
+        .setDepth(DEPTH.shadows)
+        .setScale(0.62 * scale);
       const sprite = this.scene.add.image(0, 0, texture, 0).setDepth(DEPTH.actors).setScale(SCALE);
       v = {
         sprite,
@@ -119,6 +125,7 @@ export class EntityRenderer {
         wasAlive: true,
         phase: (this.views.size * 1.7) % (Math.PI * 2),
         survivor,
+        scale,
       };
       this.views.set(id, v);
     }
@@ -145,10 +152,10 @@ export class EntityRenderer {
         v.sprite.setFrame(CORPSE_FRAME).setDepth(DEPTH.corpses).clearTint();
         v.shadow.setVisible(false);
         if (deathSeen) {
-          v.sprite.setScale(SCALE * 0.85);
+          v.sprite.setScale(SCALE * v.scale * 0.85);
           this.scene.tweens.add({
             targets: v.sprite,
-            scale: SCALE,
+            scale: SCALE * v.scale,
             rotation: v.angle + 0.35,
             duration: 380,
             ease: 'Quad.easeOut',
@@ -190,7 +197,7 @@ export class EntityRenderer {
       .setFrame(frame)
       .setPosition(x, y)
       .setRotation(v.angle)
-      .setScale(SCALE * breathe)
+      .setScale(SCALE * v.scale * breathe)
       .setAlpha(v.alpha)
       .setVisible(v.alpha > 0.02);
     if ((this.hurtUntil.get(id) ?? 0) > now) v.sprite.setTintFill(0xff5040);
@@ -293,7 +300,12 @@ export class EntityRenderer {
     for (const z of state.zombies) {
       seen.add(z.id);
       const p = pos(z.id, z.position);
-      const v = this.view(z.id, zombieTextureKey(z.typeId, z.id), false);
+      const v = this.view(
+        z.id,
+        zombieTextureKey(z.typeId, z.id),
+        false,
+        ZOMBIE_SCALE[z.typeId] ?? 1,
+      );
       if (!z.alive) {
         const known = v.alpha > 0.05 || !v.wasAlive;
         const shown = (known || showAllZombies) && fogAt(z.position) !== 0;

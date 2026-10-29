@@ -26,7 +26,13 @@ export type CueKind =
   | 'blocked'
   | 'horde'
   | 'victory'
-  | 'defeat';
+  | 'defeat'
+  | 'glass'
+  | 'hammer'
+  | 'bash'
+  | 'scream'
+  | 'hordeWarning'
+  | 'turn';
 
 export interface Cue {
   kind: CueKind;
@@ -69,13 +75,25 @@ export function cuesForEvents(events: SimEvent[], state: GameState, world: World
           at('footstep', x, y, world.tiles[Math.floor(y) * world.width + Math.floor(x)]);
         } else if (p['category'] === 'shout') {
           const z = zombie(p['sourceEntityId']);
-          if (z) at(z.typeId === 'runner' ? 'shriek' : 'groan', x, y);
+          // the screamer's shriek has its own cue (ZOMBIE_SCREAMED); here only ordinary groans
+          if (z && (p['intensity'] as number) < 50)
+            at(z.typeId === 'runner' ? 'shriek' : 'groan', x, y, z.typeId);
+        } else if (p['category'] === 'glass') {
+          at('glass', x, y);
+        } else if (p['category'] === 'door') {
+          // survivors hammering planks, or infected pounding a door
+          const byZombie = !!zombie(p['sourceEntityId']);
+          const s = survivor(p['sourceEntityId']);
+          if (byZombie) at('bash', x, y);
+          else if (s && s.interaction?.kind === 'barricade') at('hammer', x, y);
         }
         break;
       }
       case 'DOOR_CHANGED': {
         const d = state.doors.find((door) => door.id === p['doorId']);
-        if (d) at(p['broken'] ? 'doorBreak' : 'door', d.cell.x + 0.5, d.cell.y + 0.5);
+        // glass and planks have their own sounds; plain open/close/break are door sounds
+        if (d && !p['window'] && p['barricade'] === undefined)
+          at(p['broken'] ? 'doorBreak' : 'door', d.cell.x + 0.5, d.cell.y + 0.5);
         break;
       }
       case 'WEAPON_RELOADED': {
@@ -106,6 +124,17 @@ export function cuesForEvents(events: SimEvent[], state: GameState, world: World
       case 'REINFORCEMENT_SPAWNED': {
         const sp = world.mission.spawners.find((s) => s.id === p['spawnerId']);
         if (sp) at('horde', sp.cell.x + 0.5, sp.cell.y + 0.5);
+        break;
+      }
+      case 'ZOMBIE_SCREAMED':
+        at('scream', p['x'] as number, p['y'] as number);
+        break;
+      case 'SURVIVOR_TURNED':
+        at('turn', p['x'] as number, p['y'] as number);
+        break;
+      case 'HORDE_INCOMING': {
+        const sp = world.mission.spawners.find((s) => s.id === p['spawnerId']);
+        if (sp) at('hordeWarning', sp.cell.x + 0.5, sp.cell.y + 0.5);
         break;
       }
       case 'EXTRACTION_STARTED':

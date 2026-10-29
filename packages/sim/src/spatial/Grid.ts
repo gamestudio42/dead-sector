@@ -9,7 +9,8 @@ const MOVE_COST: Record<TileType, number> = {
   rubble: 1.6,
   wall: Infinity,
   fence: 1.5,
-  window: Infinity,
+  // climbing through a broken window is slow; intact glass is blocked by the barrier check
+  window: 2,
   doorClosed: 1,
   doorOpen: 1,
   doorLocked: 1,
@@ -20,9 +21,10 @@ const MOVE_COST: Record<TileType, number> = {
   cabinet: Infinity,
 };
 
-const STATIC_BLOCKING = new Set<TileType>(['wall', 'window', 'wreck', 'cabinet']);
+const STATIC_BLOCKING = new Set<TileType>(['wall', 'wreck', 'cabinet']);
 const STATIC_OPAQUE = new Set<TileType>(['wall', 'bush']);
-const DOOR_TILES = new Set<TileType>(['doorClosed', 'doorOpen', 'doorLocked']);
+/** Cells that hold a breakable barrier entity (`Door`): doors and windows. */
+const DOOR_TILES = new Set<TileType>(['doorClosed', 'doorOpen', 'doorLocked', 'window']);
 
 export const inBounds = (world: World, cx: number, cy: number): boolean =>
   cx >= 0 && cy >= 0 && cx < world.width && cy < world.height;
@@ -40,7 +42,9 @@ export function doorAt(world: World, state: GameState, cx: number, cy: number): 
   return i >= 0 ? state.doors[i] : undefined;
 }
 
-export const isDoorClosed = (door: Door): boolean => !door.open && !door.broken;
+/** True while the barrier stops movement: a closed intact door/window, or any barricade. */
+export const isDoorClosed = (door: Door): boolean =>
+  door.barricade > 0 || (!door.open && !door.broken);
 
 export function isDoorTile(world: World, cx: number, cy: number): boolean {
   return DOOR_TILES.has(tileAt(world, cx, cy));
@@ -52,7 +56,8 @@ export function blocksMovement(world: World, state: GameState, cx: number, cy: n
   if (STATIC_BLOCKING.has(t)) return true;
   if (DOOR_TILES.has(t)) {
     const door = doorAt(world, state, cx, cy);
-    return door ? isDoorClosed(door) : false;
+    // a window without an entity (pre-v3 save) stays solid
+    return door ? isDoorClosed(door) : t === 'window';
   }
   return false;
 }
@@ -61,6 +66,7 @@ export function blocksMovement(world: World, state: GameState, cx: number, cy: n
 export function isOpaque(world: World, state: GameState, cx: number, cy: number): boolean {
   const t = tileAt(world, cx, cy);
   if (STATIC_OPAQUE.has(t)) return true;
+  if (t === 'window') return false;
   if (DOOR_TILES.has(t)) {
     const door = doorAt(world, state, cx, cy);
     return door ? isDoorClosed(door) : false;
@@ -78,6 +84,7 @@ export function acousticTile(world: World, state: GameState, cx: number, cy: num
   if (DOOR_TILES.has(t)) {
     const door = doorAt(world, state, cx, cy);
     if (!door) return t;
+    if (t === 'window') return isDoorClosed(door) ? 'window' : 'doorOpen';
     return isDoorClosed(door) ? 'doorClosed' : 'doorOpen';
   }
   return t;

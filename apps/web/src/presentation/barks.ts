@@ -26,6 +26,22 @@ const PANIC_FLEE = ['Não dá! Tô fora!', 'Eu não fico aqui!', 'Corre, corre!'
 const PANIC_FREEZE = ['Não consigo me mexer...', 'Não, não, não...', 'Eu… não…'];
 const RALLY = ['Tá... estou bem.', 'Voltei. Vamos.', 'Respira... certo.'];
 const NEW_LEADER = ['Eu assumo o comando!', 'Comigo agora!'];
+const SPOT_HEAVY = [
+  'Esse é grande!',
+  'Brutamontes! Mirem na cabeça!',
+  'Vai precisar de muita bala…',
+];
+const SPOT_SCREAMER = ['Gritador! Derrubem antes que berre!', 'Aquele ali vai gritar!'];
+const TURNED = ['Ele virou! Atirem!', 'Não… ela se transformou!', 'Afastem-se! Virou um deles!'];
+const HORDE = ['Tem uma horda vindo!', 'Escutem… são muitos.', 'Horda! Precisamos sair daqui.'];
+const BARRICADE = ['Porta travada.', 'Tábuas no lugar.', 'Isso deve segurar um tempo.'];
+const SCREAM_HEARD = ['Que grito foi esse?!', 'Agora todos sabem que estamos aqui.'];
+const SPOT_LINES: Record<string, string[]> = {
+  walker: SPOT_WALKER,
+  runner: SPOT_RUNNER,
+  heavy: SPOT_HEAVY,
+  screamer: SPOT_SCREAMER,
+};
 
 /** Deterministic line choice from the event id so replays read the same. */
 function pick(lines: string[], key: string): string {
@@ -77,9 +93,9 @@ export function barksForEvents(events: SimEvent[], state: GameState): Bark[] {
         if (!p['reacquired'])
           say(
             nearestSquadMember(state, { x: p['x'] as number, y: p['y'] as number }),
-            p['typeId'] === 'runner' ? SPOT_RUNNER : SPOT_WALKER,
+            SPOT_LINES[p['typeId'] as string] ?? SPOT_WALKER,
             e.id,
-            p['typeId'] === 'runner' ? 3 : 2,
+            p['typeId'] === 'walker' ? 2 : 3,
           );
         break;
       case 'OUT_OF_AMMO':
@@ -125,6 +141,34 @@ export function barksForEvents(events: SimEvent[], state: GameState): Bark[] {
         }
         break;
       }
+      case 'SURVIVOR_TURNED':
+        say(
+          nearestSquadMember(
+            state,
+            { x: p['x'] as number, y: p['y'] as number },
+            p['survivorId'] as string,
+          ),
+          TURNED,
+          e.id,
+          4,
+        );
+        break;
+      case 'HORDE_INCOMING': {
+        const leader = state.survivors.find((s) => s.alive && s.isLeader && !s.extracted);
+        say(leader, HORDE, e.id, 4);
+        break;
+      }
+      case 'BARRICADE_BUILT':
+        say(surv(p['byId']), BARRICADE, e.id, 2);
+        break;
+      case 'ZOMBIE_SCREAMED':
+        say(
+          nearestSquadMember(state, { x: p['x'] as number, y: p['y'] as number }),
+          SCREAM_HEARD,
+          e.id,
+          3,
+        );
+        break;
       case 'EXTRACTION_STARTED':
         say(
           surv(p['survivorId']),

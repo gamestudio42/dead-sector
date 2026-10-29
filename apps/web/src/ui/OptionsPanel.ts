@@ -31,6 +31,7 @@ const ACTION_ORDER: Action[] = [
   'retreat',
   'regroup',
   'firePolicy',
+  'barricade',
   'pause',
   'speed',
   'quicksave',

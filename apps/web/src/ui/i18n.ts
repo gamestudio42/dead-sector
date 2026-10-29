@@ -48,6 +48,7 @@ export const T = {
     retreat: 'Retirada',
     interact: 'Interagir',
     regroup: 'Reagrupar',
+    barricade: 'Barricar',
   } as Record<string, string>,
   orderStatus: {
     queued: 'na fila',
@@ -68,6 +69,7 @@ export const T = {
     obstructed: 'Ação impedida: passagem obstruída',
     missionEnded: 'Missão encerrada',
     queueFull: 'Fila cheia: no máximo 8 pontos por esquadrão',
+    noKits: 'Sem tábuas: o esquadrão não tem mais kits de barricada',
   } as Record<string, string>,
   policy: {
     weaponsFree: 'Fogo livre',
@@ -81,7 +83,19 @@ export const T = {
     infected: 'infectado',
     critical: 'crítico',
   } as Record<string, string>,
-  zombie: { walker: 'Errante', runner: 'Corredor' } as Record<string, string>,
+  zombie: {
+    walker: 'Errante',
+    runner: 'Corredor',
+    heavy: 'Brutamontes',
+    screamer: 'Gritador',
+  } as Record<string, string>,
+  alarm: ['Calmo', 'Inquieto', 'Alerta', 'Caçada'],
+  spawner: {
+    'spawn-north': 'norte',
+    'spawn-south': 'sul',
+    'spawn-west': 'oeste',
+    'spawn-east': 'leste',
+  } as Record<string, string>,
   outcome: {
     success: 'Missão cumprida',
     partial: 'Sucesso parcial',

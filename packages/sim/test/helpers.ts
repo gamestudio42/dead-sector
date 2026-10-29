@@ -59,6 +59,7 @@ export function testContent(sc: TestScenario): ContentBundle {
     },
     zombieZones: [],
     spawners: [],
+    hordes: undefined,
     objectives: {
       perimeter: sc.perimeter ?? { x0: 0, y0: 0, x1: 0, y1: 0 },
       cabinet: { cell: sc.cabinet ?? { x: 0, y: 0 }, interactSeconds: 5 },

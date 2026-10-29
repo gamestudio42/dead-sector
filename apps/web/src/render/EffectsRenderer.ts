@@ -41,6 +41,7 @@ export class EffectsRenderer {
   private debris: Phaser.GameObjects.Particles.ParticleEmitter;
   private blood: Phaser.GameObjects.Particles.ParticleEmitter;
   private ichor: Phaser.GameObjects.Particles.ParticleEmitter;
+  private glass: Phaser.GameObjects.Particles.ParticleEmitter;
   private decals: Phaser.GameObjects.Image[] = [];
   private vignette: HTMLDivElement;
 
@@ -109,6 +110,19 @@ export class EffectsRenderer {
         scale: { start: 0.55, end: 0.2 },
         alpha: { start: 1, end: 0 },
         tint: [0x3b2a18, 0x4a3a1c, 0x2a2010],
+      },
+      DEPTH.particles,
+    );
+    this.glass = burst(
+      'fx-dot',
+      {
+        lifespan: { min: 300, max: 700 },
+        speed: { min: 30, max: 110 },
+        scale: { start: 0.5, end: 0.15 },
+        alpha: { start: 0.95, end: 0 },
+        rotate: { min: 0, max: 360 },
+        tint: [0xbfe6ff, 0xe8f6ff, 0x9fc6dc],
+        blendMode: Phaser.BlendModes.ADD,
       },
       DEPTH.particles,
     );
@@ -277,10 +291,39 @@ export class EffectsRenderer {
           break;
         case 'DOOR_CHANGED': {
           const d = state.doors.find((door) => door.id === p['doorId']);
-          if (d && p['broken']) {
-            this.debris.explode(18, (d.cell.x + 0.5) * CELL, (d.cell.y + 0.5) * CELL);
-            this.dust.explode(10, (d.cell.x + 0.5) * CELL, (d.cell.y + 0.5) * CELL);
+          if (!d) break;
+          const cx = (d.cell.x + 0.5) * CELL;
+          const cy = (d.cell.y + 0.5) * CELL;
+          if (p['broken'] && p['window']) {
+            this.glass.explode(16, cx, cy);
+          } else if (p['broken'] || p['barricadeBroken']) {
+            this.debris.explode(18, cx, cy);
+            this.dust.explode(10, cx, cy);
+          } else if (typeof p['barricade'] === 'number' && (p['barricade'] as number) > 0) {
+            this.dust.explode(8, cx, cy);
           }
+          break;
+        }
+        case 'ZOMBIE_SCREAMED': {
+          if (!visible(p['x'] as number, p['y'] as number)) break;
+          this.fx.push({
+            kind: 'ring',
+            x: p['x'] as number,
+            y: p['y'] as number,
+            x2: 0,
+            y2: 0,
+            radius: 14,
+            color: 0xff4b3a,
+            born: now,
+            ttl: 1100,
+          });
+          break;
+        }
+        case 'SURVIVOR_TURNED': {
+          const x = (p['x'] as number) * CELL;
+          const y = (p['y'] as number) * CELL;
+          (Settings.blood ? this.blood : this.dust).explode(24, x, y);
+          this.shake(300, 0.006);
           break;
         }
         case 'ORDER_ISSUED': {

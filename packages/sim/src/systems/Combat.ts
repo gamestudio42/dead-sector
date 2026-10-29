@@ -1,4 +1,4 @@
-import type { GameState, Squad, Survivor, Zombie } from '../model/types';
+import type { Door, GameState, Squad, Survivor, Zombie } from '../model/types';
 import type { World } from '../model/World';
 import { emit } from '../engine/EventBus';
 import type { TickContext } from '../engine/TickContext';
@@ -169,6 +169,42 @@ function melee(
   });
 }
 
+/** Damage to a barrier: planks absorb first, then the door or glass itself. */
+function bashBarrier(
+  world: World,
+  state: GameState,
+  door: Door,
+  damage: number,
+  byId: string,
+): void {
+  const at = { x: door.cell.x + 0.5, y: door.cell.y + 0.5 };
+  if (door.barricade > 0) {
+    door.barricade = Math.max(0, door.barricade - damage);
+    emitNoise(state, at, world.rules.noise.doorBash, 'door', byId);
+    if (door.barricade === 0)
+      emit(state, 'DOOR_CHANGED', { doorId: door.id, barricade: 0, byId, barricadeBroken: true });
+    return;
+  }
+  door.hp -= damage;
+  if (door.kind === 'window') {
+    if (door.hp > 0) {
+      emitNoise(state, at, world.rules.noise.doorBash * 0.6, 'glass', byId);
+      return;
+    }
+    door.broken = true;
+    emitNoise(state, at, world.rules.barriers.glassBreakNoise, 'glass', byId);
+    emit(state, 'DOOR_CHANGED', { doorId: door.id, broken: true, window: true, byId });
+    return;
+  }
+  emitNoise(state, at, world.rules.noise.doorBash, 'door', byId);
+  if (door.hp <= 0) {
+    door.broken = true;
+    door.open = true;
+    door.locked = false;
+    emit(state, 'DOOR_CHANGED', { doorId: door.id, broken: true, byId });
+  }
+}
+
 function zombieAttacks(
   world: World,
   state: GameState,
@@ -183,21 +219,8 @@ function zombieAttacks(
     const door = state.doors.find((d) => d.id === z.ai.doorTargetId);
     z.ai.doorTargetId = null;
     if (door && isDoorClosed(door) && doorAt(world, state, door.cell.x, door.cell.y) === door) {
-      door.hp -= type.doorDamage;
+      bashBarrier(world, state, door, type.doorDamage, z.id);
       z.attackCooldown = Math.round(type.attackCooldownSeconds * 10);
-      emitNoise(
-        state,
-        { x: door.cell.x + 0.5, y: door.cell.y + 0.5 },
-        world.rules.noise.doorBash,
-        'door',
-        z.id,
-      );
-      if (door.hp <= 0) {
-        door.broken = true;
-        door.open = true;
-        door.locked = false;
-        emit(state, 'DOOR_CHANGED', { doorId: door.id, broken: true, byId: z.id });
-      }
       return;
     }
   }

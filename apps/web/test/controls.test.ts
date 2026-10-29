@@ -72,7 +72,7 @@ describe('orders from the pointer', () => {
 
   it('interacting sends only the first selected squad', () => {
     const s = sim();
-    const door = s.state.doors.find((d) => !d.locked)!;
+    const door = s.state.doors.find((d) => d.kind === 'door' && !d.locked)!;
     const p = { x: door.cell.x + 0.5, y: door.cell.y + 0.5 };
     expect(targetAt(s.world, s.state, p)?.kind).toBe('interact');
     const cmds = commandsForRightClick(s.world, s.state, ['alfa', 'bravo'], p);
@@ -82,7 +82,7 @@ describe('orders from the pointer', () => {
 
   it('forcing a move type ignores interactables under the cursor', () => {
     const s = sim();
-    const door = s.state.doors.find((d) => !d.locked)!;
+    const door = s.state.doors.find((d) => d.kind === 'door' && !d.locked)!;
     const p = { x: door.cell.x + 0.5, y: door.cell.y + 0.5 };
     const [cmd] = commandsForRightClick(s.world, s.state, ['alfa'], p, { moveType: 'sneak' });
     expect(cmd?.type === 'issueOrder' && cmd.payload.type).toBe('sneak');

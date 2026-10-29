@@ -313,7 +313,11 @@ function decideMember(
       ) {
         pathMemberTo(world, state, s, contact.position);
       }
-    } else if (order.type === 'interact' && order.interactorId === s.id && s.interaction) {
+    } else if (
+      (order.type === 'interact' || order.type === 'barricade') &&
+      order.interactorId === s.id &&
+      s.interaction
+    ) {
       s.activity = 'interacting';
       s.pauseMove = true;
       return;

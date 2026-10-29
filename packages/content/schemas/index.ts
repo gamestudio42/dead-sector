@@ -61,6 +61,11 @@ export const zombieTypeSchema = z.object({
   doorDamage: z.number().nonnegative(),
   searchSeconds: z.number().positive(),
   spawnWeight: z.number().nonnegative(),
+  /** Fraction of the stagger a hit causes (heavy infected shrug most of it off). */
+  staggerFactor: z.number().min(0).max(1).default(1),
+  /** Loud shriek on first sight of a survivor (screamer); 0 = never screams. */
+  screamIntensity: z.number().min(0).max(100).default(0),
+  screamCooldownSeconds: z.number().positive().default(15),
 });
 
 const stat = z.number().min(0).max(100);
@@ -145,6 +150,8 @@ export const missionSchema = z.object({
         spawn: vec2Schema,
         firePolicy: firePolicySchema,
         moveMode: moveModeSchema,
+        /** Plank kits for barricading doors and windows. */
+        barricadeKits: z.number().int().nonnegative().default(2),
       }),
     )
     .min(1)
@@ -164,6 +171,20 @@ export const missionSchema = z.object({
     }),
   ),
   spawners: z.array(z.object({ id: z.string().min(1), cell: cellSchema })),
+  /** Roaming hordes: timed and alarm-triggered groups that patrol a route through the map. */
+  hordes: z
+    .object({
+      firstAtSeconds: z.number().positive(),
+      intervalSeconds: z.number().positive(),
+      max: z.number().int().nonnegative(),
+      size: z.number().int().positive(),
+      heavyPerHorde: z.number().int().nonnegative(),
+      warningSeconds: z.number().nonnegative(),
+      routes: z
+        .array(z.object({ spawnerId: z.string().min(1), waypoints: z.array(cellSchema).min(1) }))
+        .min(1),
+    })
+    .optional(),
   reinforcements: z.object({
     budget: z.number().int().nonnegative(),
     maxConcurrent: z.number().int().positive(),
@@ -275,6 +296,25 @@ export const simulationRulesSchema = z.object({
   infection: z.object({
     exposedToInfectedSeconds: z.number().positive(),
     infectedToCriticalSeconds: z.number().positive(),
+    /** Critical survivors turn into infected after this long. */
+    criticalToTurnSeconds: z.number().positive(),
+    /** Progress multiplier while a squad medic (medicine ≥ 50) stays within 4 m. */
+    medicSlowFactor: z.number().min(0).max(1),
+  }),
+  barriers: z.object({
+    windowHp: z.number().positive(),
+    barricadeHp: z.number().positive(),
+    barricadeSeconds: z.number().positive(),
+    removeBarricadeSeconds: z.number().positive(),
+    hammerNoise: z.number().min(0).max(100),
+    glassBreakNoise: z.number().min(0).max(100),
+  }),
+  alarm: z.object({
+    /** Alarm points per point of intensity of loud noises (shots, doors, glass, screams, radio). */
+    perIntensity: z.number().nonnegative(),
+    decayPerSecond: z.number().nonnegative(),
+    /** Thresholds for levels 1–3 (inquieto, alerta, caçada). */
+    tiers: z.tuple([z.number(), z.number(), z.number()]),
   }),
   interaction: z.object({
     doorForceSecondsBase: z.number().positive(),

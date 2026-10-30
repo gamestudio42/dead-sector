@@ -1,0 +1,63 @@
+# Dead Sector as a snap, built from source: installs the workspace, runs
+# `pnpm --filter @dead-sector/desktop dist:dir` and packs release/linux-unpacked. The Snap Store's
+# Builds tab builds and releases it to edge on every push to main; .github/workflows/snap.yml
+# builds the same file and smoke-tests it.
+name: dead-sector
+title: Dead Sector
+base: core22
+adopt-info: dead-sector
+icon: snap/gui/icon.png
+summary: Pausable real-time squad tactics in a zombie outbreak
+description: |
+  Every shot is heard. Every order has a price.
+  Command two squads through a fallen neighbourhood: survivors act on their
+  own under threat, panic and refuse risky orders, and the infected react only
+  to what they see and hear. Sound travels through streets, walls and doors, so
+  every gunshot can bring the district down on you. A campaign of three linked
+  operations with permanent losses. The interface is in Brazilian Portuguese.
+license: AGPL-3.0-or-later
+website: https://gamestudio42.github.io/dead-sector/
+source-code: https://github.com/gamestudio42/dead-sector
+issues: https://github.com/gamestudio42/dead-sector/issues
+contact: talkgamestudio42@gmail.com
+grade: stable
+confinement: strict
+compression: lzo
+
+architectures:
+  - build-on: amd64
+
+apps:
+  dead-sector:
+    # Chromium's own sandbox cannot run inside strict confinement; the snap sandbox replaces it.
+    command: app/dead-sector --no-sandbox
+    desktop: meta/gui/dead-sector.desktop
+    extensions: [gnome]
+    plugs:
+      - browser-support
+      - opengl
+      - audio-playback
+    environment:
+      TMPDIR: $XDG_RUNTIME_DIR
+
+parts:
+  dead-sector:
+    plugin: nil
+    source: .
+    build-snaps:
+      - node/22/stable
+    stage-packages:
+      - libnspr4
+      - libnss3
+      - libxss1
+    override-pull: |
+      craftctl default
+      craftctl set version="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' apps/desktop/package.json)"
+    override-build: |
+      # The node snap is read-only: install the pinned pnpm next to the build.
+      npm install --prefix "$CRAFT_PART_BUILD/.tools" "$(sed -n 's/^  "packageManager": "\(.*\)",$/\1/p' package.json)"
+      export PATH="$CRAFT_PART_BUILD/.tools/node_modules/.bin:$PATH"
+      pnpm install --frozen-lockfile
+      pnpm --filter @dead-sector/desktop dist:dir
+      mkdir -p "$CRAFT_PART_INSTALL/app"
+      cp -a apps/desktop/release/linux-unpacked/. "$CRAFT_PART_INSTALL/app/"

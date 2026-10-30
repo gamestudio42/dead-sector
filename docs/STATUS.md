@@ -70,10 +70,16 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   (Alta/Média/Baixa) and an FPS readout; multi-seed balance report; installable offline app (web manifest + service
   worker), loading screen, credits with the libraries and their licences, build id in the menu.
 
+- **Controls from playtest**: WASD camera with arrows as secondary keys, Shift pans faster, Q/E/Z/X/C/V orders, second
+  key per action, WASD and Setas presets, camera speed, migration of saved keys, live key names in texts (ADR 0013).
+
+- **Desktop shell**: Electron app in `apps/desktop` serving the game offline from `app://game/`, packaged as a strict
+  snap following the Vazante setup, with `--smoke` and `--bench` modes (ADR 0014).
+
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **102/102** ✓ (plus the opt-in balance report).
-- `pnpm e2e`: **11/11** Playwright ✓ — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **107/107** ✓ (plus the opt-in balance report).
+- `pnpm e2e`: **13/13** Playwright ✓ — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
   serves on a dedicated port (4317, `strictPort`, never reusing another server).
@@ -101,7 +107,10 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   very hard by design, and scripted bots cannot adapt to a missing squad.
 - The stealth acceptance is "no shot until the radio is on": the radio draws infected to the final hold by design,
   and on the canonical seed one walker reaches the zone, so the scripted run fires a few shots there.
-- Survivors cannot climb through broken windows (only infected do), and there is no cure for infection yet.
+- Survivors cannot climb through broken windows (only infected do). Infection is cured only between campaign missions,
+  with treatment doses; there is no cure during a mission.
+- Desktop snap: the packaged app passes `--smoke` outside the snap, but the snap itself has not been built yet (the dev
+  machine lacks disk space; the Snap workflow does it on the first push). Saves are separate from the website's.
 - Balance is tuned for the canonical seed (1337); other seeds are playable but scripted bots sometimes lose the civilian there.
 
 ## Repository layout

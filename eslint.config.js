@@ -2,7 +2,16 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', 'playwright-report/**', 'test-results/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      'apps/desktop/game/**',
+      'apps/desktop/release/**',
+      '**/node_modules/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -19,6 +28,11 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
   {
+    // sandboxed Electron preload: CommonJS
+    files: ['apps/desktop/preload.cjs'],
+    languageOptions: { globals: { require: 'readonly' } },
+  },
+  {
     // service worker: runs in the worker global scope
     files: ['apps/web/public/sw.js'],
     languageOptions: {
@@ -26,7 +40,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'apps/desktop/scripts/**/*.mjs'],
     languageOptions: { globals: { URL: 'readonly', console: 'readonly', process: 'readonly' } },
   },
   {

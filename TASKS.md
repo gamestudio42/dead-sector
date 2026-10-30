@@ -8,16 +8,18 @@
 
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
-- Native desktop package (Electron or Tauri) if an executable is wanted beyond the installable web app.
-- Project licence: choose one (owner's decision) and add `LICENSE`.
+- Snap release: confirm the first CI snap build, register `dead-sector` in the Snap Store and connect its Builds tab.
 - Art upgrade: replace procedural character sheets with a hand-made or CC0 set (frame layout: 8 walk, attack, corpse).
 - More objective types (defence, scavenging) for future missions; Phase 6 strategic campaign layer.
 
 ## BLOCKED
 
-- (none)
+- Real-GPU FPS: `electron . --bench` was followed by an unexplained hard reset of the dev machine (hybrid Intel +
+  NVIDIA); run it only with work saved, or on another machine, until that is understood.
 
 ## DONE
+
+- Desktop shell: Electron app in `apps/desktop` with `--smoke` and `--bench`, strict snap, Snap CI workflow (ADR 0014).
 
 - Controls from playtest feedback: WASD camera by default (arrows as secondary), Shift pans faster, Q retreat,
   E hide, Z/X/C modes, V hold; second key per action, WASD/Setas presets, camera speed, migration of saved keys,

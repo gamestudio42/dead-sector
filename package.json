@@ -9,6 +9,7 @@
     "dev": "pnpm --filter @dead-sector/game dev",
     "build": "pnpm --filter @dead-sector/game build",
     "preview": "pnpm --filter @dead-sector/game preview",
+    "desktop": "pnpm --filter @dead-sector/desktop start",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -28,6 +29,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "electron",
       "esbuild"
     ]
   }

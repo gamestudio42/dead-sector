@@ -102,6 +102,7 @@ Every key can be rebound in Opções → Controles, with a second key per action
 between the **WASD** layout (default) and the **Setas** classic layout (camera on the arrows,
 `Q`/`W`/`E` modes). Games and the campaign save in the browser. In
 Chrome or Edge the game can be installed as an app that runs full screen and offline.
+On Linux a desktop build is packaged as a snap (Snap Store listing pending).
 
 ## Develop
 
@@ -118,8 +119,10 @@ pnpm dev        # http://localhost:5173  (?debug=1 shows sight, sound and AI sta
 | `pnpm e2e`     | Playwright browser tests (serves the build on port 4317)                  |
 | `pnpm balance` | Plays every scripted route on ten seeds and writes the balance report     |
 | `pnpm build`   | Static build in `apps/web/dist`, relative paths, runs from any folder     |
+| `pnpm desktop` | Build and open the Electron desktop app                                   |
 
-Every push to `main` runs the checks and publishes `apps/web/dist` to GitHub Pages. First
+Every push to `main` runs the checks and publishes `apps/web/dist` to GitHub Pages. The Snap
+workflow builds `snap/snapcraft.yaml`, installs it and runs the desktop smoke test. First
 Playwright run: `pnpm --filter @dead-sector/game exec playwright install chromium`.
 
 The simulation is a pure TypeScript package with fixed 100 ms ticks and a seeded RNG; it never

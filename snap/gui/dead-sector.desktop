@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dead Sector
+Comment=Pausable real-time squad tactics in a zombie outbreak
+Exec=dead-sector
+Icon=${SNAP}/meta/gui/icon.png
+Categories=Game;StrategyGame;
+StartupWMClass=Dead Sector
+Terminal=false

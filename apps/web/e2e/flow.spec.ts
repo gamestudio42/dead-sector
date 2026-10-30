@@ -333,6 +333,18 @@ test('default keys: WASD pans the camera, Shift pans faster, orders on Q/E/Z/X/C
   expect(errors).toEqual([]);
 });
 
+test('the quit button exists only inside the desktop shell', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('menu')).toBeVisible();
+  await expect(page.getByTestId('btn-quit')).toHaveCount(0);
+  await page.addInitScript(() => {
+    (window as any).deadSectorDesktop = { quit: () => ((window as any).__quit = true) };
+  });
+  await page.reload();
+  await page.getByTestId('btn-quit').click();
+  expect(await page.evaluate(() => (window as any).__quit)).toBe(true);
+});
+
 for (const id of ['sinal-fraco', 'plantao-noturno'])
   test(`mission ${id} loads its own map, texts and objectives`, async ({ page }) => {
     const errors = trackErrors(page);

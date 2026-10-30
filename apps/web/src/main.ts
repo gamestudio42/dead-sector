@@ -6,6 +6,7 @@ import { DebriefScene } from './scenes/DebriefScene';
 import { MenuScene } from './scenes/MenuScene';
 import { TacticalScene } from './scenes/TacticalScene';
 import { AudioEngine } from './audio/AudioEngine';
+import { desktop } from './ui/desktop';
 import { applyContrast } from './ui/SaveStore';
 
 applyContrast();
@@ -36,8 +37,9 @@ function boot(): void {
 
 boot();
 
-// Installed app: cache the static bundle for offline play (production builds only).
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+// Installed web app: cache the static bundle for offline play (production builds only). The desktop
+// shell already serves its own files, and a worker there could only serve stale ones.
+if (import.meta.env.PROD && !desktop && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {
       /* offline support is optional */

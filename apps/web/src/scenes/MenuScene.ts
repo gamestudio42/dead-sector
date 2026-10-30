@@ -4,6 +4,7 @@ import { currentMissionId, newCampaign } from '@dead-sector/sim';
 import { AudioEngine } from '../audio/AudioEngine';
 import { Backdrop } from '../render/Backdrop';
 import { CampaignStore } from '../ui/CampaignStore';
+import { desktop } from '../ui/desktop';
 import { clearUi, uiRoot } from '../ui/dom';
 import { openOptions } from '../ui/OptionsPanel';
 import { applyContrast, SaveStore } from '../ui/SaveStore';
@@ -81,6 +82,7 @@ export class MenuScene extends Phaser.Scene {
           <button data-act="continue" data-testid="btn-continue" disabled><b>Continuar</b><small>Salvamento rápido</small></button>
           <button data-act="options" data-testid="btn-menu-options"><b>Opções</b><small>Áudio, vídeo, acessibilidade e controles</small></button>
           <button data-act="credits" data-testid="btn-credits"><b>Créditos</b><small>Autoria e bibliotecas</small></button>
+          ${desktop ? '<button data-act="quit" data-testid="btn-quit"><b>Sair</b><small>Fechar o jogo</small></button>' : ''}
         </nav>
         <p class="tagline">Cada disparo é ouvido. Cada decisão cobra seu preço.</p>
       </div>
@@ -136,6 +138,9 @@ export class MenuScene extends Phaser.Scene {
           return;
         case 'credits':
           showCredits();
+          return;
+        case 'quit':
+          desktop?.quit();
           return;
         case 'options':
           screen.style.visibility = 'hidden';

@@ -19,7 +19,7 @@ web app, and its frame rate had never been measured on a real GPU.
 
 ## Consequences
 
-Electron adds about 276 MB unpacked for a small game, in exchange for sharing the studio's packaging and CI. The snap
-must be built in CI at first because the dev machine lacks disk space. An unexplained hard reset of that machine right
+Electron adds about 276 MB unpacked for a small game, in exchange for sharing the studio's packaging and CI. The snap is
+built in CI because the dev machine lacks disk space. An unexplained hard reset of that machine right
 after the first `--bench` run is recorded in `TASKS.md`; the cause is unknown, and that run's reload bug means it probably
 never reached the mission load.

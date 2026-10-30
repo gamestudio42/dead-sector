@@ -8,7 +8,7 @@
 
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
-- Snap release: confirm the first CI snap build, register `dead-sector` in the Snap Store and connect its Builds tab.
+- Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
 - Art upgrade: replace procedural character sheets with a hand-made or CC0 set (frame layout: 8 walk, attack, corpse).
 - More objective types (defence, scavenging) for future missions; Phase 6 strategic campaign layer.
 

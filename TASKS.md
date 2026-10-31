@@ -17,8 +17,8 @@
 
 ## BLOCKED
 
-- Real-GPU FPS: `electron . --bench` was followed by an unexplained hard reset of the dev machine (hybrid Intel +
-  NVIDIA), and a second reset came during a full `pnpm e2e` run. Run them only with work saved, or on another machine.
+- Real-GPU FPS: the dev machine resets by itself (20 of its last 24 boots since 2026-10-20 have no shutdown record, on AC and on
+  battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
 

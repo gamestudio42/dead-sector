@@ -1,24 +1,162 @@
 {
   "id": "ferrugem",
   "displayName": "Setor Ferrugem",
-  "intro": "Três operações para tirar um grupo de sobreviventes do Setor Ferrugem. Quem cair fica para trás; feridos e infectados seguem com vocês para a próxima missão. Medicamentos trazidos de volta tratam a infecção entre as operações.",
-  "missions": [
+  "intro": "O abrigo na Escola Dom Bosco não aguenta muito tempo. Evacue o grupo pelos trilhos antes que o setor caia. Cada operação custa um dia, comida e munição, e o barulho que vocês fizerem atrai as hordas.",
+  "shelterSectorId": "abrigo",
+  "start": {
+    "food": 34,
+    "medicine": 1,
+    "ammo": 140,
+    "parts": 2,
+    "population": 10
+  },
+  "peoplePerFood": 3,
+  "healFraction": 0.25,
+  "victory": {
+    "evacuateGoal": 8,
+    "deadlineDays": 12
+  },
+  "thresholds": {
+    "securedBelow": 30,
+    "infestedFrom": 60
+  },
+  "migration": {
+    "flowRate": 0.04,
+    "noiseDraw": 0.25,
+    "noisePerHeat": 2500,
+    "jitter": 2
+  },
+  "operationEffect": {
+    "success": -45,
+    "partial": -20,
+    "failed": 10
+  },
+  "sectors": [
     {
+      "id": "abrigo",
+      "displayName": "Escola Dom Bosco",
+      "blurb": "O abrigo. Se os infectados tomarem a escola, acabou.",
+      "pos": {
+        "x": 14,
+        "y": 74
+      },
+      "neighbors": ["ferrugem", "avenida"],
+      "missionId": null,
+      "infestation": 5,
+      "growth": 0,
+      "reward": {
+        "food": 0,
+        "medicine": 0,
+        "ammo": 0,
+        "parts": 0,
+        "people": 0
+      },
+      "evacuates": 0
+    },
+    {
+      "id": "ferrugem",
+      "displayName": "Bairro da Ferrugem",
+      "blurb": "Vizinho do abrigo. A farmácia e os mercados ainda têm o que levar.",
+      "pos": {
+        "x": 38,
+        "y": 58
+      },
+      "neighbors": ["abrigo", "avenida", "ferrovia", "centro"],
       "missionId": "a-ultima-farmacia",
-      "title": "1. A Última Farmácia",
-      "rewardSupplies": 2
+      "infestation": 45,
+      "growth": 0,
+      "reward": {
+        "food": 14,
+        "medicine": 2,
+        "ammo": 20,
+        "parts": 1,
+        "people": 1
+      },
+      "evacuates": 0
     },
     {
-      "missionId": "sinal-fraco",
-      "title": "2. Sinal Fraco",
-      "rewardSupplies": 0
+      "id": "avenida",
+      "displayName": "Avenida Norte",
+      "blurb": "Por aqui descem as hordas vindas da cidade. Ainda sem plano de operação.",
+      "pos": {
+        "x": 30,
+        "y": 22
+      },
+      "neighbors": ["abrigo", "ferrugem", "centro"],
+      "missionId": null,
+      "infestation": 70,
+      "growth": 3,
+      "reward": {
+        "food": 0,
+        "medicine": 0,
+        "ammo": 0,
+        "parts": 0,
+        "people": 0
+      },
+      "evacuates": 0
     },
     {
+      "id": "centro",
+      "displayName": "Centro Velho",
+      "blurb": "O posto de saúde resiste à noite, com o último estoque de antibióticos.",
+      "pos": {
+        "x": 62,
+        "y": 26
+      },
+      "neighbors": ["ferrugem", "avenida", "ferrovia", "mercadao"],
       "missionId": "plantao-noturno",
-      "title": "3. Plantão Noturno",
-      "rewardSupplies": 8
+      "infestation": 60,
+      "growth": 1,
+      "reward": {
+        "food": 8,
+        "medicine": 6,
+        "ammo": 30,
+        "parts": 1,
+        "people": 1
+      },
+      "evacuates": 0
+    },
+    {
+      "id": "ferrovia",
+      "displayName": "Pátio da Ferrovia",
+      "blurb": "A saída. Cada operação bem-sucedida aqui leva um comboio de pessoas embora.",
+      "pos": {
+        "x": 70,
+        "y": 74
+      },
+      "neighbors": ["ferrugem", "centro", "mercadao"],
+      "missionId": "sinal-fraco",
+      "infestation": 50,
+      "growth": 0,
+      "reward": {
+        "food": 6,
+        "medicine": 0,
+        "ammo": 25,
+        "parts": 3,
+        "people": 1
+      },
+      "evacuates": 5
+    },
+    {
+      "id": "mercadao",
+      "displayName": "Mercadão Leste",
+      "blurb": "Infestado e barulhento. Ainda sem plano de operação.",
+      "pos": {
+        "x": 90,
+        "y": 44
+      },
+      "neighbors": ["centro", "ferrovia"],
+      "missionId": null,
+      "infestation": 75,
+      "growth": 2,
+      "reward": {
+        "food": 0,
+        "medicine": 0,
+        "ammo": 0,
+        "parts": 0,
+        "people": 0
+      },
+      "evacuates": 0
     }
-  ],
-  "healFraction": 0.35,
-  "ammoResupplyFraction": 0.8
+  ]
 }

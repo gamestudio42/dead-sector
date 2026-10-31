@@ -4,6 +4,7 @@ import { BootScene } from './scenes/BootScene';
 import { BriefingScene } from './scenes/BriefingScene';
 import { DebriefScene } from './scenes/DebriefScene';
 import { MenuScene } from './scenes/MenuScene';
+import { StrategicScene } from './scenes/StrategicScene';
 import { TacticalScene } from './scenes/TacticalScene';
 import { AudioEngine } from './audio/AudioEngine';
 import { desktop } from './ui/desktop';
@@ -29,7 +30,7 @@ function boot(): void {
     backgroundColor: '#0d0e10',
     scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
     render: { antialias: true, pixelArt: false },
-    scene: [BootScene, MenuScene, BriefingScene, TacticalScene, DebriefScene],
+    scene: [BootScene, MenuScene, StrategicScene, BriefingScene, TacticalScene, DebriefScene],
     banner: false,
   });
   (window as unknown as Record<string, unknown>)['__PHASER_GAME__'] = game;

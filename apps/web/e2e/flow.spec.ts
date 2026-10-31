@@ -361,32 +361,65 @@ for (const id of ['sinal-fraco', 'plantao-noturno'])
     expect(errors).toEqual([]);
   });
 
-test('campaign: losses and progress carry into the next mission', async ({ page }) => {
+test('campaign: strategic map, operations, losses and days persist', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
   await page.getByTestId('btn-campaign').click();
+  await expect(page.getByTestId('strategic')).toBeVisible();
+  await expect(page.getByTestId('campaign-day')).toHaveText('Dia 1 de 12');
+  await expect(page.getByTestId('btn-end-day')).toBeInViewport();
+  await page.screenshot({ path: `${SHOTS}/strategic-1280x720.png` });
+
+  // the far sectors are hidden until a neighbour is secured
+  await expect(page.getByTestId('sector-ferrovia')).toHaveAttribute('data-status', 'unknown');
+  await page.getByTestId('sector-avenida').click();
+  await expect(page.getByTestId('sector-block')).toContainText('plano de operação');
+
+  const food = Number(await page.getByTestId('stock-food').textContent());
+  await page.getByTestId('sector-ferrugem').click();
+  await page.getByTestId('btn-operate').click();
   await expect(page.getByTestId('briefing')).toContainText('Campanha');
+  await page.getByTestId('btn-back').click();
+  await expect(page.getByTestId('strategic')).toBeVisible();
+  await page.getByTestId('sector-ferrugem').click();
+  await page.getByTestId('btn-operate').click();
   await page.getByTestId('btn-deploy').click();
   await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
   await playPlanToEnd(page, 'mission');
+
   await expect(page.getByTestId('interlude')).toBeVisible({ timeout: 15_000 });
-  await page.getByTestId('btn-campaign-next').click();
-  await expect(page.getByTestId('briefing')).toContainText('Sinal Fraco');
-  // the roster shows the condition everyone came back in
-  await expect(page.locator('[data-testid=briefing] td.state').first()).not.toHaveText('pronto');
-  const dead = await page.locator('[data-testid=briefing] tr.fallen').count();
+  await page.getByTestId('btn-to-shelter').click();
+  await expect(page.getByTestId('strategic')).toBeVisible();
+  // the operation paid its reward and took today's action
+  expect(Number(await page.getByTestId('stock-food').textContent())).toBeGreaterThan(food);
+  await expect(page.getByTestId('sector-ferrovia')).not.toHaveAttribute('data-status', 'unknown');
+  await page.getByTestId('sector-ferrovia').click();
+  await expect(page.getByTestId('sector-block')).toContainText('hoje');
+  const dead = await page.locator('[data-testid=strategic] tr.fallen').count();
+
+  await page.getByTestId('btn-end-day').click();
+  await expect(page.getByTestId('campaign-day')).toHaveText('Dia 2 de 12');
+  await page.screenshot({ path: `${SHOTS}/strategic-day2-1280x720.png` });
+
+  // the campaign survives a reload of the page, and the next mission deploys who is left
+  await page.goto('/');
+  await expect(page.getByTestId('btn-campaign')).toContainText('Continuar campanha: dia 2');
+  await page.getByTestId('btn-campaign').click();
+  await expect(page.getByTestId('campaign-day')).toHaveText('Dia 2 de 12');
+  await page.getByTestId('sector-ferrugem').click();
+  const reachable = page.getByTestId('btn-operate');
+  if (await reachable.count()) await reachable.click();
+  else {
+    await page.getByTestId('sector-ferrovia').click();
+    await page.getByTestId('btn-operate').click();
+  }
   await page.getByTestId('btn-deploy').click();
-  await page.waitForFunction(
-    () => (window as any).__DEAD_SECTOR__?.state().missionId === 'sinal-fraco',
-  );
+  await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
   const deployed = await hook(
     page,
     (h) => h.state().survivors.filter((s: any) => s.squadId).length,
   );
   expect(deployed).toBe(8 - dead);
-  // and the campaign survives a reload of the page
-  await page.goto('/');
-  await expect(page.getByTestId('btn-campaign')).toContainText('Continuar campanha');
   expect(errors).toEqual([]);
 });
 

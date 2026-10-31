@@ -74,12 +74,19 @@ export class GameSimulation {
     seed?: number,
     content: ContentBundle = loadContent(),
     carry?: CarryOver,
+    reinforcementMultiplier?: number,
   ): GameSimulation {
     const mission = content.missions[missionId];
     if (!mission) throw new Error(`Unknown mission ${missionId}`);
     return new GameSimulation(
       content,
-      createMissionState(content, missionId, seed ?? mission.canonicalSeed, carry),
+      createMissionState(
+        content,
+        missionId,
+        seed ?? mission.canonicalSeed,
+        carry,
+        reinforcementMultiplier,
+      ),
     );
   }
 

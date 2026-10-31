@@ -1389,3 +1389,181 @@ button.bind.alt.empty {
 .bindings {
   grid-template-columns: 1fr !important;
 }
+
+/* ---------- strategic map and shelter ---------- */
+.strategic-card {
+  width: min(1180px, 96vw) !important;
+}
+.strategic-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.strategic-head h2 {
+  margin: 0;
+  font-size: 26px;
+}
+.stock-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stock-chip {
+  display: flex;
+  flex-direction: column;
+  min-width: 68px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.stock-chip small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.stock-chip.warn {
+  border-color: var(--danger);
+}
+.stock-chip.warn b {
+  color: var(--danger);
+}
+.campaign-end {
+  margin-bottom: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+}
+.campaign-end.won {
+  border-color: var(--ok);
+}
+.campaign-end h3,
+.campaign-end p {
+  margin: 2px 0;
+}
+.strategic-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 18px;
+  align-items: start;
+}
+.strategic-grid.lower {
+  margin: 12px 0;
+}
+.sector-map {
+  position: relative;
+  height: min(40vh, 400px);
+  min-height: 240px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.sector-map svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sector-map line {
+  stroke: var(--muted);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+.sector-map line.faint {
+  opacity: 0.25;
+  stroke-dasharray: 4 4;
+}
+button.sector {
+  position: absolute;
+  transform: translate(-50%, -14px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(14, 15, 17, 0.72);
+  white-space: nowrap;
+  cursor: pointer;
+}
+button.sector.selected {
+  border-color: var(--accent);
+}
+button.sector i {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  background: var(--muted);
+}
+button.sector.shelter i {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button.sector.secured i {
+  background: var(--ok);
+}
+button.sector.contested i {
+  background: var(--warn);
+}
+button.sector.infested i {
+  background: var(--danger);
+}
+button.sector.lost i {
+  background: #000;
+  border-color: var(--danger);
+}
+button.sector b {
+  font-size: 13px;
+}
+button.sector small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sector-side h3 {
+  margin: 0;
+}
+.sector-status.secured {
+  color: var(--ok);
+}
+.sector-status.contested {
+  color: var(--warn);
+}
+.sector-status.infested,
+.sector-status.lost,
+.warn-text {
+  color: var(--danger);
+}
+.meter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.meter-row .meter {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.meter-row .meter i {
+  display: block;
+  height: 100%;
+  background: var(--danger);
+}
+.strategic-card .roster button {
+  margin-left: 6px;
+  padding: 1px 8px;
+}
+@media (max-width: 860px) {
+  .strategic-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.strategic-actions {
+  margin-bottom: 12px;
+}

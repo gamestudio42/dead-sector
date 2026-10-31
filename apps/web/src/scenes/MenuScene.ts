@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { loadContent } from '@dead-sector/content';
-import { currentMissionId, newCampaign } from '@dead-sector/sim';
+import { newCampaign } from '@dead-sector/sim';
 import { AudioEngine } from '../audio/AudioEngine';
 import { Backdrop } from '../render/Backdrop';
 import { CampaignStore } from '../ui/CampaignStore';
@@ -69,13 +69,13 @@ export class MenuScene extends Phaser.Scene {
         <h1 class="title">DEAD <span>SECTOR</span></h1>
         <div class="subtitle">Tática em tempo real pausável</div>
         <nav class="menu-buttons">
-          <button data-act="campaign" data-testid="btn-campaign"><b data-el="campaignLabel">Campanha: ${campaign.displayName}</b><small data-el="campaignSub">${campaign.missions.length} missões encadeadas · perdas permanentes</small></button>
+          <button data-act="campaign" data-testid="btn-campaign"><b data-el="campaignLabel">Campanha: ${campaign.displayName}</b><small data-el="campaignSub">Evacue o abrigo em ${campaign.victory.deadlineDays} dias · perdas permanentes</small></button>
           <button data-act="new" data-testid="btn-new-mission"><b>Missão avulsa</b><small>Jogar uma missão sem consequências</small></button>
           <div class="mission-pick" data-el="pick" hidden>
-            ${campaign.missions
+            ${Object.values(content.missions)
               .map(
                 (m) =>
-                  `<button data-mission="${m.missionId}" data-testid="pick-${m.missionId}"><b>${m.title}</b><small>${content.maps[content.missions[m.missionId]!.mapId]!.displayName}${content.missions[m.missionId]!.isNight ? ' · noite' : ''}</small></button>`,
+                  `<button data-mission="${m.id}" data-testid="pick-${m.id}"><b>${m.displayName}</b><small>${content.maps[m.mapId]!.displayName}${m.isNight ? ' · noite' : ''}</small></button>`,
               )
               .join('')}
           </div>
@@ -95,11 +95,11 @@ export class MenuScene extends Phaser.Scene {
     void CampaignStore.load().then((c) => {
       if (!c || c.status !== 'active') return;
       saved = c;
-      const step = campaign.missions[c.missionIndex];
       const alive = c.roster.filter((r) => r.alive).length;
-      q('[data-el=campaignLabel]').textContent = `Continuar campanha: ${step?.title ?? ''}`;
+      q('[data-el=campaignLabel]').textContent =
+        `Continuar campanha: dia ${c.day} de ${campaign.victory.deadlineDays}`;
       q('[data-el=campaignSub]').textContent =
-        `${alive}/${c.roster.length} sobreviventes · ${c.supplies} doses de tratamento · nova campanha nas opções abaixo`;
+        `${alive}/${c.roster.length} na equipe · ${c.evacuated}/${campaign.victory.evacuateGoal} evacuados · nova campanha nas opções abaixo`;
       const restart = document.createElement('button');
       restart.dataset['act'] = 'newCampaign';
       restart.innerHTML = '<b>Nova campanha</b><small>Descarta a campanha em andamento</small>';
@@ -114,23 +114,13 @@ export class MenuScene extends Phaser.Scene {
         return this.scene.start('Briefing', { missionId: t.dataset['mission'], campaign: false });
       switch (t.dataset['act']) {
         case 'campaign': {
-          const c = saved ?? newCampaign(content, CAMPAIGN_ID);
-          void CampaignStore.save(c).then(() =>
-            this.scene.start('Briefing', {
-              missionId: currentMissionId(content, c),
-              campaign: true,
-            }),
-          );
+          const c = saved ?? newCampaign(content, CAMPAIGN_ID, Math.floor(Math.random() * 1e6));
+          void CampaignStore.save(c).then(() => this.scene.start('Strategic'));
           return;
         }
         case 'newCampaign': {
-          const c = newCampaign(content, CAMPAIGN_ID);
-          void CampaignStore.save(c).then(() =>
-            this.scene.start('Briefing', {
-              missionId: currentMissionId(content, c),
-              campaign: true,
-            }),
-          );
+          const c = newCampaign(content, CAMPAIGN_ID, Math.floor(Math.random() * 1e6));
+          void CampaignStore.save(c).then(() => this.scene.start('Strategic'));
           return;
         }
         case 'new':

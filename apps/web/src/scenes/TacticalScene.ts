@@ -110,6 +110,7 @@ export class TacticalScene extends Phaser.Scene {
   private missionId = MISSION_ID;
   private inCampaign = false;
   private carry: CarryOver | undefined;
+  private reinforcements: number | undefined;
 
   create(data: {
     missionId?: string;
@@ -118,23 +119,38 @@ export class TacticalScene extends Phaser.Scene {
     paused?: boolean;
     campaign?: boolean;
     carry?: CarryOver;
+    reinforcements?: number;
   }): void {
     this.missionId = data.missionId ?? MISSION_ID;
     this.inCampaign = !!data.campaign;
     this.carry = data.carry;
+    this.reinforcements = data.reinforcements;
     clearUi();
     const content = loadContent();
     if (data.save) {
       try {
         this.sim = new GameSimulation(content, deserializeState(data.save));
       } catch (err) {
-        this.sim = GameSimulation.create(this.missionId, data.seed, content, this.carry);
+        this.sim = GameSimulation.create(
+          this.missionId,
+          data.seed,
+          content,
+          this.carry,
+          this.reinforcements,
+        );
         window.setTimeout(
           () => this.hud.toast(`Salvamento inválido: ${(err as Error).message}`),
           50,
         );
       }
-    } else this.sim = GameSimulation.create(this.missionId, data.seed, content, this.carry);
+    } else
+      this.sim = GameSimulation.create(
+        this.missionId,
+        data.seed,
+        content,
+        this.carry,
+        this.reinforcements,
+      );
     this.missionId = this.sim.state.missionId;
     setMissionTexts(this.sim.world.mission.texts);
     this.clock = new FixedStepClock();
@@ -488,6 +504,7 @@ export class TacticalScene extends Phaser.Scene {
           seed: this.sim.state.seed,
           campaign: this.inCampaign,
           carry: this.carry,
+          reinforcements: this.reinforcements,
         });
       if (a === 'menu') this.scene.start('Menu');
     });
@@ -674,6 +691,7 @@ export class TacticalScene extends Phaser.Scene {
           paused,
           campaign: this.inCampaign,
           carry: this.carry,
+          reinforcements: this.reinforcements,
         }),
       startPlan: (name: 'stealth' | 'combat' | 'mission') => {
         this.plan = {

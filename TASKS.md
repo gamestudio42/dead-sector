@@ -2,20 +2,23 @@
 
 ## NOW
 
-- (none — vertical slice delivered; awaiting playtest feedback)
+- Phase 6: stages 6.1 and 6.2 done locally; playtest the strategic map before stage 6.3 (ADR 0015).
 
 ## NEXT
 
+- Phase 6.3: choose who deploys and how much ammo they take, roster by ID, recruits from the population.
+- Phase 6.4: scavenging objective, operations for Avenida Norte and Mercadão Leste, variants by sector state.
+- Phase 6.5: shelter upgrades (parts have no use yet), campaign difficulties, economy balance report.
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
 - Art upgrade: replace procedural character sheets with a hand-made or CC0 set (frame layout: 8 walk, attack, corpse).
-- More objective types (defence, scavenging) for future missions; Phase 6 strategic campaign layer.
+- More objective types (defence) for future missions.
 
 ## BLOCKED
 
 - Real-GPU FPS: `electron . --bench` was followed by an unexplained hard reset of the dev machine (hybrid Intel +
-  NVIDIA); run it only with work saved, or on another machine, until that is understood.
+  NVIDIA), and a second reset came during a full `pnpm e2e` run. Run them only with work saved, or on another machine.
 
 ## DONE
 

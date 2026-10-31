@@ -1,4 +1,5 @@
-import type { CampaignState } from '@dead-sector/sim';
+import { loadContent } from '@dead-sector/content';
+import { migrateCampaign, type CampaignState } from '@dead-sector/sim';
 import { SaveStore } from './SaveStore';
 
 const SLOT = 'campaign';
@@ -10,8 +11,7 @@ export const CampaignStore = {
     const raw = await SaveStore.load(SLOT);
     if (!raw) return null;
     try {
-      const c = JSON.parse(raw) as CampaignState;
-      return c.version === 1 && Array.isArray(c.roster) ? c : null;
+      return migrateCampaign(loadContent(), JSON.parse(raw));
     } catch {
       return null;
     }

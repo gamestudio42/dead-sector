@@ -166,10 +166,23 @@ export function validateContent(raw: RawContent): ContentBundle {
         issues.push(`mission ${m.id} hordes need the heavy infected type`);
     }
   }
-  for (const c of Object.values(bundle.campaigns))
-    for (const step of c.missions)
-      if (!bundle.missions[step.missionId])
-        issues.push(`campaign ${c.id} references unknown mission ${step.missionId}`);
+  for (const c of Object.values(bundle.campaigns)) {
+    const ids = new Map(c.sectors.map((sec) => [sec.id, sec]));
+    if (!ids.has(c.shelterSectorId))
+      issues.push(`campaign ${c.id} has no shelter sector ${c.shelterSectorId}`);
+    if (!c.sectors.some((sec) => sec.missionId && sec.evacuates > 0))
+      issues.push(`campaign ${c.id} has no sector that can evacuate people`);
+    for (const sec of c.sectors) {
+      if (sec.missionId && !bundle.missions[sec.missionId])
+        issues.push(
+          `campaign ${c.id} sector ${sec.id} references unknown mission ${sec.missionId}`,
+        );
+      for (const n of sec.neighbors) {
+        if (!ids.get(n)?.neighbors.includes(sec.id))
+          issues.push(`campaign ${c.id}: ${sec.id} and ${n} must list each other as neighbours`);
+      }
+    }
+  }
   if (issues.length) throw new ContentValidationError('cross-references', issues);
   return bundle;
 }

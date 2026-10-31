@@ -42,8 +42,8 @@
    neighbourhood's alarm, brings runners and, at the top, a roaming horde through the avenues.
 4. **Keep the squad together.** Stress, wounds and lost leaders break people. A panicking survivor
    stops following orders; a bitten one will turn in minutes unless a medic buys time.
-5. **Carry the losses.** In the campaign the dead never come back, and wounds, infection and ammo
-   follow your survivors into the next operation.
+5. **Carry the losses.** In the campaign you choose each day's operation on a map of the sector.
+   The dead never come back, food and ammo run out, and the noise you make draws the hordes.
 
 The simulation is deterministic: the same seed and orders always play out the same way, so saves,
 replays and the scripted acceptance runs are exact.
@@ -80,7 +80,7 @@ The debriefing grades the run and maps every route and loss.
 ## Play
 
 Open **[gamestudio42.github.io/dead-sector](https://gamestudio42.github.io/dead-sector/)**. Choose
-**Campanha** for the three linked operations of Setor Ferrugem (losses are permanent), or
+**Campanha** to evacuate a shelter from Setor Ferrugem against a deadline (losses are permanent), or
 **Missão avulsa** to play any of them on its own. The interface is in Portuguese; contextual hints
 explain each mechanic the first time it matters.
 

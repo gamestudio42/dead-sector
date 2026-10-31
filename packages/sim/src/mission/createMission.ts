@@ -185,6 +185,8 @@ export function createMissionState(
   seed: number,
   /** Campaign roster: only living survivors deploy, in the condition they came back in. */
   carry?: CarryOver,
+  /** Strategic layer: reinforcements follow how infested the sector is on the day. */
+  reinforcementMultiplier = 1,
 ): GameState {
   const mission = content.missions[missionId];
   if (!mission) throw new Error(`Unknown mission ${missionId}`);
@@ -260,7 +262,9 @@ export function createMissionState(
       nextPulseTick: 0,
       reinforcementsSpawned: 0,
       reinforcementBudget: Math.round(
-        mission.reinforcements.budget * difficulty.reinforcementBudgetMultiplier,
+        mission.reinforcements.budget *
+          difficulty.reinforcementBudgetMultiplier *
+          reinforcementMultiplier,
       ),
       spawners: mission.spawners.map((s) => ({
         id: s.id,

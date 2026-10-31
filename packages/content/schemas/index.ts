@@ -227,25 +227,61 @@ export const missionSchema = z.object({
   }),
 });
 
-/** A linked campaign: missions in order, with what carries over between them. */
+const stockSchema = z.object({
+  food: z.number().int().nonnegative(),
+  medicine: z.number().int().nonnegative(),
+  ammo: z.number().int().nonnegative(),
+  parts: z.number().int().nonnegative(),
+});
+
+/** One node of the strategic map; a sector without a mission only moves infected for now. */
+export const sectorSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+  blurb: z.string().min(1),
+  /** Position on the strategic map, 0–100 on each axis. */
+  pos: z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) }),
+  neighbors: z.array(z.string().min(1)).min(1),
+  missionId: z.string().min(1).nullable(),
+  /** Infected density at the start of the campaign, 0–100. */
+  infestation: z.number().min(0).max(100),
+  /** Infected arriving per day from outside the map. */
+  growth: z.number().nonnegative(),
+  /** Paid when the operation brings its item back; half on later runs. */
+  reward: stockSchema.extend({ people: z.number().int().nonnegative() }),
+  /** People a successful operation here takes out of the sector for good. */
+  evacuates: z.number().int().nonnegative(),
+});
+
+/** A strategic campaign: a shelter, connected sectors, scarce stock and a deadline. */
 export const campaignSchema = z.object({
   id: z.string().min(1),
   displayName: z.string().min(1),
   intro: z.string().min(1),
-  missions: z
-    .array(
-      z.object({
-        missionId: z.string().min(1),
-        title: z.string().min(1),
-        /** Treatment doses earned when the mission item is brought back (each cures one infected survivor). */
-        rewardSupplies: z.number().int().nonnegative(),
-      }),
-    )
-    .min(1),
-  /** Fraction of max health recovered between missions. */
+  shelterSectorId: z.string().min(1),
+  start: stockSchema.extend({ population: z.number().int().nonnegative() }),
+  /** One food unit feeds this many people for a day. */
+  peoplePerFood: z.number().int().positive(),
+  /** Fraction of max health recovered each day. */
   healFraction: z.number().min(0).max(1),
-  /** Fraction of each survivor's starting reserve ammo found between missions. */
-  ammoResupplyFraction: z.number().min(0).max(1),
+  victory: z.object({
+    evacuateGoal: z.number().int().positive(),
+    deadlineDays: z.number().int().positive(),
+  }),
+  thresholds: z.object({ securedBelow: z.number(), infestedFrom: z.number() }),
+  migration: z.object({
+    /** Fraction of the density gap that crosses each connection per day. */
+    flowRate: z.number().min(0).max(0.5),
+    /** Fraction of a noisy sector's heat drawn from each neighbour per day. */
+    noiseDraw: z.number().min(0).max(1),
+    /** Mission noise points per point of sector heat. */
+    noisePerHeat: z.number().positive(),
+    /** Random infected per sector per day, from 0 to this. */
+    jitter: z.number().int().nonnegative(),
+  }),
+  /** Infestation change after an operation, by outcome. */
+  operationEffect: z.object({ success: z.number(), partial: z.number(), failed: z.number() }),
+  sectors: z.array(sectorSchema).min(2),
 });
 
 const num = z.number();

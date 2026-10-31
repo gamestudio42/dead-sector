@@ -76,9 +76,15 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 - **Desktop shell**: Electron app in `apps/desktop` serving the game offline from `app://game/`, packaged as a strict
   snap following the Vazante setup, with `--smoke` and `--bench` modes (ADR 0014).
 
+- **Strategic campaign (Phase 6, stages 6.1 and 6.2 of 5)**: pure seeded campaign layer with connected sectors, stock,
+  shelter population, one operation per day, nightly food, healing, rearming and infection, horde migration driven by
+  density and mission noise, a deadline and an evacuation goal; save migration from the linear campaign; map and
+  shelter screen. Not yet: choosing who deploys, recruits, sector operations beyond the three missions, shelter
+  upgrades, campaign difficulties (ADR 0015). Stock and migration values are provisional, checked only by scripted runs.
+
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **107/107** ✓ (plus the opt-in balance report).
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **119/119** ✓ (plus the opt-in balance report).
 - `pnpm e2e`: **13/13** Playwright ✓ — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite

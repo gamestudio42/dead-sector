@@ -7,7 +7,12 @@ import { CampaignStore } from '../ui/CampaignStore';
 import { MT, setMissionTexts, T } from '../ui/i18n';
 import { baseMap, drawMissionMarks } from '../ui/MapCanvas';
 import { CAMPAIGN_ID, MISSION_ID } from './MenuScene';
-import { carryOver, type CampaignState } from '@dead-sector/sim';
+import {
+  carryOver,
+  missionSeed,
+  reinforcementMultiplier,
+  type CampaignState,
+} from '@dead-sector/sim';
 
 const PX = 3;
 const SQUAD_CSS: Record<string, string> = { alfa: '#5aa9ff', bravo: '#ffad4d' };
@@ -151,7 +156,7 @@ export class BriefingScene extends Phaser.Scene {
     q('[data-act=canon]').onclick = () => setSeed(mission.canonicalSeed, true);
     q('[data-act=back]').onclick = () => {
       audio.uiClick();
-      this.scene.start('Menu');
+      this.scene.start(inCampaign ? 'Strategic' : 'Menu');
     };
     if (inCampaign) {
       // campaign: the roster deploys as it came back from the last mission
@@ -161,13 +166,13 @@ export class BriefingScene extends Phaser.Scene {
         if (!c) return;
         campaign = c;
         const tries = c.history.filter((h) => h.missionId === missionId).length;
-        seed = mission.canonicalSeed + tries;
+        seed = missionSeed(content, c, missionId);
         q('[data-el=seed]').textContent = String(seed);
         q('[data-el=seedNote]').textContent = tries ? `(tentativa ${tries + 1})` : '(canônica)';
         const alive = c.roster.filter((r) => r.alive).length;
         const status = q('[data-el=campaignStatus]');
         status.hidden = false;
-        status.textContent = `${alive}/${c.roster.length} sobreviventes · ${c.supplies} doses de tratamento · ${c.rescued.length} resgatados até agora`;
+        status.textContent = `${alive}/${c.roster.length} na equipe · ${c.stock.medicine} remédios · ${c.stock.ammo} balas no estoque · ${c.evacuated} evacuados`;
         for (const r of c.roster) {
           const cell = screen.querySelector<HTMLElement>(`[data-state="${r.templateId}"]`);
           if (!cell) continue;
@@ -193,6 +198,9 @@ export class BriefingScene extends Phaser.Scene {
         seed,
         campaign: inCampaign,
         carry: campaign ? carryOver(campaign) : undefined,
+        reinforcements: campaign?.activeSectorId
+          ? reinforcementMultiplier(campaign.sectors[campaign.activeSectorId]?.infestation ?? 50)
+          : undefined,
       });
     };
   }

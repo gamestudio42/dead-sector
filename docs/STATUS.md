@@ -85,7 +85,7 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 ## Verification evidence
 
 - `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **119/119** ✓ (plus the opt-in balance report).
-- `pnpm e2e`: **13/13** Playwright ✓ — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
+- `pnpm e2e`: **13/13** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
   serves on a dedicated port (4317, `strictPort`, never reusing another server).

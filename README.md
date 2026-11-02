@@ -121,7 +121,7 @@ pnpm dev        # http://localhost:5173  (?debug=1 shows sight, sound and AI sta
 | `pnpm build`   | Static build in `apps/web/dist`, relative paths, runs from any folder     |
 | `pnpm desktop` | Build and open the Electron desktop app                                   |
 
-Every push to `main` runs the checks and publishes `apps/web/dist` to GitHub Pages. The Snap
+Every push to `main` runs the checks and publishes `apps/web/dist` to the `gh-pages` branch (GitHub Pages must deploy from that branch). Each pull request from this repository publishes a preview at `/pr-preview/pr-<number>/` and comments the link; closing the pull request removes it. The Snap
 workflow builds `snap/snapcraft.yaml`, installs it and runs the desktop smoke test. First
 Playwright run: `pnpm --filter @dead-sector/game exec playwright install chromium`.
 

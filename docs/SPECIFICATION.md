@@ -1,210 +1,212 @@
-# DEAD SECTOR — Especificação Técnica e Game Design
+# DEAD SECTOR — Technical and Game-Design Specification
 
-**Versão:** 1.0 — 28/10/2026  
-**Tipo:** Especificação implementável para agente de IA de programação  
-**Inspiração mecânica:** Close Combat (especialmente a série clássica 2D)  
-**Título:** provisório, sujeito a pesquisa de disponibilidade comercial  
-**Ambientação:** Apocalipse zumbi, universo e identidade visual originais  
-**Plataformas iniciais:** navegador desktop; distribuição desktop posterior  
-**Idioma do jogo:** português brasileiro; código, comentários, commits e documentos técnicos em inglês  
-**Público-alvo:** jogadores que apreciam RTT tático, sobrevivência, esquadrões e campanhas emergentes.
+**Version:** 1.0 — 2026-10-28
+**Type:** Implementable specification for a programming agent
+**Mechanical inspiration:** Close Combat (especially the classic 2D series)
+**Title:** provisional, pending a commercial-availability check
+**Setting:** Zombie apocalypse, original universe and visual identity
+**Initial platforms:** desktop browser; desktop distribution later
+**Game language:** Brazilian Portuguese; code, comments, commits and technical documents in English
+**Audience:** players who like tactical real-time tactics, survival, squads and emergent campaigns.
 
-> **Natureza da engenharia reversa:** análise funcional e reconstrução independente de mecanismos observáveis/documentados. Não acessar código fechado, não extrair recursos, não copiar mapas, roteiros, marcas, UI específica, áudio ou artes de Close Combat ou de outros jogos. O objetivo é um sucessor espiritual com implementação e identidade próprias.
+Quoted interface strings in this document stay in Brazilian Portuguese, because that is the player-facing language.
 
-## 0. INSTRUÇÃO DIRETA AO AGENTE IMPLEMENTADOR
+> **Nature of the reverse engineering:** functional analysis and an independent reconstruction of observable, documented mechanisms. Do not access closed source, extract resources, or copy maps, scripts, trademarks, specific UI, audio or art from Close Combat or from any other game. The goal is a spiritual successor with its own implementation and identity.
 
-Você é o engenheiro-chefe de um jogo original chamado **Dead Sector**. Sua missão é entregar um protótipo jogável e evoluir progressivamente até o produto aqui especificado. Não implemente telas estáticas que finjam mecânicas; cada funcionalidade incluída deverá funcionar na simulação real. Não faça arquitetura excessiva antes de ter um vertical slice jogável. Use código TypeScript estrito, testes automatizados, simulação determinística com RNG injetável, divisão entre domínio e renderização, dados configuráveis e commits pequenos e verificáveis. Cada fase deve resultar em uma versão executável e critérios de aceitação cumpridos. Quando faltar detalhe, escolha a solução mais simples consistente com os pilares e documente a decisão em `docs/decisions/`.
+## 0. DIRECT INSTRUCTION TO THE IMPLEMENTING AGENT
 
-Prioridade absoluta: **(1) simulação tática convincente > (2) legibilidade e interação > (3) IA zumbi > (4) campanha > (5) acabamento visual**. Jamais trate zumbis como soldados convencionais.
+You are the lead engineer of an original game called **Dead Sector**. Your mission is to deliver a playable prototype and evolve it until it matches this specification. Do not ship static screens that pretend to be mechanics; every included feature must work in the real simulation. Do not over-architect before there is a playable vertical slice. Use strict TypeScript, automated tests, a deterministic simulation with an injectable RNG, a split between domain and rendering, configurable data and small, verifiable commits. Each phase must produce an executable build whose acceptance criteria are met. When a detail is missing, choose the simplest solution consistent with the pillars and record the decision in `docs/decisions/`.
 
-## 1. VISÃO DO PRODUTO
+Absolute priority: **(1) a convincing tactical simulation > (2) readability and interaction > (3) zombie AI > (4) campaign > (5) visual finish**. Never treat zombies as conventional soldiers.
+
+## 1. PRODUCT VISION
 
 ### 1.1 High concept
 
-Um jogo de **tática em tempo real pausável**, no qual o jogador comanda **esquadrões de sobreviventes** em operações de reconhecimento, resgate, obtenção de recursos, defesa e evacuação em cidades infestadas. Os sobreviventes são pessoas — não drones — com habilidades, medo, cansaço, vínculos, ferimentos e iniciativa própria. Zumbis reagem a som, visão, obstáculos e movimentos de outros infectados. As perdas são persistentes na campanha.
+A **pausable real-time tactics** game in which the player commands **squads of survivors** on reconnaissance, rescue, supply, defence and evacuation operations in infested cities. Survivors are people, not drones: they have skills, fear, fatigue, bonds, wounds and their own initiative. Zombies react to sound, sight, obstacles and the movement of other infected. Losses persist across the campaign.
 
-### 1.2 Os seis pilares
+### 1.2 The six pillars
 
-1. **Comando em nível de esquadrão:** ordens por equipe, comportamento individual emergente.
-2. **Psicologia operacional:** medo, stress, moral, disciplina e liderança influenciam as decisões.
-3. **Informação imperfeita:** fog of war, LOS individual, memória de contatos e ruído.
-4. **Som como recurso tático:** disparos atraem e concentram hordas; armas silenciosas têm custo/risco próprios.
-5. **Persistência e escassez:** baixas, infecção, munição e recursos importam além da missão.
-6. **Histórias emergentes verificáveis:** consequências derivam do estado da simulação, não de eventos arbitrários sem aviso.
+1. **Squad-level command:** orders go to the team; individual behaviour emerges.
+2. **Operational psychology:** fear, stress, morale, discipline and leadership change decisions.
+3. **Imperfect information:** fog of war, individual line of sight, contact memory and noise.
+4. **Sound as a tactical resource:** gunfire attracts and concentrates hordes; quiet weapons have their own cost and risk.
+5. **Persistence and scarcity:** casualties, infection, ammunition and supplies matter beyond the mission.
+6. **Verifiable emergent stories:** consequences come from simulation state, not from arbitrary events with no warning.
 
-### 1.3 O que o jogo NÃO é
+### 1.3 What the game is not
 
-- Não é RTS de construir bases e colher recursos em tempo real.
-- Não é tower defense de ondas lineares como sistema principal.
-- Não é shooter com controle WASD individual do protagonista.
-- Não exige LLM online nem conexão com API para suas decisões em tempo real.
-- Não deve premiar apenas eliminar zumbis; resgatar e retornar vivos são objetivos principais.
+- It is not a real-time strategy game about building bases and gathering resources.
+- It is not a tower-defence game whose main system is linear waves.
+- It is not a shooter with individual WASD control of a protagonist.
+- It does not require an online LLM or an API connection for its real-time decisions.
+- It must not reward only killing zombies; rescuing people and bringing them back alive are the main objectives.
 
-### 1.4 Experiência-alvo
+### 1.4 Target experience
 
-Uma partida isolada deve produzir momentos como: um explorador avista infectados além da névoa, o comandante manda sua equipe avançar silenciosamente, um tiro acidental revela a posição, o ruído atrai um grupo vindo de outra rua, uma integrante entra em pânico, o líder consegue reorganizá-la e a equipe foge por uma rota alternativa. As regras que geram o acontecimento precisam ser observáveis e reproduzíveis em testes.
+A single match should be able to produce moments like this: a scout spots infected beyond the fog, the commander orders the team to advance quietly, an accidental shot reveals the position, the noise draws a group from another street, one member panics, the leader rallies her, and the team escapes by an alternate route. The rules that generate the event must be observable and reproducible in tests.
 
-## 2. DECOMPOSIÇÃO FUNCIONAL DA REFERÊNCIA E TRANSFORMAÇÃO
+## 2. FUNCTIONAL BREAKDOWN OF THE REFERENCE AND THE TRANSFORMATION
 
-| Sistema inspirado em Close Combat | Elemento funcional a reconstruir | Conversão autoral para Dead Sector |
+| System inspired by Close Combat | Functional element to rebuild | Original conversion for Dead Sector |
 |---|---|---|
-| Ordem para o time, não para o soldado | unidade obedece com autonomia | esquadrões de 2–6, soldados buscam posições próximas |
-| Sneak / Move / Move Fast | três ritmos de deslocamento | furtivo / normal / corrida, com ruído, fadiga e risco distintos |
-| Defend / Hide / Fire / Smoke | postura, fogo e ocultação | guardar, ocultar, atacar alvo/área; fumaça em evolução |
-| Moral e liderança individuais | reação psicológica sob ameaça | medo por proximidade da horda, perdas, isolamento e escuridão |
-| Supressão por tiros | sob fogo, humanos reduzem ação | permanece somente contra inimigos humanos; infectados não entram em pânico por tiros |
-| LOS, cobertura, elevação | informação parcial e vantagem do terreno | paredes bloqueiam visão; janelas permitem observação, luz, fumaça e escuridão afetam detecção |
-| Recursos e formações | escolher equipes conforme missão | recrutas, veteranos, especialistas e suprimentos raros |
-| Campanha e perdas | progressão em múltiplos encontros | setores infestados, abrigos, missões, trauma e sobreviventes persistentes |
-| Fog of war | esconder adversários não detectados | preservar contatos conhecidos apenas como última posição estimada |
-| Combate combinado | posicionamento, flanqueamento | iscas sonoras, rotas de fuga, barricadas, cobertura coordenada |
+| Order the team, not the soldier | the unit obeys with autonomy | squads of 2–6; soldiers seek nearby positions |
+| Sneak / Move / Move Fast | three movement tempos | sneak / normal / sprint, with distinct noise, fatigue and risk |
+| Defend / Hide / Fire / Smoke | posture, fire and concealment | hold, hide, attack a target or area; smoke later |
+| Individual morale and leadership | psychological reaction under threat | fear from horde proximity, losses, isolation and darkness |
+| Suppression by gunfire | under fire, humans do less | remains only against human enemies; the infected do not panic from shots |
+| LOS, cover, elevation | partial information and terrain advantage | walls block sight; windows allow observation; light, smoke and darkness affect detection |
+| Resources and formations | choose teams for the mission | recruits, veterans, specialists and scarce supplies |
+| Campaign and losses | progression across several encounters | infested sectors, shelters, missions, trauma and persistent survivors |
+| Fog of war | hide undetected opponents | keep known contacts only as a last estimated position |
+| Combined combat | positioning, flanking | sound lures, escape routes, barricades, coordinated cover |
 
-**Observação:** esta tabela identifica fundamentos mecânicos, não descreve nem replica algoritmos proprietários.
+**Note:** this table names mechanical foundations. It does not describe or replicate proprietary algorithms.
 
-## 3. ESCOPO E MODOS
+## 3. SCOPE AND MODES
 
-### 3.1 MVP — uma missão tática completa
+### 3.1 MVP — one complete tactical mission
 
-- 1 mapa original fixo, 96 × 96 células, cada célula representa aproximadamente 1 metro.
-- 2 esquadrões de 4 sobreviventes (8 pessoas no total), com atributos individuais e um líder por esquadrão.
-- 3 tipos de infectados: errante, corredor e pesado (no MVP, versões simples dos 2 primeiros; pesado na fase seguinte).
-- 30–60 zumbis ativos, dependendo da dificuldade e do ruído.
-- 4 armas: pistola, carabina, espingarda e arma branca.
-- Ordens básicas: mover, correr, furtivo, manter posição, esconder, atacar, retirar, interagir.
-- Fog of war, LOS, som propagado, estados de IA, combate, medo, munição, ferimentos, mordida e extração.
-- Uma missão com objetivos e resultados verificáveis.
-- Pausa, velocidades 1× e 2×, câmera, seleção e HUD.
-- Save/load mínimo; testes determinísticos do motor.
-- Sem multiplayer, sem crafting, sem editor, sem base expansível nesta fase.
+- 1 original fixed map, 96 × 96 cells, each cell about 1 metre.
+- 2 squads of 4 survivors (8 people in total), with individual attributes and one leader per squad.
+- 3 infected types: walker, runner and heavy (in the MVP, simple versions of the first two; the heavy comes in the next phase).
+- 30–60 active zombies, depending on difficulty and noise.
+- 4 weapons: pistol, carbine, shotgun and melee.
+- Basic orders: move, sprint, sneak, hold, hide, attack, retreat, interact.
+- Fog of war, line of sight, propagated sound, AI states, combat, fear, ammunition, wounds, bites and extraction.
+- One mission with verifiable objectives and outcomes.
+- Pause, 1× and 2× speeds, camera, selection and HUD.
+- Minimal save/load; deterministic engine tests.
+- No multiplayer, crafting, editor or expandable base in this phase.
 
-### 3.2 Vertical slice ampliado
+### 3.2 Extended vertical slice
 
-- 3 mapas, 4 classes e 4 tipos de infectados.
-- Portas, janelas e barricadas com HP; efeitos simples de iluminação.
-- Inventário, saque de recursos, extração e debriefing.
-- 3 missões conectadas com persistência entre elas.
-- Tutorial contextual e efeitos sonoros originais.
+- 3 maps, 4 classes and 4 infected types.
+- Doors, windows and barricades with hit points; simple lighting.
+- Inventory, supply loot, extraction and debriefing.
+- 3 connected missions with persistence between them.
+- Contextual tutorial and original sound effects.
 
-### 3.3 Lançamento 1.0
+### 3.3 1.0 release
 
-- Campanha com mapa estratégico setorial.
-- 12–20 mapas desenhados ou parametricamente montados, com revisão manual.
-- Missões variadas, equipamentos, treinamento e especialistas.
-- Ciclo dia/noite, chuva, energia, veículos simplificados e hordas itinerantes.
-- Ferramentas de modding via JSON, balanceamento e salvamento estável.
+- Campaign with a sector strategic map.
+- 12–20 maps, drawn or assembled parametrically, with manual review.
+- Varied missions, equipment, training and specialists.
+- Day/night cycle, rain, power, simplified vehicles and roaming hordes.
+- JSON modding tools, balance passes and stable saving.
 
-### 3.4 Pós-1.0 (não começar antes de concluir a campanha)
+### 3.4 Post-1.0 (do not start before the campaign is done)
 
-- Co-op, facções humanas hostis, multiplayer competitivo opcional.
-- Editor de mapas e cenários.
-- Comandos de alto nível em linguagem natural traduzidos em ordens estruturadas, com fallback local.
-- LLM para planejamento de líderes em momentos discretos, nunca no loop de simulação.
-- Mapa com múltiplos pavimentos completos e interior detalhado.
+- Co-op, hostile human factions, optional competitive multiplayer.
+- Map and scenario editor.
+- High-level natural-language commands translated into structured orders, with a local fallback.
+- An LLM for leader planning at discrete moments, never inside the simulation loop.
+- A map with complete multiple floors and a detailed interior.
 
 ## 4. GAME LOOP
 
-**Antes da operação:** inspecionar mapa parcial, escolher integrantes, armas, munição, suprimentos e possível rota de fuga.
+**Before the operation:** inspect the partial map and choose members, weapons, ammunition, supplies and a possible escape route.
 
-**Durante:** explorar → detectar ameaças → emitir ordens → adaptar a rota → administrar medo/ferimentos/munição/ruído → cumprir objetivo → extrair.
+**During:** explore → detect threats → issue orders → adapt the route → manage fear, wounds, ammunition and noise → complete the objective → extract.
 
-**Depois:** relatório de acontecimentos → atualizar lesões, traumas, infecção e morte → consumir recursos → avançar campanha → escolher nova operação.
+**After:** event report → update injuries, trauma, infection and death → spend resources → advance the campaign → choose the next operation.
 
-**Economia dramática:** cada munição gasta protege a equipe agora, mas custa recurso futuro; cada disparo faz ruído; cada atraso aumenta a pressão de infestação.
+**Dramatic economy:** every round spent protects the team now but costs a future resource; every shot makes noise; every delay raises infestation pressure.
 
-## 5. SIMULAÇÃO: CONTRATOS E TEMPORIZAÇÃO
+## 5. SIMULATION: CONTRACTS AND TIMING
 
-### 5.1 Modelo de tempo
+### 5.1 Time model
 
-- Tick fixo da simulação: **100 ms (10 ticks/segundo)**.
-- Renderização separada: `requestAnimationFrame`, interpolação entre estados.
-- Pausa: acumulação de ticks desativada, sem avançar mundo.
-- Velocidades: 1× e 2× multiplicam quantidade de ticks, não alteram fórmulas por tick.
-- Operações aleatórias usam RNG com seed reproduzível, jamais `Math.random()` dentro do domínio.
-- Todos os tempos em segundos no conteúdo e em ticks no motor; conversão explícita.
-- Pipeline de tick: `applyCommands` → `updatePerception` → `updateNoise` → `decideAI` → `moveActors` → `resolveCombat` → `resolveDamageAndInfection` → `updatePsychology` → `evaluateObjectives` → `emitEvents`.
-- Desempate determinístico: prioridade explícita seguida de ID estável.
+- Fixed simulation tick: **100 ms (10 ticks per second)**.
+- Rendering is separate: `requestAnimationFrame`, interpolation between states.
+- Pause: tick accumulation is off, and the world does not advance.
+- Speeds: 1× and 2× multiply how many ticks run; they do not change per-tick formulas.
+- Random operations use a seeded, reproducible RNG. The domain never calls `Math.random()`.
+- Content times are in seconds; the engine uses ticks. Conversion is explicit.
+- Tick pipeline: `applyCommands` → `updatePerception` → `updateNoise` → `decideAI` → `moveActors` → `resolveCombat` → `resolveDamageAndInfection` → `updatePsychology` → `evaluateObjectives` → `emitEvents`.
+- Deterministic tie-break: an explicit priority, then a stable id.
 
-### 5.2 Regras da camada de domínio
+### 5.2 Domain-layer rules
 
-- `simulation-core` NÃO importa Phaser, browser, DOM ou objetos gráficos.
-- Todas as mudanças de estado ocorrem em `advanceTick(state, commands, rng)` ou sistemas invocados pelo simulador.
-- Estado possui `schemaVersion` e `tick`.
-- Eventos gerados contêm `id`, `tick`, `type` e payload validado.
-- Renderizador somente consome estado/snapshots e envia comandos validados.
-- Movimento e combate ocorrem no espaço do mundo; câmera é apenas apresentação.
-- Uma entidade morta não atua, não ocupa ordem ativa nem recebe novos comandos.
+- `simulation-core` does NOT import Phaser, the browser, the DOM or graphics objects.
+- Every state change happens in `advanceTick(state, commands, rng)` or in systems the simulator calls.
+- State has `schemaVersion` and `tick`.
+- Generated events contain `id`, `tick`, `type` and a validated payload.
+- The renderer only consumes state or snapshots and sends validated commands.
+- Movement and combat happen in world space. The camera is presentation only.
+- A dead entity does not act, does not hold an active order and does not receive new commands.
 
-### 5.3 Geometria
+### 5.3 Geometry
 
-- Mundo 2D cartesiano em metros/células; cada tile possui terreno, custo de movimento, transparência, absorção acústica e resistência à travessia.
-- `worldPosition` usa coordenadas contínuas; grid de tiles controla navegação e LOS.
-- Colisões por círculo aproximado (raio do sobrevivente: 0,25 m; zumbi: 0,28 m).
-- Portas e obstáculos são entidades com estado; alterar passabilidade invalida caminhos afetados.
-- MVP é **um único nível jogável**; telhados e alturas podem ser visuais inicialmente, não prometer pavimentos em simulação antes do sistema de níveis.
+- A 2D Cartesian world in metres and cells. Each tile has terrain, movement cost, transparency, acoustic absorption and traversal resistance.
+- `worldPosition` uses continuous coordinates. The tile grid controls navigation and line of sight.
+- Collisions use an approximate circle (survivor radius 0.25 m; zombie radius 0.28 m).
+- Doors and obstacles are entities with state. Changing passability invalidates the affected paths.
+- The MVP is **one playable level**. Roofs and heights may be visual at first. Do not promise simulated floors before a level system exists.
 
-## 6. MAPA, TERRENO E COBERTURA
+## 6. MAP, TERRAIN AND COVER
 
-### 6.1 Tipos de terreno iniciais
+### 6.1 Initial terrain types
 
-| Terreno | Custo de movimento | LOS | Ruído/Interação | Observação |
+| Terrain | Movement cost | LOS | Noise / interaction | Note |
 |---|---:|---|---|---|
-| Rua asfaltada | 1.0 | livre | passos normais | rápido, exposto |
-| Calçada | 1.0 | livre | normal | — |
-| Grama | 1.2 | parcialmente obscurecido em moitas | passos reduzidos | pouca proteção balística |
-| Entulho | 1.6 | parcial | passos elevados | risco de tropeço (não MVP) |
-| Parede sólida | bloqueado | bloqueado | alta absorção | destrutível somente se marcada |
-| Cercado baixo | 1.5 ou escalável | livre | ruído de escalada | atrasa zumbis |
-| Janela | bloqueado/atravessável por interação | permite visão | vidro quebrado gera ruído | passagem após quebra |
-| Porta fechada | bloqueado | bloqueado | pode abrir/arrombar | possui HP/fechadura |
-| Porta aberta | 1.0 | livre | livre | — |
+| Asphalt street | 1.0 | clear | normal footsteps | fast, exposed |
+| Sidewalk | 1.0 | clear | normal | — |
+| Grass | 1.2 | partly obscured in bushes | quieter footsteps | little ballistic protection |
+| Rubble | 1.6 | partial | loud footsteps | trip risk (not MVP) |
+| Solid wall | blocked | blocked | high absorption | destructible only if marked |
+| Low fence | 1.5 or climbable | clear | climb noise | slows zombies |
+| Window | blocked / crossable by interaction | allows sight | broken glass makes noise | passage after it breaks |
+| Closed door | blocked | blocked | can be opened or forced | has hit points / a lock |
+| Open door | 1.0 | clear | clear | — |
 
-Valores são pontos de partida de balanceamento, não simulações físicas.
+These values are balance starting points, not a physical simulation.
 
-### 6.2 Cobertura e ocultação são diferentes
+### 6.2 Cover and concealment are different
 
-- **Cobertura:** reduz chance de acerto ou dano de tiros humanos (futuro PvE humano); contra zumbis, funciona apenas se for um **obstáculo físico** que eles não alcancem ou precisem destruir/contornar.
-- **Ocultação:** reduz probabilidade/alcance de detecção visual; moita não é escudo contra mordida.
-- **Bloqueio de movimento:** parede ou barricada pode segurar infectados, com custo e HP.
-- Não permitir que um mero `coverBonus` torne alguém inalcançável a uma horda.
+- **Cover:** reduces the hit chance or damage of human gunfire (future human PvE). Against zombies it works only as a **physical obstacle** they cannot reach or must destroy or go around.
+- **Concealment:** reduces the probability or range of visual detection. A bush is not a shield against a bite.
+- **Movement block:** a wall or barricade can hold the infected, at a cost and with hit points.
+- A mere `coverBonus` must not make someone unreachable by a horde.
 
-### 6.3 LOS (line of sight)
+### 6.3 Line of sight
 
-- Implementar **supercover grid traversal** ou ray traversal equivalente com testes de oclusão por tile.
-- Parede e porta fechada opacas bloqueiam LOS. Janela deixa ver, mas não atravessar sem ação explícita.
-- Visão individual nasce do soldado, não do centro da equipe.
-- Alcance diurno base de 18 células para sobrevivente; noturno sem luz 7 células; luz e lanternas modificam.
-- Ângulo de visão 120° normal; dentro de 3 células, visão periférica reduzida de 360° para facilitar controle (parâmetro ajustável).
-- A cada tick, somente entidades candidatas em buckets espaciais são testadas; LOS em distância curta exige raio de visão.
-- Mapa conhecido não significa inimigo atualmente visível. Contatos sumidos deixam marcador impreciso da última posição, com timestamp.
+- Implement **supercover grid traversal**, or an equivalent ray traversal, with per-tile occlusion tests.
+- An opaque wall and a closed door block line of sight. A window allows sight, not passage, until an explicit action.
+- Vision belongs to the individual soldier, not to the centre of the team.
+- Base daytime range is 18 cells for a survivor; 7 cells at night without light. Lights and lanterns modify this.
+- Normal view angle is 120°. Within 3 cells, a reduced 360° peripheral vision makes control easier (tunable).
+- Each tick tests only candidate entities in spatial buckets. Short-range line of sight still requires a vision radius.
+- A known map does not mean an enemy is currently visible. Lost contacts leave an imprecise marker of the last position, with a timestamp.
 
-### 6.4 Neblina de guerra
+### 6.4 Fog of war
 
-Por célula: `unexplored`, `explored`, `visible`. Visibilidade atual é união das células visíveis pelos sobreviventes ativos. Desenhar diferentemente: preto para nunca explorado, escurecido para explorado, claro para visível. Nunca exibir zumbi não detectado só porque a célula foi explorada anteriormente.
+Per cell: `unexplored`, `explored`, `visible`. Current visibility is the union of cells visible to living survivors. Draw them differently: black for never explored, dimmed for explored, clear for visible. Never show an undetected zombie only because the cell was explored before.
 
-## 7. SOBREVIVENTES: MODELO DE DADOS E PSICOLOGIA
+## 7. SURVIVORS: DATA MODEL AND PSYCHOLOGY
 
-### 7.1 Atributos por sobrevivente
+### 7.1 Attributes per survivor
 
-- Identidade: ID persistente, nome original, retrato genérico, profissão, histórico curta.
-- Físicos: `health` (0–100), `stamina` (0–100), `bleeding`, `infectionStage`.
-- Psicológicos: `stress` (0–100), `courage` (0–100), `discipline` (0–100), `leadership` (0–100).
-- Técnicos: `marksmanship`, `medicine`, `mechanics`, `stealth` (0–100).
-- Estado: `alive`, `downed`, `dead`, `turned`; postura: `standing`, `crouched`, `prone` (prone em evolução).
-- Equipamentos: arma equipada, munição em pente e reserva, peso, itens.
-- Squad: `squadId`, `isLeader`, ordem atual herdada, interrupção local, alvo atual.
-- Campanha: `experience`, `traits`, lesões, traumas, relações (futuro).
+- Identity: persistent id, original name, generic portrait, profession, short background.
+- Physical: `health` (0–100), `stamina` (0–100), `bleeding`, `infectionStage`.
+- Psychological: `stress` (0–100), `courage` (0–100), `discipline` (0–100), `leadership` (0–100).
+- Technical: `marksmanship`, `medicine`, `mechanics`, `stealth` (0–100).
+- State: `alive`, `downed`, `dead`, `turned`. Posture: `standing`, `crouched`, `prone` (prone comes later).
+- Equipment: equipped weapon, rounds in the magazine and in reserve, weight, items.
+- Squad: `squadId`, `isLeader`, current inherited order, local interruption, current target.
+- Campaign: `experience`, `traits`, injuries, traumas, relationships (later).
 
-### 7.2 Stress ≠ moral ≠ ferimento
+### 7.2 Stress is not morale and is not a wound
 
-Para MVP, usar um **medidor de estresse** para comportamento imediato e `discipline/courage/leadership` como atributos duradouros. Evitar cinco medidores distintos sem efeitos claros.
+For the MVP, use one **stress meter** for immediate behaviour and `discipline`, `courage` and `leadership` as lasting attributes. Do not add five separate meters without clear effects.
 
-- Estresse 0–24: calmo; segue ordens.
-- 25–49: alerta; mira ligeiramente prejudicada.
-- 50–74: abalado; demora a reagir, recusa algumas ações de alto risco.
-- 75–89: pânico; pode congelar ou buscar fuga.
-- 90–100: ruptura; abandona a ordem e tenta sobreviver, com cooldown antes de reavaliar.
+- Stress 0–24: calm; follows orders.
+- 25–49: alert; aim is slightly worse.
+- 50–74: shaken; slow to react, refuses some high-risk actions.
+- 75–89: panic; may freeze or seek escape.
+- 90–100: breakdown; abandons the order and tries to survive, with a cooldown before re-evaluation.
 
-**Regra de atualização proposta a cada segundo (valores configuráveis):**
+**Proposed update rule each second (configurable values):**
 
 ```
 stressDeltaPerSecond =
@@ -218,109 +220,109 @@ stressDeltaPerSecond =
   - 0.2 * (courage / 100)
 ```
 
-Aplicar `delta = stressDeltaPerSecond * tickSeconds`, limitar a 0–100. Eventos como morte/ferimento recente devem virar impulsos **apenas uma vez por evento**, não repetir como 'recentemente' em todos os ticks. Implementar `StressImpulse` com ID consumido ou temporizador explícito. Fórmula acima é conceitual; no código, separar componentes contínuos dos impulsos.
+Apply `delta = stressDeltaPerSecond * tickSeconds` and clamp to 0–100. Events such as a recent death or wound must become impulses **once per event**. Do not keep treating "recently" as true on every tick. Implement `StressImpulse` with a consumed id or an explicit timer. The formula above is conceptual. In code, separate continuous components from impulses.
 
-Histerese: entrar em pânico com stress ≥ 75 e sair somente após cair abaixo de 55 e passar pelo menos 4 segundos. Não oscilar de estado a cada tick.
+Hysteresis: enter panic at stress ≥ 75 and leave only after it falls below 55 and at least 4 seconds have passed. Do not flip state every tick.
 
-### 7.3 Autonomia e recusa de ordens
+### 7.3 Autonomy and refusing orders
 
-Uma ordem é uma intenção, não garantia. Quando o estresse está alto:
+An order is an intention, not a guarantee. When stress is high:
 
-- `moveFast` rumo a local com grande horda pode ser interrompido por `seekCover` ou `flee`.
-- `holdPosition` se torna extremamente difícil se zumbis estão ao alcance imediato.
-- `fire` pode ser interrompido por `reload`, `retreat`, `panic` ou ausência de munição.
-- O líder reduz custo psicológico e pode reagrupar aliados, sem controle mágico.
-- IA jamais deve deliberadamente se colocar em perigo mortal por bug de prioridade.
-- Um soldado assustado pode ficar imóvel, mas deve informar a razão na UI.
+- `moveFast` toward a large horde may be interrupted by `seekCover` or `flee`.
+- `holdPosition` becomes extremely hard if zombies are in immediate reach.
+- `fire` may be interrupted by `reload`, `retreat`, `panic` or an empty magazine.
+- The leader lowers the psychological cost and can rally allies. There is no magic control.
+- AI must never deliberately step into mortal danger because of a priority bug.
+- A frightened soldier may stand still, but the UI must say why.
 
-### 7.4 Sobrevivência e infecção
+### 7.4 Survival and infection
 
-- Ataque zumbi corpo a corpo é mitigado por posicionamento, armadura leve, barricadas e alcance.
-- Contato pode causar dano, ferida ou mordida; parâmetros por tipo e dificuldade.
-- **Mordida** provoca infecção segundo configuração da missão (por padrão, probabilidade elevada, mas não 100%).
-- Estágios: `healthy` → `exposed` → `infected` → `critical` → `turned/dead`; temporizadores escalonados em **tempo de campanha**, não obrigatoriamente durante a batalha.
-- Transformação não pode ocorrer instantaneamente sem aviso. O usuário precisa entender o risco.
-- Primeiros socorros tratam sangramento e HP, não curam automaticamente infecção.
-- MVP: infecção aparece no debriefing e no estado do sobrevivente; transformação em combate apenas numa fase posterior, salvo missão explicitamente projetada para isso.
+- A zombie melee attack is mitigated by positioning, light armour, barricades and range.
+- Contact can cause damage, a wound or a bite. Parameters depend on type and difficulty.
+- A **bite** causes infection according to the mission configuration (by default a high probability, not 100%).
+- Stages: `healthy` → `exposed` → `infected` → `critical` → `turned/dead`. Timers are staged in **campaign time**, not necessarily during the battle.
+- Turning cannot happen instantly with no warning. The player must understand the risk.
+- First aid treats bleeding and hit points. It does not automatically cure infection.
+- MVP: infection appears in the debriefing and on the survivor's state. Turning during combat comes in a later phase, unless a mission is explicitly designed for it.
 
-## 8. ESQUADRÕES E ORDENS
+## 8. SQUADS AND ORDERS
 
-### 8.1 Estrutura
+### 8.1 Structure
 
-- 2–6 sobreviventes, um líder opcional, formação compacta, espaçamento 0,8–1,5 m.
-- Jogador seleciona grupo inteiro por clique, painel ou tecla de atalho.
-- Cada sobrevivente escolhe posição local viável ao redor do destino central da formação.
-- Distância grande entre membros ativa 'separado'; líder pode reagrupar.
-- Quando líder morre, substituto é escolhido por leadership entre vivos; impacto imediato no stress.
+- 2–6 survivors, an optional leader, a compact formation, spacing 0.8–1.5 m.
+- The player selects the whole group by click, panel or hotkey.
+- Each survivor picks a viable local position around the formation's central destination.
+- A large distance between members marks them as separated. The leader can regroup them.
+- When the leader dies, the replacement is the living member with the highest leadership. Stress is affected immediately.
 
-### 8.2 Catálogo de comandos
+### 8.2 Order catalogue
 
-| Ordem | Ação esperada | Consequência |
+| Order | Expected action | Consequence |
 |---|---|---|
-| Move | deslocamento coordenado normal | ruído médio |
-| Sneak | deslocamento lento e furtivo | baixa emissão sonora; maior atenção |
-| Sprint | corrida com menor precisão/atenção | ruído e fadiga altos |
-| Hold | defender perímetro; mirar, disparar se autorizado | pouco deslocamento |
-| Hide | evitar disparos desnecessários e tentar não ser detectado | risco de ser cercado |
-| Attack | atacar alvo detectado ou área definida | consumo munição e ruído |
-| Retreat | deslocar para ponto seguro prioritário | coesão reduzida se em pânico |
-| Interact | abrir porta, revistar objeto, resgatar, ativar extração | expõe equipe |
-| Regroup | aproximar-se do líder e reorganizar | reduz dispersão |
-| Fire Discipline | postura: `weaponsFree`, `returnFire`, `holdFire` | controla disparos espontâneos |
+| Move | coordinated movement at a normal pace | medium noise |
+| Sneak | slow, quiet movement | low sound; higher attention |
+| Sprint | a run with less accuracy and attention | high noise and fatigue |
+| Hold | defend a perimeter; aim and fire if allowed | little movement |
+| Hide | avoid unnecessary shots and try not to be detected | risk of being surrounded |
+| Attack | attack a detected target or a defined area | spends ammunition and makes noise |
+| Retreat | move to a priority safe point | cohesion drops if the squad is panicking |
+| Interact | open a door, search an object, rescue, start extraction | exposes the team |
+| Regroup | move toward the leader and re-form | reduces scatter |
+| Fire Discipline | posture: `weaponsFree`, `returnFire`, `holdFire` | controls spontaneous shots |
 
-### 8.3 Máquina de execução de ordem
+### 8.3 Order execution machine
 
-`queued` → `planning` → `executing` → `completed` ou `blocked`/`interrupted`/`cancelled`.
+`queued` → `planning` → `executing` → `completed`, or `blocked` / `interrupted` / `cancelled`.
 
-- Nova ordem substitui a atual por padrão; shift adiciona waypoint (após MVP).
-- Bloqueios de rota geram pedido de replanejamento; após N tentativas emitir `ORDER_BLOCKED`.
-- Comandos duram até completar/cancelar, respeitando interrupções de sobrevivência.
-- IA de emergência tem precedência: `avoidImmediateDeath` > `panic` > `reload/seekSafety` > `explicitOrder` > `idleBehavior`.
-- Durante pausa, interface pode aceitar ordens, mas só executar ao retomar.
+- A new order replaces the current one by default. Shift adds a waypoint (after the MVP).
+- A blocked route requests a replan. After N attempts, emit `ORDER_BLOCKED`.
+- Commands last until they complete or are cancelled, subject to survival interruptions.
+- Emergency AI takes precedence: `avoidImmediateDeath` > `panic` > `reload/seekSafety` > `explicitOrder` > `idleBehavior`.
+- While paused, the interface may accept orders, but they execute only on resume.
 
-### 8.4 Formação e navegação
+### 8.4 Formation and navigation
 
-- Planejamento de rota por **A\*** em grade, com custos por terreno e risco observado.
-- Formação recebe rota do centróide, indivíduos seguem offsets locais com busca de posição livre.
-- Replanejar em mudanças significativas, não a cada frame.
-- Evitar atravessar paredes, atravessar portas fechadas ou movimentar mais rápido que `speed * dt`.
-- Anti-stuck: se deslocamento <0,2 m em 2 s durante ordem de movimento, recalcular ou declarar bloqueio com reason.
+- Route planning uses **A\*** on the grid, with terrain costs and observed risk.
+- The formation receives the centroid's route. Individuals follow local offsets and search for a free position.
+- Replan on significant changes, not every frame.
+- Do not cross walls, pass closed doors, or move faster than `speed * dt`.
+- Anti-stuck: if displacement is under 0.2 m in 2 s during a movement order, recalculate or declare a block with a reason.
 
-## 9. ZUMBIS: IA E COMPORTAMENTO EMERGENTE
+## 9. ZOMBIES: AI AND EMERGENT BEHAVIOUR
 
-### 9.1 Princípios
+### 9.1 Principles
 
-Zumbis não têm morale/suppression humanos, não procuram cobertura balística e não conhecem automaticamente a posição do jogador. Eles percebem **som, visão e sinais de outros infectados** e devem perder interesse quando estímulos desaparecem. Não receber telepatia disfarçada de IA.
+Zombies have no human morale or suppression, they do not seek ballistic cover, and they do not automatically know the player's position. They perceive **sound, sight and signals from other infected**, and they must lose interest when the stimuli disappear. Do not hide telepathy inside the AI.
 
-### 9.2 Tipos iniciais
+### 9.2 Initial types
 
-| Tipo | HP | Velocidade | Percepção | Comportamento | Fase |
+| Type | HP | Speed | Perception | Behaviour | Phase |
 |---|---:|---:|---|---|---|
-| Errante | 100 | 0,8 m/s | som forte, visão curta | patrulha/reage/lento | MVP |
-| Corredor | 70 | 2,4 m/s | visão e ruído | perseguição rápida | MVP |
-| Pesado | 260 | 0,55 m/s | ruído médio | danifica barricadas | vertical slice |
-| Gritador | 65 | 1,0 m/s | vê e sinaliza | emite evento sonoro intenso | vertical slice |
-| Rastejante | 45 | 0,5 m/s | curto alcance | esconde-se em terreno | 1.0 |
+| Walker | 100 | 0.8 m/s | loud sound, short sight | patrols, reacts, slow | MVP |
+| Runner | 70 | 2.4 m/s | sight and noise | fast pursuit | MVP |
+| Heavy | 260 | 0.55 m/s | medium noise | damages barricades | vertical slice |
+| Screamer | 65 | 1.0 m/s | sees and signals | emits an intense sound event | vertical slice |
+| Crawler | 45 | 0.5 m/s | short range | hides in terrain | 1.0 |
 
-Todos os valores parametrizáveis por dificuldade. Sem ataques à distância mágicos no MVP.
+All values are tunable by difficulty. No magical ranged attacks in the MVP.
 
-### 9.3 FSM por infectado
+### 9.3 Per-infected state machine
 
 `Idle` → `Wander` → `InvestigateSound` → `PursueVisibleTarget` → `Attack` → `SearchLastKnownPosition` → `Wander`.
 
-- `Idle`: pequena espera; não consumir pathfinding.
-- `Wander`: waypoint local plausível, determinístico para seed.
-- `InvestigateSound`: escolhe evento sonoro percebido de maior utilidade, com memória de expiração.
-- `PursueVisibleTarget`: requer LOS ou visual recente ainda válido; escolhe alvo alcançável próximo.
-- `Attack`: requer distância e cooldown.
-- `SearchLastKnownPosition`: vai ao último local percebido e procura por intervalo limitado.
-- Perde contato: nunca segue precisamente o jogador fora de LOS sem percepção alternativa.
-- Se porta bloqueia caminho: contorna, empurra ou agride, conforme tipo e estado.
-- Reavaliação a cada 0,3–1 s conforme estado, escalonada por ID/tick para distribuir CPU.
+- `Idle`: a short wait. Do not spend pathfinding.
+- `Wander`: a plausible local waypoint, deterministic for the seed.
+- `InvestigateSound`: pick the perceived sound event with the highest utility, with an expiring memory.
+- `PursueVisibleTarget`: requires line of sight, or recent sight that is still valid. Choose a nearby reachable target.
+- `Attack`: requires distance and a cooldown.
+- `SearchLastKnownPosition`: go to the last perceived place and search for a limited interval.
+- On lost contact: never follow the player's exact position outside line of sight without another perception.
+- If a door blocks the path: go around, push or attack it, according to type and state.
+- Re-evaluate every 0.3–1 s depending on state, staggered by id and tick to spread CPU cost.
 
-### 9.4 Som e propagação espacial (sistema-chave)
+### 9.4 Sound and spatial propagation (key system)
 
-Toda fonte de som produz:
+Every sound source produces:
 
 ```ts
 interface NoiseEvent {
@@ -333,9 +335,9 @@ interface NoiseEvent {
 }
 ```
 
-Eventos de som não devem ser conhecidos globalmente por todos os zumbis. Criar uma grade acústica propagada por **Dijkstra limitado por orçamento de intensidade** (uma fonte com custo de atravessar células, absorção de obstáculos). Para fontes fracas, permitir aproximação radial com LOS/acoustic ray como otimização no MVP; por padrão, o sistema correto é um campo de propagação atenuada.
+Sound events must not be known globally by every zombie. Build an acoustic grid propagated by **intensity-budgeted Dijkstra** (a source pays to cross cells, and obstacles absorb). For weak sources, a radial approximation with line of sight or an acoustic ray is an allowed MVP optimisation. The correct default is an attenuated propagation field.
 
-Modelo proposto:
+Proposed model:
 
 ```
 remainingIntensity(nextTile) =
@@ -345,193 +347,193 @@ remainingIntensity(nextTile) =
   - obstaclePenalty
 ```
 
-Parar quando restante ≤ 0. Um zumbi escuta se a intensidade remanescente na célula dele for ≥ `hearingThreshold`, salvo modificadores. Para impedir milhares de eventos:
+Stop when the remainder is ≤ 0. A zombie hears the sound if the remaining intensity on its cell is ≥ `hearingThreshold`, except for modifiers. To avoid thousands of events:
 
-- passos são agregados em pulsos a cada 0,5 s por equipe em movimento;
-- tiros são eventos discretos;
-- ruídos da mesma região/tempo podem ser agregados mantendo fonte e máximo;
-- cache curto por evento/tick, spatial buckets para ouvintes;
-- número máximo de expansões por tick configurável;
-- som atrasado/atenuado ao atravessar paredes; nunca 'soma de todos os zumbis do mapa'.
+- footsteps are aggregated into pulses every 0.5 s per moving team;
+- shots are discrete events;
+- noises from the same region and time may be aggregated, keeping the source and the maximum;
+- a short cache per event and tick, plus spatial buckets for listeners;
+- a configurable maximum number of expansions per tick;
+- sound is delayed and attenuated through walls. Never "the sum of every zombie on the map".
 
-**Referência inicial de intensidades** (abstratas, a calibrar): furtivo 5; passo normal 12; corrida 24; quebrar vidro 40; pistola 70; carabina 85; espingarda 90; alarme 95; explosão 100. Não usar a mesma escala como decibéis reais.
+**Initial intensity reference** (abstract, to be calibrated): sneak 5; normal step 12; sprint 24; breaking glass 40; pistol 70; carbine 85; shotgun 90; alarm 95; explosion 100. Do not treat this scale as real decibels.
 
-### 9.5 Hordas
+### 9.5 Hordes
 
-- Horda é **comportamento coletivo emergente**, não necessariamente uma entidade indivisível.
-- Um zumbi pode investigar som e atrair outros por barulho de colisões, gritos ou tumulto.
-- Todos continuam com HP/colisões próprios.
-- Para >150 zumbis, agrupar destino de investigação em campos de fluxo (`flow fields`) compartilhados, recalculados com parcimônia.
-- Interações de multidão devem impedir que 50 zumbis ocupem exatamente o mesmo local; usar separação local simples.
-- Gerar reforços apenas por spawners explícitos fora da área atualmente visível, com limites e cooldown; sinalização razoável para o jogador.
+- A horde is **emergent collective behaviour**, not necessarily one indivisible entity.
+- A zombie can investigate a sound and draw others through collision noise, shouts or a commotion.
+- Each one still has its own hit points and collisions.
+- Above 150 zombies, group investigation destinations into shared flow fields, recalculated sparingly.
+- Crowd interactions must stop 50 zombies from occupying exactly the same spot. Use simple local separation.
+- Spawn reinforcements only from explicit spawners outside the currently visible area, with limits and a cooldown, and with a reasonable signal to the player.
 
-### 9.6 Anti-trapaça perceptiva
+### 9.6 Perceptual anti-cheat
 
-Testes devem assegurar:
+Tests must ensure:
 
-1. Zumbi atrás de muro opaco não detecta sobrevivente parado só por proximidade visual.
-2. Zumbi fora do alcance acústico não reage ao disparo.
-3. Fechando uma porta, o som é atenuado mais do que com porta aberta.
-4. Ao perder contato visual e sonoro, o perseguidor procura a última posição, não a coordenada atual.
-5. Zombies never receive player global position from render or UI systems.
+1. A zombie behind an opaque wall does not detect a stationary survivor from visual proximity alone.
+2. A zombie outside acoustic range does not react to a shot.
+3. Closing a door attenuates sound more than an open door.
+4. After losing sight and sound, the pursuer searches the last position, not the current coordinate.
+5. Zombies never receive the player's global position from render or UI systems.
 
-## 10. COMBATE, ARMAS E RECURSOS
+## 10. COMBAT, WEAPONS AND RESOURCES
 
-### 10.1 Armamento inicial
+### 10.1 Initial weapons
 
-| Arma | Cadência aprox. | Pente | Dano base | Ruído | Distância útil |
+| Weapon | Approximate rate | Magazine | Base damage | Noise | Useful range |
 |---|---:|---:|---:|---:|---:|
-| Pistola | 2 tiros/s | 12 | 38 | 70 | 12 m |
-| Carabina | 3 tiros/s | 24 | 50 | 85 | 20 m |
-| Espingarda | 0,8 tiros/s | 6 | 85 próximo, decai com distância | 90 | 9 m |
-| Bastão/faca | 1 ataque/s | — | 28 | 5 | 1,1 m |
+| Pistol | 2 shots/s | 12 | 38 | 70 | 12 m |
+| Carbine | 3 shots/s | 24 | 50 | 85 | 20 m |
+| Shotgun | 0.8 shots/s | 6 | 85 up close, falls with distance | 90 | 9 m |
+| Club / knife | 1 attack/s | — | 28 | 5 | 1.1 m |
 
-Balística abstrata e apropriada a um jogo, não simulador de armamento real. Acertos por raycast/LOS e probabilidade configurável.
+Ballistics are abstract and appropriate to a game, not a real-weapons simulator. Hits use raycast or line of sight and a configurable probability.
 
-### 10.2 Resolução determinística de tiro
+### 10.2 Deterministic shot resolution
 
-Para cada ataque permitido:
+For each allowed attack:
 
-1. Validar vivo, arma, munição, cooldown, alvo, distância e LOS.
-2. Calcular `hitChance = clamp(baseAccuracy + skillBonus - rangePenalty - movementPenalty - stressPenalty - darknessPenalty + stanceBonus, 0.05, 0.95)`.
-3. Consumir exatamente um projétil e emitir som, independentemente de acerto.
-4. Sortear com RNG injetável uma vez, registrar `SHOT_FIRED` com chance e resultado.
-5. Em acerto, aplicar dano e status (ex.: stagger breve no zumbi, não supressão mental).
-6. Se HP ≤ 0, retirar zumbi de combate e emitir `ENTITY_KILLED` apenas uma vez.
-7. Cooldown previne disparar múltiplas vezes em mesmo tick.
+1. Validate alive, weapon, ammunition, cooldown, target, distance and line of sight.
+2. Compute `hitChance = clamp(baseAccuracy + skillBonus - rangePenalty - movementPenalty - stressPenalty - darknessPenalty + stanceBonus, 0.05, 0.95)`.
+3. Spend exactly one round and emit sound, whether or not the shot hits.
+4. Draw once with the injectable RNG and record `SHOT_FIRED` with the chance and the result.
+5. On a hit, apply damage and status (for example a brief stagger on the zombie, not mental suppression).
+6. If hit points are ≤ 0, remove the zombie from combat and emit `ENTITY_KILLED` only once.
+7. The cooldown prevents firing more than once in the same tick.
 
-Não permitir projéteis atravessarem paredes opacas no MVP. Friendly fire desativado por padrão no MVP (configurável em fase posterior).
+In the MVP, projectiles must not pass through opaque walls. Friendly fire is off by default in the MVP (configurable in a later phase).
 
-### 10.3 Corpo a corpo
+### 10.3 Melee
 
-- Atacante precisa estar no alcance, possuir cooldown livre e linha de contato.
-- Zumbi prioriza alvo alcançável, não ataca através de paredes.
-- Chance de mordida apenas quando um ataque de contato válido acerta.
-- Portas e barricadas absorvem ataques quando fecham rota ao sobrevivente.
-- Melee do jogador é silencioso, porém perigoso por alcance e gasto de stamina.
+- The attacker must be in range, off cooldown, and have a line of contact.
+- A zombie prefers a reachable target and does not attack through walls.
+- A bite chance exists only when a valid contact attack hits.
+- Doors and barricades absorb attacks when they close the route to the survivor.
+- Player melee is quiet, but dangerous because of range and stamina cost.
 
-### 10.4 Munição e recarga
+### 10.4 Ammunition and reload
 
-- Separar `magazineRounds`, `reserveRounds`, `magazineCapacity`, `reloadTicks`.
-- Recarga requer tempo ininterrupto ou política explícita de interrupção; não restaurar munição automaticamente.
-- Esquadrão com `holdFire` não dispara por iniciativa; exceção apenas se regra `emergencySelfDefense` configurada para permitir melee.
-- Zero munição deve aparecer no HUD e impedir tiro; não pode resultar em ruído fantasma.
+- Separate `magazineRounds`, `reserveRounds`, `magazineCapacity` and `reloadTicks`.
+- Reload needs uninterrupted time, or an explicit interruption policy. Do not restore ammunition automatically.
+- A squad on `holdFire` does not shoot on its own. The only exception is a configured `emergencySelfDefense` rule that allows melee.
+- Zero ammunition must show on the HUD and must prevent the shot. It must not produce phantom noise.
 
-## 11. MISSÕES E CAMPANHA
+## 11. MISSIONS AND CAMPAIGN
 
-### 11.1 Tipos de missão
+### 11.1 Mission types
 
-1. **Reconhecimento:** revelar pontos de interesse e voltar com sobreviventes vivos.
-2. **Resgate:** alcançar NPC, libertar, escoltar até extração.
-3. **Suprimentos:** coletar medicamentos, comida, munição ou peças sem perder a equipe.
-4. **Evacuação:** chegar ao ponto sob pressão de horda, ativar e resistir por tempo limitado.
-5. **Defesa de posição:** proteger civis e barricadas durante intervalo definido.
-6. **Retomada de setor:** limpar pontos críticos/ativar infraestrutura; evitar 'matar todos' como padrão.
-7. **Escolta:** mover civis frágeis por rotas protegidas.
+1. **Reconnaissance:** reveal points of interest and return with living survivors.
+2. **Rescue:** reach an NPC, free them and escort them to extraction.
+3. **Supplies:** collect medicine, food, ammunition or parts without losing the team.
+4. **Evacuation:** reach the point under horde pressure, activate it and hold for a limited time.
+5. **Position defence:** protect civilians and barricades for a defined interval.
+6. **Sector retake:** clear critical points or activate infrastructure. Avoid "kill everyone" as the default.
+7. **Escort:** move fragile civilians along protected routes.
 
-### 11.2 Campanha estratégica (fase posterior)
+### 11.2 Strategic campaign (later phase)
 
-- Mapa com setores conectados e estados `unknown`, `infested`, `contested`, `secured`, `lost`.
-- Abrigo central possui capacidade, armazenamento, enfermaria, oficinas e moral coletiva.
-- Recursos: comida, medicamentos, munições, combustível, peças, população.
-- Dia estratégico discretizado; cada missão consome turno/tempo e avança migração de hordas.
-- Zumbis deslocam-se entre setores por ruído, densidade e eventos definidos.
-- Sobreviventes persistem por ID e continuam feridos, traumatizados, infectados ou veteranos.
-- Morte é permanente na campanha padrão; modo casual pode permitir recomeçar missão.
-- Rotas de suprimento e extração influenciam seleções de operação.
-- Condições de vitória de campanha: evacuar uma parcela da população ou estabelecer rede estável de setores; selecionar uma para versão 1.0.
+- A map of connected sectors with states `unknown`, `infested`, `contested`, `secured`, `lost`.
+- The central shelter has capacity, storage, an infirmary, workshops and collective morale.
+- Resources: food, medicine, ammunition, fuel, parts, population.
+- A discrete strategic day. Each mission spends a turn or time and advances horde migration.
+- Zombies move between sectors according to noise, density and defined events.
+- Survivors persist by id and stay wounded, traumatised, infected or veteran.
+- Death is permanent in the standard campaign. A casual mode may allow restarting the mission.
+- Supply and extraction routes influence which operations can be chosen.
+- Campaign victory: evacuate a share of the population, or establish a stable network of sectors. Pick one for version 1.0.
 
-### 11.3 Progressão sem RPG artificial
+### 11.3 Progression without an artificial RPG
 
-Skills sobem por atividades reais com tetos e progressão lenta. Não permitir soldado receber +500% dano por nível. Veteranos melhoram percepção, disciplina, tempo de reação e eficiência, mantendo vulnerabilidade física.
+Skills rise from real activity, with caps and slow progression. Do not let a soldier gain +500% damage from a level. Veterans improve perception, discipline, reaction time and efficiency, and they stay physically vulnerable.
 
-## 12. MISSÃO MVP: 'A ÚLTIMA FARMÁCIA'
+## 12. MVP MISSION: "A ÚLTIMA FARMÁCIA"
 
-**Mapa:** **Bairro da Ferrugem**, distrito urbano ficcional, 96×96 células; ruas em cruz, mercado, farmácia, pátio, muros e vielas.
+**Map:** **Bairro da Ferrugem**, a fictional urban district, 96×96 cells; crossing streets, a market, a pharmacy, a yard, walls and alleys.
 
-**Situação:** uma equipe precisa recolher medicamentos essenciais de uma farmácia e retirar uma civil encontrada no local.
+**Situation:** a team must collect essential medicine from a pharmacy and extract a civilian found there.
 
-**Equipes:**
-- Alfa: líder (policial), atiradora, socorrista, civil; 4 integrantes.
-- Bravo: líder (ex-militar), batedora, mecânico, voluntária; 4 integrantes.
+**Teams:**
+- Alfa: leader (police officer), marksman, medic, civilian; 4 members.
+- Bravo: leader (former soldier), scout, mechanic, volunteer; 4 members.
 
-**Inimigos:** 24 errantes espalhados inicialmente e 6 corredores em regiões de risco; até mais 30 poderão entrar em zonas de spawn fora da visibilidade se ruído alto sustentar reforço, respeitando limite simultâneo de 60.
+**Enemies:** 24 walkers scattered at the start and 6 runners in risk areas. Up to 30 more may enter spawn zones outside visibility if loud noise sustains reinforcement, respecting a simultaneous cap of 60.
 
-**Objetivos obrigatórios:**
-1. Entrar no perímetro da farmácia.
-2. Interagir com o armário de suprimentos (5 segundos protegidos).
-3. Localizar e resgatar a civil (interação de 3 segundos).
-4. Ativar extração no estacionamento ao sul.
-5. Permanecer na área de extração durante 20 segundos e retirar pelo menos um integrante vivo **e** a civil resgatada.
+**Required objectives:**
+1. Enter the pharmacy perimeter.
+2. Interact with the supply cabinet (5 protected seconds).
+3. Find and rescue the civilian (a 3-second interaction).
+4. Start extraction in the southern parking lot.
+5. Stay in the extraction area for 20 seconds and extract at least one living member **and** the rescued civilian.
 
-**Condição de falha:** todos os membros dos dois esquadrões mortos/convertidos; civil morta ou não extraída; limite de 15 minutos de tempo simulado excedido. **Sucesso parcial:** medicamentos recuperados sem civil extraída; contabilizar no debriefing, mas missão não concluída.
+**Failure:** every member of both squads is dead or turned; the civilian is dead or not extracted; the 15-minute simulated time limit is exceeded. **Partial success:** medicine recovered without the civilian extracted. Count it in the debriefing, but the mission is not complete.
 
-**Ritmo esperado:** reconhecimento → escolha de rota → contato acidental ou furtividade → farmácia → resgate → retirada sob pressão de hordas. O jogador pode vencer sem eliminar a maioria dos zumbis.
+**Expected rhythm:** reconnaissance → route choice → accidental contact or stealth → pharmacy → rescue → withdrawal under horde pressure. The player can win without killing most of the zombies.
 
-**Variação determinística:** mapa é fixo para o teste de aceitação; posicionamento inicial e alguns patrulhamentos usam seed declarada. Cenário possui uma seed canônica para regressões.
+**Deterministic variation:** the map is fixed for the acceptance test. Initial placement and some patrols use a declared seed. The scenario has a canonical seed for regressions.
 
-**Critérios específicos:**
-- É possível vencer com pelo menos dois planos: rota furtiva pela viela e avanço pela rua com consumo de munição.
-- Disparos elevam atividade de infectados realmente alcançados pelo campo acústico.
-- Pelo menos uma rota pode ser bloqueada por barricada/porta e resolvida por interação/contorno.
-- Civil resgatada caminha como seguidora, precisa de rota e pode morrer; não teleporta até extração.
-- Debriefing contém duração, sobreviventes extraídos, mortos, feridos, munição usada, ruído total, suprimentos e resultado.
+**Specific criteria:**
+- It is possible to win with at least two plans: a stealth route through the alley, and an advance down the street that spends ammunition.
+- Shots raise the activity of infected that the acoustic field actually reaches.
+- At least one route can be blocked by a barricade or door and resolved by interaction or by going around.
+- The rescued civilian walks as a follower, needs a route and can die. She does not teleport to extraction.
+- The debriefing contains duration, extracted survivors, dead, wounded, ammunition used, total noise, supplies and the result.
 
-## 13. UX / UI / CONTROLES
+## 13. UX / UI / CONTROLS
 
-### 13.1 Tela tática desktop
+### 13.1 Desktop tactical screen
 
-- **Centro:** mapa 2D, corpos, objetos, pontos de interação e ícones de ameaça.
-- **Superior:** objetivo atual, tempo, velocidade, pausa, nível de alarme/ruído relativo.
-- **Esquerda:** lista de squads, estados (calmo/pânico/ferido/sem munição), atalhos.
-- **Inferior:** membros da equipe selecionada com HP, stress, munição e ordem atual.
-- **Direita contextual:** ordens e descrição breve do motivo de interrupção; mostrar apenas ao selecionar.
-- **Minimapa:** área explorada e contatos conhecidos, não revelar zumbis invisíveis.
+- **Centre:** 2D map, bodies, objects, interaction points and threat icons.
+- **Top:** current objective, time, speed, pause, relative alarm or noise level.
+- **Left:** squad list, states (calm, panic, wounded, out of ammunition), shortcuts.
+- **Bottom:** members of the selected team with hit points, stress, ammunition and the current order.
+- **Contextual right side:** orders and a short reason for an interruption. Show it only while something is selected.
+- **Minimap:** explored area and known contacts. Do not reveal invisible zombies.
 
-### 13.2 Controles
+### 13.2 Controls
 
-- Clique esquerdo: selecionar esquadrão, alvo ou contexto; arrastar: caixa seleção opcional pós-MVP.
-- Clique direito no solo: mover (padrão), menu radial com modificador ou long-press em dispositivos touch futuros.
-- Clique direito no inimigo conhecido: atacar ou abrir menu de contexto.
-- Teclas `1–4`: selecionar squads; `Space`: pausa; `Q`: furtivo; `W`: mover; `E`: correr; `R`: retirada; `H`: manter posição; `F`: atirar/disciplinar fogo; `Tab`: alternar velocidade.
-- Zoom mouse wheel; pan WASD ou borda, configurável; evitar conflito teclado de pan com comandos (usar setas para pan inicialmente).
-- ESC fecha menu; pausa acessível sempre.
-- Mostrar caminho previsto e cor/ícone de ordem; avisar quando ação não é possível.
+- Left click: select a squad, target or context. Drag: an optional selection box after the MVP.
+- Right click on the ground: move (default), a radial menu with a modifier, or a long-press on future touch devices.
+- Right click on a known enemy: attack, or open a context menu.
+- Keys `1–4`: select squads. `Space`: pause. `Q`: sneak. `W`: move. `E`: sprint. `R`: retreat. `H`: hold. `F`: fire or fire discipline. `Tab`: toggle speed.
+- Mouse-wheel zoom. Pan with WASD or the screen edge, configurable. Avoid a conflict between pan keys and commands (use the arrow keys for pan at first).
+- Esc closes the menu. Pause is always available.
+- Show the predicted path and the order colour or icon. Warn when an action is impossible.
 
-### 13.3 Acessibilidade e entendimento
+### 13.3 Accessibility and comprehension
 
-- Escala de HUD 100–150%.
-- Cores acompanhadas por ícones/texto, nunca apenas cor.
-- Legenda de sons críticos e indicação visual opcional do ponto de origem estimado.
-- Game speed e pausa sem penalidade de modo solo.
-- Tooltips curtos: 'Equipe não obedece: pânico', 'Rota bloqueada: porta trancada'.
+- HUD scale 100–150%.
+- Colour is always paired with an icon or text, never colour alone.
+- A legend for critical sounds, and an optional visual mark of the estimated origin.
+- Game speed and pause have no penalty in solo play.
+- Short tooltips, shown to the player in Brazilian Portuguese: "Equipe não obedece: pânico", "Rota bloqueada: porta trancada".
 
-## 14. ARTE, AUDIO E IDENTIDADE ORIGINAL
+## 14. ART, AUDIO AND ORIGINAL IDENTITY
 
-**Direção:** cidade contemporânea decadente, vista de cima, atmosfera realista estilizada, palette escura de alta legibilidade. Silhuetas de humanos/zumbis diferentes, indicadores de equipe discretos, sem reproduzir os painéis, mapas, fontes, logos ou identidade visual de Close Combat.
+**Direction:** a decaying contemporary city, seen from above, a stylised realistic atmosphere, a dark palette with high readability. Distinct human and zombie silhouettes, discreet team indicators, and no reproduction of Close Combat panels, maps, fonts, logos or visual identity.
 
-- Tiles de rua, calçada, concreto, grama, entulho e interior.
-- Sprites com direção e animações `idle`, `walk`, `run`, `attack`, `hurt`, `die`.
-- Iluminação noturna simples com cones/polígonos posteriormente.
-- Efeitos: impacto, poeira, ruído visual, sangue estilizado opcional com intensidade configurável.
-- Áudio original: passos por superfície, tiros, vidro quebrando, rosnados distantes, barricada cedendo, rádio e ambientação.
-- Cada efeito de áudio importante deve gerar **evento de simulação de som coerente**; efeito visual sozinho não pode atrair zumbis.
-- No desenvolvimento inicial usar placeholders licenciados ou feitos no projeto; não bloquear mecânicas à espera de arte final.
+- Tiles for street, sidewalk, concrete, grass, rubble and interiors.
+- Sprites with facing and animations `idle`, `walk`, `run`, `attack`, `hurt`, `die`.
+- Simple night lighting with cones or polygons later.
+- Effects: impact, dust, a visual noise cue, optional stylised blood with a configurable intensity.
+- Original audio: footsteps per surface, shots, breaking glass, distant groans, a failing barricade, radio and ambience.
+- Every important audio effect must produce a **coherent simulation sound event**. A visual effect alone cannot attract zombies.
+- Early development may use licensed placeholders or assets made for the project. Do not block mechanics while waiting for final art.
 
-## 15. ARQUITETURA RECOMENDADA
+## 15. RECOMMENDED ARCHITECTURE
 
 ### 15.1 Stack
 
-- **TypeScript strict**, Vite, Phaser 3 para cena/UI 2D, HTML/CSS para painéis e overlays.
-- `@dead-sector/sim`: biblioteca TypeScript pura, sem dependências de UI.
-- `@dead-sector/game`: camada Phaser + entrada do usuário + HUD.
-- `@dead-sector/content`: mapas, missões, unidades, armas e parâmetros JSON com validação Zod (ou alternativa com mesma finalidade).
-- Testes: Vitest unitários, Playwright end-to-end, ESLint, Prettier.
-- Inicialmente `localStorage` para opções e `IndexedDB` para saves (com adaptador substituível). Não exigir backend.
-- Build estático compatível com hospedagem simples (inclusive GitHub Pages) usando base path configurável.
-- Desktop posterior via Tauri, reaproveitando a build web.
+- **Strict TypeScript**, Vite, Phaser 3 for the 2D scene and UI, HTML/CSS for panels and overlays.
+- `@dead-sector/sim`: a pure TypeScript library, with no UI dependencies.
+- `@dead-sector/game`: the Phaser layer, user input and HUD.
+- `@dead-sector/content`: maps, missions, units, weapons and JSON parameters validated with Zod (or an equivalent).
+- Tests: Vitest unit tests, Playwright end to end, ESLint, Prettier.
+- At first, `localStorage` for options and `IndexedDB` for saves (behind a replaceable adapter). No backend is required.
+- A static build compatible with simple hosting, including GitHub Pages, using a configurable base path.
+- Desktop later via Tauri, reusing the web build.
 
-### 15.2 Estrutura de pastas
+### 15.2 Folder structure
 
 ```
 dead-sector/
@@ -577,7 +579,7 @@ dead-sector/
 └── README.md
 ```
 
-### 15.3 Interfaces mínimas
+### 15.3 Minimum interfaces
 
 ```ts
 type EntityId = string;
@@ -630,19 +632,19 @@ interface GameState {
   tick: Tick;
   seed: number;
   missionId: string;
-  actors: Record<EntityId, ActorCore>;  // model real pode usar união discriminada
+  actors: Record<EntityId, ActorCore>;  // the real model may use a discriminated union
   squads: Record<SquadId, { members: EntityId[]; leaderId?: EntityId }>;
   // world, orders, objectives, visibility, noise and metrics omitted here
 }
 ```
 
-**Atenção:** exemplos são contratos orientadores, não o esquema completo. `setSimulationSpeed` é configuração do relógio da aplicação, não deve avançar o tick de forma diferente nem prejudicar replay determinístico.
+**Caution:** the examples are guiding contracts, not the complete schema. `setSimulationSpeed` is an application-clock setting. It must not advance the tick differently or break a deterministic replay.
 
-### 15.4 Data driven e validação
+### 15.4 Data-driven content and validation
 
-Definir assets JSON `zombieTypes`, `weapons`, `survivorTemplates`, `missions`, `maps`, `difficultyPresets`. Validar na inicialização e falhar com erro descritivo. Unidades SI e nomenclatura consistentes. Separar lógica e tuning.
+Define JSON assets for `zombieTypes`, `weapons`, `survivorTemplates`, `missions`, `maps` and `difficultyPresets`. Validate them at startup and fail with a descriptive error. Use SI units and consistent names. Separate logic from tuning.
 
-Exemplo:
+Example:
 
 ```json
 {
@@ -659,187 +661,187 @@ Exemplo:
 }
 ```
 
-### 15.5 Serviços e eventos
+### 15.5 Services and events
 
-Eventos essenciais: `ORDER_ISSUED`, `ORDER_BLOCKED`, `ENEMY_SPOTTED`, `ENEMY_LOST`, `NOISE_EMITTED`, `ZOMBIE_ALERTED`, `SHOT_FIRED`, `WEAPON_RELOADED`, `ACTOR_INJURED`, `ACTOR_KILLED`, `SURVIVOR_PANICKED`, `SURVIVOR_RALLIED`, `OBJECTIVE_COMPLETED`, `EXTRACTION_STARTED`, `MISSION_ENDED`.
+Essential events: `ORDER_ISSUED`, `ORDER_BLOCKED`, `ENEMY_SPOTTED`, `ENEMY_LOST`, `NOISE_EMITTED`, `ZOMBIE_ALERTED`, `SHOT_FIRED`, `WEAPON_RELOADED`, `ACTOR_INJURED`, `ACTOR_KILLED`, `SURVIVOR_PANICKED`, `SURVIVOR_RALLIED`, `OBJECTIVE_COMPLETED`, `EXTRACTION_STARTED`, `MISSION_ENDED`.
 
-O HUD, os sons e os testes devem poder inspecionar eventos sem alterar estado. Não usar event bus para mascarar dependências cíclicas entre sistemas.
+The HUD, sounds and tests must be able to inspect events without changing state. Do not use an event bus to hide cyclic dependencies between systems.
 
-### 15.6 Save, replay e observabilidade
+### 15.6 Save, replay and observability
 
-- Salvar `schemaVersion`, seed, tick, mapa e estado completo incluindo RNG e cooldowns.
-- Restaurar e continuar produzindo mesma sequência sob mesmas ordens.
-- Replay: snapshot inicial + comandos com `scheduledTick`; modo debug registra hash de estado a cada 100 ticks.
-- Debug overlay (`?debug=1`): grid, raycast LOS, campo acústico, rotas, visão, estado IA, FPS, tick duration, contagem de zumbis e seed.
-- Logs estruturados por missão e tick; evitar logs por entidade a cada frame em produção.
+- Save `schemaVersion`, seed, tick, map and the full state, including the RNG and cooldowns.
+- Restoring and continuing under the same orders produces the same sequence.
+- Replay: initial snapshot plus commands with `scheduledTick`. Debug mode records a state hash every 100 ticks.
+- Debug overlay (`?debug=1`): grid, line-of-sight raycasts, acoustic field, routes, vision, AI state, FPS, tick duration, zombie count and seed.
+- Structured logs by mission and tick. Avoid a log line per entity every frame in production.
 
-## 16. DESEMPENHO E ESCALA
+## 16. PERFORMANCE AND SCALE
 
-### 16.1 Meta de hardware e desempenho
+### 16.1 Hardware and performance target
 
-- Desktop com navegador moderno e GPU integrada recente, sem requisito de WebGL avançado.
-- MVP: 8 sobreviventes + até 60 infectados, mapa 96², >45 FPS na máquina de referência e sem congelamentos longos.
-- Meta pós-MVP: até 250 infectados ativos, 60 FPS em máquina intermediária; não sacrificar o funcionamento do MVP por essa meta.
-- Simulação p95 <10 ms/tick em ambiente de CI de referência a definir; medir antes de impor como gate rígido.
+- A desktop with a modern browser and a recent integrated GPU, with no advanced WebGL requirement.
+- MVP: 8 survivors plus up to 60 infected, a 96² map, above 45 FPS on the reference machine and no long freezes.
+- Post-MVP target: up to 250 active infected at 60 FPS on a mid-range machine. Do not sacrifice the MVP to chase that target.
+- Simulation p95 under 10 ms per tick on a reference CI environment still to be defined. Measure before making it a hard gate.
 
-### 16.2 Otimizações em ordem
+### 16.2 Optimisations, in order
 
-1. Spatial hash/grid para percepção e colisões locais.
-2. Perception updates escalonados e otimização de LOS.
-3. Pathfinding cache com limite temporal e invalidação ao mudar mapa.
-4. Fluxo compartilhado para múltiplos zumbis atraídos à mesma fonte.
-5. Instancing/batching de sprites, animações econômicas, objetos fora da tela não renderizados.
-6. Profiler antes de Web Worker; mover simulação para Worker só se precisar, mantendo API de snapshots.
+1. A spatial hash or grid for perception and local collisions.
+2. Staggered perception updates and line-of-sight optimisation.
+3. A pathfinding cache with a time limit, invalidated when the map changes.
+4. A shared flow for several zombies drawn to the same source.
+5. Sprite instancing and batching, cheap animations, and no rendering of off-screen objects.
+6. Profile before adding a web worker. Move the simulation to a worker only if needed, and keep the snapshot API.
 
-## 17. TESTES E CRITÉRIOS DE ACEITAÇÃO
+## 17. TESTS AND ACCEPTANCE CRITERIA
 
-### 17.1 Unitários obrigatórios
+### 17.1 Required unit tests
 
-- A*: caminho evita parede; rota inexistente retorna `blocked` sem travar.
-- LOS: parede bloqueia; janela permite ver; porta alterna visibilidade conforme estado.
-- Ruído: zumbi próximo reage; fora do campo não reage; parede reduz intensidade; seed fixa gera mesma grade.
-- Psicologia: múltiplos zumbis elevam stress; líder reduz; pânico tem histerese; stress é limitado 0–100.
-- Combate: sem munição não atira; tiro consome uma munição; parede bloqueia; dano não se repete após morte.
-- Zumbi: após perder LOS não passa a seguir coordenada secreta do alvo.
-- Ordens: nova ordem substitui atual; bloqueio emite evento; pausa não avança tick.
-- Extração: exige civil resgatada + ao menos 1 sobrevivente + tempo de extração completo.
-- Save/load: estado round-trip preservado e simulação continua determinística.
-- Separação: package `sim` executa em Node sem DOM e sem Phaser.
+- A*: a path avoids a wall. A missing route returns `blocked` without hanging.
+- Line of sight: a wall blocks; a window allows sight; a door toggles visibility with its state.
+- Noise: a nearby zombie reacts; one outside the field does not; a wall reduces intensity; a fixed seed produces the same grid.
+- Psychology: several zombies raise stress; a leader lowers it; panic has hysteresis; stress is clamped to 0–100.
+- Combat: no ammunition means no shot; a shot spends one round; a wall blocks; damage does not repeat after death.
+- Zombie: after losing line of sight it does not start following the target's secret coordinate.
+- Orders: a new order replaces the current one; a block emits an event; pause does not advance the tick.
+- Extraction: requires the rescued civilian, at least 1 survivor, and the full extraction time.
+- Save/load: a round trip preserves state and the simulation stays deterministic.
+- Boundary: the `sim` package runs in Node with no DOM and no Phaser.
 
-### 17.2 Integração e E2E
+### 17.2 Integration and end to end
 
-- Carregar menu → iniciar missão → selecionar Alfa → mover → pausar → retomar → disparar → escutar reação zumbi → coletar → resgatar → extrair → debriefing.
-- Teste screenshot de interface para 1280×720 e 1920×1080, sem recortes nos controles.
-- Semente canônica reproduz mesmo resultado com mesmo script de comandos e duração de ticks.
-- Cenário de morte do líder transfere liderança ou estado `leaderless` com efeito previsto.
-- Cenário de derrota termina uma única vez e bloqueia ordens de combate posteriores.
+- Load the menu → start the mission → select Alfa → move → pause → resume → fire → hear the zombie react → collect → rescue → extract → debriefing.
+- An interface screenshot test at 1280×720 and 1920×1080, with no clipped controls.
+- The canonical seed reproduces the same result for the same command script and tick count.
+- A leader-death scenario transfers leadership, or enters a predicted `leaderless` state.
+- A defeat scenario ends exactly once and blocks later combat orders.
 
-### 17.3 Qualidade e segurança de código
+### 17.3 Code quality and safety
 
-- `tsc --noEmit` sem erros, linter sem erros e testes unitários passando.
-- Não inserir APIs pagas, trackers ou telemetria sem decisão explícita.
-- Sanitizar/validar importações de JSON, saves e mapas.
-- Saves versionados; migração ou rejeição clara de versão incompatível.
-- Evitar importações circulares e `any` não justificado.
-- Asset licensing file (`ASSETS.md`) com autoria/licença/proveniência.
+- `tsc --noEmit` with no errors, the linter with no errors, and unit tests passing.
+- Do not add paid APIs, trackers or telemetry without an explicit decision.
+- Sanitise and validate imported JSON, saves and maps.
+- Versioned saves. Migrate an incompatible version, or reject it with a clear error.
+- Avoid circular imports and unjustified `any`.
+- An asset-licensing file (`ASSETS.md`) with authorship, licence and provenance.
 
-## 18. PLANO DE IMPLEMENTAÇÃO EM FASES
+## 18. PHASED IMPLEMENTATION PLAN
 
-### Fase 0 — Fundação (primeiro commit jogável mínimo)
+### Phase 0 — Foundation (first minimal playable commit)
 
-**Entregar:** monorepo, Vite + Phaser, mapa placeholder, câmera, seleção de squad dummy, relógio fixo, seeded RNG, logs e testes.  
-**Aceite:** `pnpm install && pnpm dev` exibe mapa navegável; `pnpm test` passa; core funciona em Node.
+**Deliver:** monorepo, Vite + Phaser, a placeholder map, camera, dummy squad selection, a fixed clock, a seeded RNG, logs and tests.
+**Accept:** `pnpm install && pnpm dev` shows a navigable map; `pnpm test` passes; the core runs in Node.
 
-### Fase 1 — Movimento tático
+### Phase 1 — Tactical movement
 
-**Entregar:** grid de bloqueios, esquadrões, 8 sobreviventes, A*, ordens move/sneak/sprint/hold, offsets de formação, seleção, destinos e UI.  
-**Aceite:** nenhum atravessa parede; equipes executam ordens; pausa funciona; stress ainda pode ser mockado e identificado como placeholder.
+**Deliver:** a blocking grid, squads, 8 survivors, A*, move/sneak/sprint/hold orders, formation offsets, selection, destinations and UI.
+**Accept:** nobody walks through a wall; teams carry out orders; pause works; stress may still be mocked and labelled as a placeholder.
 
-### Fase 2 — Percepção e zumbis
+### Phase 2 — Perception and zombies
 
-**Entregar:** LOS, fog of war, ruído de passos, FSM zumbi, wander/investigate/chase/attack, timers e debug acústico.  
-**Aceite:** infectados só investigam estímulos percebidos; paredes bloqueiam visão; modo furtivo atrai menos infectados que corrida.
+**Deliver:** line of sight, fog of war, footstep noise, a zombie state machine, wander/investigate/chase/attack, timers and an acoustic debug view.
+**Accept:** the infected investigate only perceived stimuli; walls block sight; sneaking attracts fewer infected than sprinting.
 
-### Fase 3 — Combate e psicologia
+### Phase 3 — Combat and psychology
 
-**Entregar:** armas, munição, recarga, dano, HP, morte, ataques zumbis, stress/pânico/liderança, fire policy.  
-**Aceite:** ataques têm cooldown; mortes são registradas uma vez; pânico pode interromper ordem e eventualmente cessar.
+**Deliver:** weapons, ammunition, reload, damage, hit points, death, zombie attacks, stress, panic, leadership and a fire policy.
+**Accept:** attacks have a cooldown; deaths are recorded once; panic can interrupt an order and can eventually end.
 
-### Fase 4 — Missão vertical slice
+### Phase 4 — Vertical-slice mission
 
-**Entregar:** farmácia, civil, interações, objetivos, evacuação temporizada, vitória/derrota, debriefing, menu, saves.  
-**Aceite:** missão completamente jogável do início ao fim; vitória possível usando furtividade e combate; E2E de fluxo crítico passa.
+**Deliver:** the pharmacy, the civilian, interactions, objectives, timed evacuation, win/loss, debriefing, menu and saves.
+**Accept:** the mission is fully playable from start to finish; victory is possible by stealth and by combat; the critical-flow end-to-end test passes.
 
-### Fase 5 — Qualidade e variação
+### Phase 5 — Quality and variation
 
-**Entregar:** obstáculos interativos, áudio original, UI acessível, mais 2 mapas, 2 tipos de zumbis adicionais, 3 missões conectadas, persistência básica.  
-**Aceite:** alterações de obstáculos impactam caminhos/LOS/som; progresso entre missões e perdas persistem.
+**Deliver:** interactive obstacles, original audio, an accessible UI, 2 more maps, 2 more zombie types, 3 connected missions and basic persistence.
+**Accept:** obstacle changes affect paths, line of sight and sound; progress and losses persist between missions.
 
-### Fase 6 — Campanha
+### Phase 6 — Campaign
 
-**Entregar:** mapa estratégico, abrigo, inventário, recursos, turno estratégico, escolhas de missão, equilíbrio de dificuldades.  
-**Aceite:** jogar várias operações modifica situação do mundo de forma persistente; decisões têm custos explícitos.
+**Deliver:** a strategic map, shelter, inventory, resources, a strategic turn, mission choices and difficulty balance.
+**Accept:** playing several operations changes the world persistently; decisions have explicit costs.
 
-### Fase 7 — Polimento/publicação
+### Phase 7 — Polish and release
 
-**Entregar:** opções de acessibilidade, otimização, menus completos, tutorial, licenças, build web e pacote desktop.  
-**Aceite:** build reproduzível, fluxo completo sem console errors, metas de desempenho verificadas.
+**Deliver:** accessibility options, optimisation, complete menus, a tutorial, licences, a web build and a desktop package.
+**Accept:** a reproducible build, a full flow with no console errors, and verified performance targets.
 
-**Regra para o agente:** não iniciar uma nova fase enquanto os critérios da fase atual não estiverem funcionando. Cada fase deve deixar `README` com como executar, recursos prontos, limitações e testes.
+**Rule for the agent:** do not start a new phase while the current phase's criteria are not working. Each phase must leave the `README` with how to run, what is ready, the limitations and the tests.
 
-## 19. BACKLOG POR SISTEMA (ORDENAÇÃO PARA AGENTE)
+## 19. BACKLOG BY SYSTEM (ORDER FOR THE AGENT)
 
-**P0 — imprescindível para o jogo existir:** loop determinístico; mapa com obstáculos; movimentação; seleção/comandos; zumbis com percepção; ruído; LOS; combate; HP/morte; stress; objetivos/extração; HUD essencial.
+**P0 — required for the game to exist:** deterministic loop; a map with obstacles; movement; selection and commands; zombies with perception; noise; line of sight; combat; hit points and death; stress; objectives and extraction; an essential HUD.
 
-**P1 — completar experiência:** esquadrões avançados; recursos; infecção; portas e barricadas; mais mapas; debriefing; persistência; tutorial; áudio e atmosfera.
+**P1 — complete the experience:** advanced squads; resources; infection; doors and barricades; more maps; debriefing; persistence; tutorial; audio and atmosphere.
 
-**P2 — dar profundidade:** campanha setorial; abrigo; suprimentos; missões dinâmicas; classes; estados climáticos; hordas avançadas; níveis de dificuldade.
+**P2 — add depth:** a sector campaign; shelter; supplies; dynamic missions; classes; weather; advanced hordes; difficulty levels.
 
-**P3 — expandir sem comprometer núcleo:** veículos; inimigos humanos; pavimentos completos; multiplayer; editor; LLM de alto nível; modding avançado.
+**P3 — expand without compromising the core:** vehicles; human enemies; complete floors; multiplayer; an editor; a high-level LLM; advanced modding.
 
-## 20. REGRAS DE BALANCEAMENTO E TELEMETRIA LOCAL
+## 20. BALANCE RULES AND LOCAL TELEMETRY
 
-- Nunca fazer o padrão de dificuldade apenas aumentar HP de zumbis; variar percepção, densidade, recursos e tolerância a ruído.
-- Métricas locais por missão: ticks, tempo, ruídos emitidos, zumbis atraídos/neutralizados, disparos, hit rate, ferimentos, panic events, tempo em pausa, distância percorrida, objetivos.
-- Uma missão deve favorecer pelo menos duas estratégias viáveis.
-- Evitar spawn invisível injusto perto do grupo; zonas de spawn são definidas e auditáveis no debug.
-- Cada falha deve ser explicável por informação visual, sonora ou evento; eliminar mortes 'aleatórias' sem contrajogo.
-- Ajustes de equilíbrio devem ser dados no JSON, não constantes dispersas pelo código.
+- Never make the only difficulty change a higher zombie hit-point total. Vary perception, density, resources and noise tolerance.
+- Local metrics per mission: ticks, time, noises emitted, zombies attracted or neutralised, shots, hit rate, wounds, panic events, time paused, distance travelled, objectives.
+- A mission must support at least two viable strategies.
+- Avoid an unfair invisible spawn next to the group. Spawn zones are defined and auditable in debug.
+- Every failure must be explainable by visual information, sound or an event. Remove "random" deaths that have no counterplay.
+- Balance changes belong in JSON, not in constants scattered through the code.
 
-## 21. RISCOS TÉCNICOS E MITIGAÇÕES
+## 21. TECHNICAL RISKS AND MITIGATIONS
 
-| Risco | Consequência | Mitigação |
+| Risk | Consequence | Mitigation |
 |---|---|---|
-| IA zumbi conhece posição global | comportamento injusto | sensores e memória por entidade, testes anti-telepatia |
-| Pathfinder recalcula por zumbi/tick | travamentos | cache, orçamento, flow fields e replanejamento escalonado |
-| Colisão de multidão | zumbis sobrepostos | spatial hash + separação local |
-| Psicologia excessivamente aleatória | jogador perde agência | thresholds, histerese e razões visíveis |
-| Sprites e HUD ligados à lógica | difícil evoluir | domínio puro e adapters |
-| Features demais antes da missão | protótipo nunca jogável | fases e vertical slice exigidos |
-| Ruído global atrai mapa inteiro | dificuldade artificial | propagação com atenuação e alcance |
-| Explosão exponencial de spawn | inviabilidade | limites e spawn fora de LOS com cooldown |
-| Salvar parcial e restaurar diferente | perda de progresso | snapshot completo de RNG e cooldowns |
-| Reutilização de assets protegidos | risco jurídico | assets originais e auditoria de licenças |
+| Zombie AI knows the global position | unfair behaviour | per-entity sensors and memory, anti-telepathy tests |
+| The pathfinder recalculates per zombie per tick | freezes | cache, a budget, flow fields and staggered replanning |
+| Crowd collision | stacked zombies | spatial hash plus local separation |
+| Over-random psychology | the player loses agency | thresholds, hysteresis and visible reasons |
+| Sprites and HUD tied to logic | hard to evolve | a pure domain and adapters |
+| Too many features before the mission | the prototype is never playable | required phases and a vertical slice |
+| Global noise attracts the whole map | artificial difficulty | propagation with attenuation and range |
+| Exponential spawn growth | the game becomes unplayable | limits, and spawns outside line of sight with a cooldown |
+| A partial save restores a different state | lost progress | a full snapshot of the RNG and cooldowns |
+| Reuse of protected assets | legal risk | original assets and a licence audit |
 
-## 22. ROTEIRO DE VALIDAÇÃO MANUAL (PLAYTEST)
+## 22. MANUAL VALIDATION SCRIPT (PLAYTEST)
 
-1. Abrir `http://localhost:5173` e iniciar `A Última Farmácia`.
-2. Selecionar Alfa, emitir ordem furtiva por caminho coberto, observar menor ruído.
-3. Selecionar Bravo e correr perto de zumbis, observar reação acústica maior.
-4. Atirar uma vez e verificar ruído, consumo de cartucho e alerta de zumbi no raio efetivo.
-5. Entrar em área de muitos infectados, observar stress e possível pânico.
-6. Pausar, emitir ordem, verificar mundo parado; retomar e validar a ordem.
-7. Contornar parede; nenhuma entidade pode atravessar tile bloqueado.
-8. Interagir com armário, libertar civil, conduzi-la fisicamente até extração.
-9. Defender área por 20 segundos simulados e completar objetivo.
-10. Conferir debriefing e salvar; recarregar e comparar estado esperado.
+1. Open `http://localhost:5173` and start `A Última Farmácia`.
+2. Select Alfa, issue a sneak order along a covered path, and observe lower noise.
+3. Select Bravo and sprint near zombies, and observe a stronger acoustic reaction.
+4. Fire once and check the noise, the spent round and a zombie alert inside the effective radius.
+5. Enter an area with many infected and observe stress and possible panic.
+6. Pause, issue an order, and confirm the world is stopped; resume and confirm the order.
+7. Go around a wall. No entity may cross a blocked tile.
+8. Interact with the cabinet, free the civilian, and lead her physically to extraction.
+9. Hold the area for 20 simulated seconds and complete the objective.
+10. Check the debriefing and save; reload and compare the expected state.
 
-## 23. PROMPT DE EXECUÇÃO PARA AGENTE
+## 23. EXECUTION PROMPT FOR THE AGENT
 
-> Implemente o projeto Dead Sector com base integral nesta especificação. Comece pela **Fase 0** e avance de forma incremental até a **Fase 4**, priorizando um vertical slice realmente jogável. Use TypeScript, Phaser, Vite e Vitest. Mantenha o motor tático isolado de renderização, use tick fixo de 100 ms e RNG com seed. Implemente ordens por esquadrão, LOS, fog of war, campo acústico com obstáculos, FSM de infectados, combate, stress, liderança, missão da farmácia e extração. Faça testes de regras fundamentais e smoke E2E. Evite servidores e dependências pagas. Não copie recursos, mapas, interface ou código de jogos existentes. Cada etapa deve incluir os comandos para executar, testes, resultado visual verificável e pendências reais. Não declare pronto o que for placeholder. Se uma decisão arquitetural se tornar cara, documente alternativa simples e priorize o jogo executável.
+> Implement the Dead Sector project from this specification in full. Start at **Phase 0** and advance incrementally through **Phase 4**, prioritising a vertical slice that is actually playable. Use TypeScript, Phaser, Vite and Vitest. Keep the tactical engine isolated from rendering, use a fixed 100 ms tick and a seeded RNG. Implement squad orders, line of sight, fog of war, an acoustic field with obstacles, the infected state machine, combat, stress, leadership, the pharmacy mission and extraction. Write tests for the fundamental rules and a smoke end-to-end test. Avoid servers and paid dependencies. Do not copy resources, maps, interface or code from existing games. Each step must include the commands to run, the tests, a verifiable visual result and real remaining work. Do not call a placeholder done. If an architectural decision becomes expensive, document a simple alternative and prioritise an executable game.
 
-## 24. REFERÊNCIAS DE ANÁLISE (CONSULTAS PÚBLICAS)
+## 24. ANALYSIS REFERENCES (PUBLIC SOURCES)
 
-Estas são fontes de mecânicas da referência, **não autorização de reutilização de conteúdo protegido**:
+These are sources for the reference mechanics. They are **not permission to reuse protected content**:
 
-- Microsoft / Close Combat II: A Bridge Too Far — manual com ordens por unidade, movimento, terreno, cobertura, moral e campanhas: https://manualmachine.com/gamespc/closecombatiiabridgetoofar/1118356-user-manual/
-- Matrix Games / Close Combat: Gateway to Caen — manual com LOS individual, supressão, soldados e decisões de combate: https://manualzz.com/doc/34356817/matrix-games-close-combat--gateway-to-caen-user-manual
-- Matrix Games / Close Combat: The Bloody First — descrição oficial da série e modo tático pausável: https://www.matrixgames.com/game/close-combat-the-bloody-first
+- Microsoft / Close Combat II: A Bridge Too Far — manual covering per-unit orders, movement, terrain, cover, morale and campaigns: https://manualmachine.com/gamespc/closecombatiiabridgetoofar/1118356-user-manual/
+- Matrix Games / Close Combat: Gateway to Caen — manual covering individual line of sight, suppression, soldiers and combat decisions: https://manualzz.com/doc/34356817/matrix-games-close-combat--gateway-to-caen-user-manual
+- Matrix Games / Close Combat: The Bloody First — official series description and the pausable tactical mode: https://www.matrixgames.com/game/close-combat-the-bloody-first
 
-## 25. DEFINITION OF DONE DO VERTICAL SLICE
+## 25. VERTICAL-SLICE DEFINITION OF DONE
 
-O primeiro marco realmente demonstrável será considerado concluído **somente se**:
+The first milestone that can actually be demonstrated is done **only if**:
 
-- O jogador consegue iniciar e finalizar a missão sem editar código.
-- Duas equipes de quatro humanos respondem a ordens coletivas sem atravessar paredes.
-- Cada sobrevivente tem HP, munição, stress, percepção e comportamento individual em risco.
-- Zumbis vagam, investigam som, perseguem ao ver, atacam em alcance e perdem contato corretamente.
-- Som atravessa o cenário com atenuação e muda materialmente a estratégia ótima.
-- Há visão limitada, névoa de guerra e informações não oniscientes.
-- Tiros consomem munição, produzem som e podem matar; zumbis podem ferir e matar.
-- A equipe consegue coletar medicamentos, resgatar civil e concluir extração.
-- Há pause/resume, HUD funcional, vitória, derrota, debriefing e save/load.
-- Testes automatizados críticos e build de produção passam.
-- Todos os assets são originais ou licenciados, e o projeto pode ser executado localmente com instruções claras.
+- The player can start and finish the mission without editing code.
+- Two teams of four humans answer collective orders and do not walk through walls.
+- Each survivor has hit points, ammunition, stress, perception and individual behaviour under threat.
+- Zombies wander, investigate sound, pursue what they see, attack in range and lose contact correctly.
+- Sound crosses the scene with attenuation and materially changes the best strategy.
+- There is limited vision, fog of war and information that is not omniscient.
+- Shots spend ammunition, make sound and can kill. Zombies can wound and kill.
+- The team can collect medicine, rescue the civilian and complete extraction.
+- There is pause and resume, a working HUD, victory, defeat, debriefing and save/load.
+- The critical automated tests and the production build pass.
+- Every asset is original or licensed, and the project can be run locally from clear instructions.
 
-**Visão de longo prazo:** a identidade do jogo surge do confronto entre a racionalidade tática dos humanos e a pressão emergente das hordas. A história do jogador é consequência do sistema.
+**Long-term vision:** the game's identity comes from the clash between human tactical reason and the emergent pressure of the hordes. The player's story is a consequence of the system.

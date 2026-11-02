@@ -15,7 +15,7 @@ Implement a **playable, original zombie-themed real-time tactics game** by follo
 7. Simulation must not import Phaser, browser APIs, rendering code or UI components.
 8. The first delivery must be a **complete playable mission**, not a screen mock-up.
 9. No use of copyrighted assets, code, designs or maps extracted from existing games.
-10. Code, commit messages, tests and technical docs in English; player-facing UI in PT-BR.
+10. Code, commit messages, tests and technical docs in English. Player-facing UI is localized (English, Portuguese, Spanish, French, German); an unknown browser opens in Portuguese.
 
 ## Preferred stack
 

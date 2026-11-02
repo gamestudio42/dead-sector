@@ -9,7 +9,7 @@ import {
   type Vec2,
   type World,
 } from '@dead-sector/sim';
-import { MT } from '../ui/i18n';
+import { MT, text } from '../ui/i18n';
 import { Settings } from '../ui/SaveStore';
 import { CELL, COLORS, DEPTH, SQUAD_COLORS } from './constants';
 import {
@@ -265,7 +265,7 @@ export class EntityRenderer {
     }
     this.label(
       BEACON_ID,
-      state.mission.extractionActive ? 'RÁDIO ATIVO' : 'RÁDIO',
+      state.mission.extractionActive ? text('hud.radioOn') : text('hud.radio'),
       bx,
       by - 13,
       '#b9e2a8',

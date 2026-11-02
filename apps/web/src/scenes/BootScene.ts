@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ContentValidationError, loadContent } from '@dead-sector/content';
 import { buildSpriteTextures } from '../render/SpriteFactory';
 import { uiRoot } from '../ui/dom';
+import { text } from '../ui/i18n';
 
 /** Validates all JSON content at startup and fails with a descriptive message. */
 export class BootScene extends Phaser.Scene {
@@ -15,7 +16,7 @@ export class BootScene extends Phaser.Scene {
       content = loadContent();
     } catch (err) {
       const msg = err instanceof ContentValidationError ? err.message : String(err);
-      uiRoot().innerHTML = `<div class="screen"><div class="card panel"><h2>Conteúdo inválido</h2><div class="error-box">${msg.replace(/</g, '&lt;')}</div></div></div>`;
+      uiRoot().innerHTML = `<div class="screen"><div class="card panel"><h2>${text('boot.invalid')}</h2><div class="error-box">${msg.replace(/</g, '&lt;')}</div></div></div>`;
       return;
     }
     const weapons: Record<string, string> = {};

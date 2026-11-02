@@ -1,6 +1,7 @@
 import type { GameState, SimEvent, World } from '@dead-sector/sim';
 import { baseMap, drawMissionMarks, fogLayer } from './MapCanvas';
 import { Settings } from './SaveStore';
+import { onLocale, text } from './i18n';
 
 const PX = 2;
 const SQUAD_CSS: Record<string, string> = { alfa: '#5aa9ff', bravo: '#ffad4d' };
@@ -33,6 +34,7 @@ export class Minimap {
   private pings: Ping[] = [];
   private dragging = false;
   private lastDraw = 0;
+  private stopLocale: (() => void) | null = null;
 
   constructor(
     private world: World,
@@ -42,12 +44,13 @@ export class Minimap {
     this.el = document.createElement('div');
     this.el.className = 'minimap panel';
     this.el.dataset['testid'] = 'minimap';
-    this.el.innerHTML = `<h4 class="collapsible" data-toggle="minimap">Mapa <span class="chev"></span></h4>`;
+    this.el.innerHTML = `<h4 class="collapsible" data-toggle="minimap"><span data-copy="map"></span> <span class="chev"></span></h4>`;
     this.canvas = document.createElement('canvas');
     this.canvas.width = world.width * PX;
     this.canvas.height = world.height * PX;
-    this.canvas.title = 'Clique: mover câmera · botão direito: mover esquadrão';
     this.el.appendChild(this.canvas);
+    this.applyCopy();
+    this.stopLocale = onLocale(() => this.applyCopy());
     this.g = this.canvas.getContext('2d') as CanvasRenderingContext2D;
     this.g.imageSmoothingEnabled = false;
     this.el.classList.toggle('collapsed', !Settings.minimapOpen);
@@ -73,6 +76,17 @@ export class Minimap {
       this.onCenter(p.x, p.y);
     });
     this.canvas.addEventListener('pointerup', () => (this.dragging = false));
+  }
+
+  private applyCopy(): void {
+    const label = this.el.querySelector('[data-copy=map]');
+    if (label) label.textContent = text('hud.map');
+    this.canvas.title = text('options.mouse.minimapDo');
+  }
+
+  destroy(): void {
+    this.stopLocale?.();
+    this.stopLocale = null;
   }
 
   toggle(): void {

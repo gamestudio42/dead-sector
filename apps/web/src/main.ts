@@ -9,6 +9,7 @@ import { TacticalScene } from './scenes/TacticalScene';
 import { AudioEngine } from './audio/AudioEngine';
 import { desktop } from './ui/desktop';
 import { applyContrast } from './ui/SaveStore';
+import './ui/i18n';
 
 applyContrast();
 

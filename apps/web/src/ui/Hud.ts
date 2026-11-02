@@ -10,7 +10,7 @@ import {
   type Survivor,
   type World,
 } from '@dead-sector/sim';
-import { fmtTime, MT, T } from './i18n';
+import { catalog, fmtTime, onLocale, roleLabel, T, text, weaponLabel } from './i18n';
 import { KeyBindings, keyLabel, keyName, type Action } from '../input/KeyBindings';
 import type { Tip } from '../presentation/tutorial';
 import { Settings } from './SaveStore';
@@ -78,16 +78,9 @@ const esc = (s: string): string =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
   );
 const pct = (v: number, max = 100): number => Math.max(0, Math.min(100, (v / max) * 100));
-const SPAWNER_NAMES: Record<string, string> = {
-  'spawn-north': 'norte',
-  'spawn-south': 'sul',
-  'spawn-west': 'oeste',
-  'spawn-east': 'leste',
-};
-
 function direction(dx: number, dy: number): string {
   const a = (Math.atan2(dy, dx) * 180) / Math.PI;
-  const dirs = ['leste', 'sudeste', 'sul', 'sudoeste', 'oeste', 'noroeste', 'norte', 'nordeste'];
+  const dirs = catalog().captions.dirs;
   return dirs[(Math.round(a / 45) + 8) % 8] as string;
 }
 
@@ -102,6 +95,7 @@ export class Hud {
   private lastRender = 0;
   private htmlCache = new Map<HTMLElement, string>();
   private captionSeen = new Map<string, number>();
+  private stopLocale: (() => void) | null = null;
 
   /** Writes markup only when it changed, avoiding DOM churn (and detached-element races). */
   private setHtml(el: HTMLElement | undefined, html: string): void {
@@ -120,49 +114,49 @@ export class Hud {
       <div class="topbar panel" data-testid="topbar">
         <span class="objective" data-el="objective" data-testid="current-objective"></span>
         <span class="clock" data-el="clock" data-testid="clock"></span>
-        <span class="noise" title="Ruído recente: quanto mais alto, mais infectados ouvem e mais reforços chegam">${ICONS.sound}<span class="meter"><i data-el="noise" style="width:0%"></i></span></span>
-        <span class="alarm" data-el="alarm" data-testid="alarm" title="Alerta do bairro: tiros, portas, vidro e gritos acumulam; em Alerta vêm mais corredores, em Caçada uma horda é atraída"></span>
+        <span class="noise" data-title="hud.noiseTitle">${ICONS.sound}<span class="meter"><i data-el="noise" style="width:0%"></i></span></span>
+        <span class="alarm" data-el="alarm" data-testid="alarm" data-title="hud.alarmTitle"></span>
         <span class="paused-flag" data-el="pausedFlag" data-testid="paused-flag"></span>
         <span class="tools">
-          <button data-act="pause" data-testid="btn-pause" title="Pausar / retomar" data-hint="pause" aria-label="Pausar"><span data-el="pauseLabel">${ICONS.pause}</span></button>
-          <button data-act="speed" data-testid="btn-speed" title="Velocidade" data-hint="speed"><span data-el="speed">1×</span></button>
-          <button data-act="save" data-testid="btn-save" title="Salvamento rápido" data-hint="quicksave" aria-label="Salvar">${ICONS.save}</button>
-          <button data-act="load" data-testid="btn-load" title="Carregar salvamento rápido" data-hint="quickload" aria-label="Carregar">${ICONS.load}</button>
-          <button data-act="options" data-testid="btn-options" title="Opções" aria-label="Opções">${ICONS.gear}</button>
-          <button data-act="menu" title="Menu de pausa (Esc)" aria-label="Menu">${ICONS.menu}</button>
+          <button data-act="pause" data-testid="btn-pause" data-title="hud.pause" data-hint="pause" data-label="hud.pause"><span data-el="pauseLabel">${ICONS.pause}</span></button>
+          <button data-act="speed" data-testid="btn-speed" data-title="hud.speed" data-hint="speed"><span data-el="speed">1×</span></button>
+          <button data-act="save" data-testid="btn-save" data-title="hud.save" data-hint="quicksave" data-label="hud.save">${ICONS.save}</button>
+          <button data-act="load" data-testid="btn-load" data-title="hud.load" data-hint="quickload" data-label="hud.load">${ICONS.load}</button>
+          <button data-act="options" data-testid="btn-options" data-title="hud.options" data-label="hud.options">${ICONS.gear}</button>
+          <button data-act="menu" data-title="hud.menu" data-label="hud.menu">${ICONS.menu}</button>
         </span>
       </div>
       <div class="left">
         <div data-el="squads"></div>
         <div class="objectives panel" data-panel="objectives">
-          <h4 class="collapsible" data-toggle="objectives">Objetivos <span class="chev"></span></h4>
+          <h4 class="collapsible" data-toggle="objectives"><span data-copy="hud.objectives"></span> <span class="chev"></span></h4>
           <ul data-el="objectives" data-testid="objectives"></ul>
         </div>
       </div>
       <div class="minimap-slot" data-el="minimapSlot"></div>
       <div class="right">
         <div class="orders panel">
-          <h4>Ordens — <span data-el="orderSquad">—</span>
-            <span class="help" title="Botão direito no chão: mover no modo atual&#10;Sobre infectado visível: atacar&#10;Sobre porta, armário, civil ou rádio: interagir&#10;No minimapa: mover o esquadrão">?</span></h4>
+          <h4><span data-copy="hud.orders"></span> — <span data-el="orderSquad">—</span>
+            <span class="help" data-title="hud.ordersHelp">?</span></h4>
           <div class="grid">
-            <button data-order="move" title="Mover no passo normal" data-hint="modeMove"><span class="kbd" data-kbd="modeMove">${keyName('modeMove')}</span>Mover</button>
-            <button data-order="sneak" title="Furtivo: lento e silencioso" data-hint="modeSneak"><span class="kbd" data-kbd="modeSneak">${keyName('modeSneak')}</span>Furtivo</button>
-            <button data-order="sprint" title="Correr: rápido, barulhento, cansa" data-hint="modeSprint"><span class="kbd" data-kbd="modeSprint">${keyName('modeSprint')}</span>Correr</button>
-            <button data-order="hold" title="Manter posição" data-hint="hold"><span class="kbd" data-kbd="hold">${keyName('hold')}</span>Manter</button>
-            <button data-order="hide" title="Esconder-se e evitar contato" data-hint="hide"><span class="kbd" data-kbd="hide">${keyName('hide')}</span>Esconder</button>
-            <button data-order="retreat" title="Retirada para o ponto seguro" data-hint="retreat"><span class="kbd" data-kbd="retreat">${keyName('retreat')}</span>Retirada</button>
-            <button data-order="regroup" title="Reagrupar no líder" data-hint="regroup"><span class="kbd" data-kbd="regroup">G</span>Reagrupar</button>
-            <button data-act="policy" data-testid="btn-policy" title="Disciplina de fogo" data-hint="firePolicy"><span class="kbd" data-kbd="firePolicy">F</span><span data-el="policy"></span></button>
+            <button data-order="move" data-title="hud.moveTitle" data-hint="modeMove"><span class="kbd" data-kbd="modeMove">${keyName('modeMove')}</span><span data-copy="hud.move"></span></button>
+            <button data-order="sneak" data-title="hud.sneakTitle" data-hint="modeSneak"><span class="kbd" data-kbd="modeSneak">${keyName('modeSneak')}</span><span data-copy="hud.sneak"></span></button>
+            <button data-order="sprint" data-title="hud.sprintTitle" data-hint="modeSprint"><span class="kbd" data-kbd="modeSprint">${keyName('modeSprint')}</span><span data-copy="hud.sprint"></span></button>
+            <button data-order="hold" data-title="hud.holdTitle" data-hint="hold"><span class="kbd" data-kbd="hold">${keyName('hold')}</span><span data-copy="hud.hold"></span></button>
+            <button data-order="hide" data-title="hud.hideTitle" data-hint="hide"><span class="kbd" data-kbd="hide">${keyName('hide')}</span><span data-copy="hud.hide"></span></button>
+            <button data-order="retreat" data-title="hud.retreatTitle" data-hint="retreat"><span class="kbd" data-kbd="retreat">${keyName('retreat')}</span><span data-copy="hud.retreat"></span></button>
+            <button data-order="regroup" data-title="hud.regroupTitle" data-hint="regroup"><span class="kbd" data-kbd="regroup">G</span><span data-copy="hud.regroup"></span></button>
+            <button data-act="policy" data-testid="btn-policy" data-title="hud.policyTitle" data-hint="firePolicy"><span class="kbd" data-kbd="firePolicy">F</span><span data-el="policy"></span></button>
           </div>
           <div class="context" data-el="context" data-testid="context"></div>
         </div>
         <div class="log panel" data-panel="log">
-          <h4 class="collapsible" data-toggle="log">Registro <span class="chev"></span></h4>
+          <h4 class="collapsible" data-toggle="log"><span data-copy="hud.log"></span> <span class="chev"></span></h4>
           <ul data-el="log" data-testid="event-log"></ul>
         </div>
       </div>
       <div class="bottom-wrap" data-panel="units">
-        <button class="units-toggle" data-toggle="units" title="Mostrar/ocultar detalhes da equipe"><span class="chev"></span></button>
+        <button class="units-toggle" data-toggle="units" data-title="hud.unitsTitle"><span class="chev"></span></button>
         <div class="captions" data-el="captions" aria-live="polite"></div>
         <div class="bottom" data-el="units" data-testid="units"></div>
       </div>
@@ -214,9 +208,27 @@ export class Hud {
           return this.actions.confirmExtraction();
       }
     });
+    this.applyCopy();
+    this.stopLocale = onLocale(() => this.applyCopy());
+  }
+
+  /** Writes the chrome labels in the language the player is reading. */
+  private applyCopy(): void {
+    this.root.querySelectorAll<HTMLElement>('[data-copy]').forEach((el) => {
+      const value = text(el.dataset['copy'] ?? '');
+      if (el.textContent !== value) el.textContent = value;
+    });
+    this.root.querySelectorAll<HTMLElement>('[data-title]').forEach((el) => {
+      const value = text(el.dataset['title'] ?? '');
+      if (!el.dataset['hint']) el.title = value;
+    });
+    this.root.querySelectorAll<HTMLElement>('[data-label]').forEach((el) => {
+      el.setAttribute('aria-label', text(el.dataset['label'] ?? ''));
+    });
   }
 
   destroy(): void {
+    this.stopLocale?.();
     window.clearTimeout(this.toastTimer);
     this.root.remove();
   }
@@ -240,7 +252,7 @@ export class Hud {
     Settings.markTipSeen(t.id);
     el.hidden = false;
     el.innerHTML = `<div class="tip-title">💡 ${esc(t.title)}</div><p>${esc(t.text)}</p>
-      <div class="tip-actions"><button data-tip="ok" data-testid="tip-ok">Entendi</button><button data-tip="off" class="link">Desligar dicas</button></div>`;
+      <div class="tip-actions"><button data-tip="ok" data-testid="tip-ok">${text('hud.tipOk')}</button><button data-tip="off" class="link">${text('hud.tipOff')}</button></div>`;
   }
 
   /** Collapses/expands a HUD panel and remembers the choice. */
@@ -306,33 +318,45 @@ export class Hud {
         case 'ORDER_ISSUED':
           this.push(
             state,
-            `${this.squadName(state, p['squadId'])}: ordem ${T.orders[p['orderType'] as string] ?? p['orderType']}`,
+            text('log.orderIssued', {
+              squad: this.squadName(state, p['squadId']),
+              order: T.orders[p['orderType'] as string] ?? String(p['orderType']),
+            }),
           );
           break;
         case 'ORDER_BLOCKED': {
-          const msg = `${this.squadName(state, p['squadId'])}: ${T.blocked[p['reason'] as string] ?? 'ordem bloqueada'}`;
+          const msg = text('log.orderBlocked', {
+            squad: this.squadName(state, p['squadId']),
+            reason: T.blocked[p['reason'] as string] ?? text('log.orderBlockedFallback'),
+          });
           this.push(state, msg, 'bad');
           this.toast(msg);
           this.context = msg;
           break;
         }
         case 'ORDER_REJECTED':
-          this.toast(T.blocked[p['reason'] as string] ?? 'Ordem recusada');
+          this.toast(T.blocked[p['reason'] as string] ?? text('log.orderRejected'));
           break;
         case 'ORDER_QUEUED':
           this.push(
             state,
-            `${this.squadName(state, p['squadId'])}: ${T.orders[p['orderType'] as string] ?? p['orderType']} na fila (${p['index']})`,
+            text('log.orderQueued', {
+              squad: this.squadName(state, p['squadId']),
+              order: T.orders[p['orderType'] as string] ?? String(p['orderType']),
+              index: String(p['index']),
+            }),
           );
           break;
         case 'ORDER_COMPLETED':
-          this.push(state, `${this.squadName(state, p['squadId'])}: ordem concluída`);
+          this.push(state, text('log.orderDone', { squad: this.squadName(state, p['squadId']) }));
           break;
         case 'ENEMY_SPOTTED':
           if (!p['reacquired'])
             this.push(
               state,
-              `Contato: ${T.zombie[p['typeId'] as string] ?? 'infectado'} avistado`,
+              text('log.contact', {
+                zombie: T.zombie[p['typeId'] as string] ?? text('log.infectedFallback'),
+              }),
               'warn',
             );
           break;
@@ -340,7 +364,9 @@ export class Hud {
           if (visible.has(p['zombieId'] as string))
             this.push(
               state,
-              `Infectado alertado (${p['cause'] === 'sound' ? 'ouviu algo' : 'viu a equipe'})`,
+              text('log.alerted', {
+                cause: p['cause'] === 'sound' ? text('log.heard') : text('log.saw'),
+              }),
               'warn',
             );
           break;
@@ -367,35 +393,43 @@ export class Hud {
           if ((this.lastCategoryLog[cat] ?? -999) > state.tick - 40) break;
           this.lastCategoryLog[cat] = state.tick;
           const where =
-            d < 6 ? 'muito perto' : `a ${direction(x - near.position.x, y - near.position.y)}`;
+            d < 6
+              ? text('log.veryNear')
+              : text('log.toDir', { dir: direction(x - near.position.x, y - near.position.y) });
           const label =
             cat === 'door'
-              ? 'Pancadas em porta'
+              ? text('log.doorHits')
               : cat === 'shout'
-                ? 'Rosnados'
-                : (T.noise[cat] ?? 'Ruído');
+                ? text('log.groans')
+                : (T.noise[cat] ?? text('log.noiseFallback'));
           this.push(state, `🔊 ${label} ${where}`, cat === 'alarm' ? 'good' : 'warn');
           break;
         }
         case 'OUT_OF_AMMO':
-          this.push(state, `${this.name(state, p['survivorId'])} está sem munição`, 'warn');
+          this.push(state, text('log.noAmmo', { name: this.name(state, p['survivorId']) }), 'warn');
           break;
         case 'ACTOR_INJURED':
           this.push(
             state,
             p['bitten']
-              ? `${this.name(state, p['actorId'])} foi MORDIDO!`
-              : `${this.name(state, p['actorId'])} ferido (−${p['damage']})`,
+              ? text('log.bitten', { name: this.name(state, p['actorId']) })
+              : text('log.hurt', {
+                  name: this.name(state, p['actorId']),
+                  damage: String(p['damage']),
+                }),
             'bad',
           );
           break;
         case 'ACTOR_KILLED':
           if (p['kind'] === 'survivor')
-            this.push(state, `${this.name(state, p['actorId'])} morreu`, 'bad');
+            this.push(state, text('log.died', { name: this.name(state, p['actorId']) }), 'bad');
           else
             this.push(
               state,
-              `${T.zombie[p['typeId'] as string] ?? 'Infectado'} abatido por ${this.name(state, p['killerId'])}`,
+              text('log.killed', {
+                zombie: T.zombie[p['typeId'] as string] ?? text('log.zombieFallback'),
+                name: this.name(state, p['killerId']),
+              }),
               'good',
             );
           break;
@@ -403,70 +437,81 @@ export class Hud {
           this.push(
             state,
             p['leaderId']
-              ? `${this.squadName(state, p['squadId'])}: liderança passa para ${this.name(state, p['leaderId'])}`
-              : `${this.squadName(state, p['squadId'])} está sem líder`,
+              ? text('log.leader', {
+                  squad: this.squadName(state, p['squadId']),
+                  name: this.name(state, p['leaderId']),
+                })
+              : text('log.noLeader', { squad: this.squadName(state, p['squadId']) }),
             'warn',
           );
           break;
         case 'SURVIVOR_PANICKED':
           this.push(
             state,
-            `${this.name(state, p['survivorId'])} entrou em pânico (${p['behaviour'] === 'flee' ? 'fugindo' : 'paralisado'})`,
+            text('log.panic', {
+              name: this.name(state, p['survivorId']),
+              behaviour: p['behaviour'] === 'flee' ? text('log.fleeing') : text('log.frozen'),
+            }),
             'bad',
           );
           break;
         case 'SURVIVOR_RALLIED':
-          this.push(state, `${this.name(state, p['survivorId'])} se recompôs`, 'good');
+          this.push(
+            state,
+            text('log.rallied', { name: this.name(state, p['survivorId']) }),
+            'good',
+          );
           break;
         case 'DOOR_CHANGED':
-          if (p['barricadeBroken']) this.push(state, 'Uma barricada cedeu!', 'bad');
+          if (p['barricadeBroken']) this.push(state, text('log.barricadeBroke'), 'bad');
           else if (p['removed'])
-            this.push(state, `${this.name(state, p['byId'])} removeu uma barricada`);
-          else if (p['broken'] && p['window'])
-            this.push(state, 'Vidro quebrado: infectados entrando por uma janela', 'bad');
-          else if (p['broken']) this.push(state, 'Uma porta cedeu aos infectados!', 'bad');
+            this.push(state, text('log.barricadeRemoved', { name: this.name(state, p['byId']) }));
+          else if (p['broken'] && p['window']) this.push(state, text('log.windowBreak'), 'bad');
+          else if (p['broken']) this.push(state, text('log.doorBroke'), 'bad');
           else if (p['forced'])
-            this.push(state, `${this.name(state, p['byId'])} arrombou a porta`, 'warn');
+            this.push(state, text('log.doorForced', { name: this.name(state, p['byId']) }), 'warn');
           break;
         case 'INTERACTION_STARTED': {
           const what: Record<string, string> = {
-            cabinet: `recolhendo ${MT.item}`,
-            civilian: `resgatando ${MT.person}`,
-            beacon: 'ativando o rádio',
-            door: 'mexendo na porta',
-            barricade: 'pregando tábuas (barulho!)',
+            cabinet: text('log.interactCabinet'),
+            civilian: text('log.interactCivilian'),
+            beacon: text('log.interactBeacon'),
+            door: text('log.interactDoor'),
+            barricade: text('log.interactBarricade'),
           };
           this.push(
             state,
-            `${this.name(state, p['survivorId'])}: ${what[p['kind'] as string] ?? 'interagindo'}…`,
+            `${this.name(state, p['survivorId'])}: ${what[p['kind'] as string] ?? text('log.interacting')}…`,
           );
           break;
         }
         case 'INTERACTION_INTERRUPTED':
-          this.push(state, `${this.name(state, p['survivorId'])}: interação interrompida`, 'warn');
+          this.push(
+            state,
+            text('log.interactStopped', { name: this.name(state, p['survivorId']) }),
+            'warn',
+          );
           break;
         case 'OBJECTIVE_COMPLETED':
           this.push(
             state,
-            `Objetivo concluído: ${T.objectives[p['objectiveId'] as string]}`,
+            text('log.objectiveDone', {
+              objective: T.objectives[p['objectiveId'] as string] ?? '',
+            }),
             'good',
           );
-          this.toast('Objetivo concluído');
+          this.toast(text('log.objectiveToast'));
           break;
         case 'EXTRACTION_STARTED':
-          this.push(
-            state,
-            'Rádio ativado: transporte a caminho. O sinal atrai infectados!',
-            'warn',
-          );
+          this.push(state, text('log.radioOn'), 'warn');
           break;
         case 'EXTRACTION_READY':
-          this.push(state, 'Transporte no local — todos na área de extração!', 'good');
+          this.push(state, text('log.transportHere'), 'good');
           break;
         case 'REINFORCEMENT_SPAWNED':
           this.push(
             state,
-            `🔊 Movimentação de infectados na entrada ${SPAWNER_NAMES[p['spawnerId'] as string] ?? ''}`,
+            text('log.spawnMove', { dir: T.spawner[p['spawnerId'] as string] ?? '' }),
             'warn',
           );
           break;
@@ -475,14 +520,17 @@ export class Hud {
           const up = level > (p['previous'] as number);
           this.push(
             state,
-            `Alerta do bairro: ${T.alarm[level]}`,
+            text('log.alarm', { level: T.alarm[level] ?? '' }),
             up ? (level >= 2 ? 'bad' : 'warn') : 'good',
           );
-          if (up && level >= 2) this.toast(`Alerta: ${T.alarm[level]}`);
+          if (up && level >= 2) this.toast(text('log.alarmToast', { level: T.alarm[level] ?? '' }));
           break;
         }
         case 'HORDE_INCOMING': {
-          const msg = `🔊 Horda se aproximando pela entrada ${T.spawner[p['spawnerId'] as string] ?? ''} (${p['inSeconds']} s)`;
+          const msg = text('log.hordeIncoming', {
+            dir: T.spawner[p['spawnerId'] as string] ?? '',
+            seconds: String(p['inSeconds']),
+          });
           this.push(state, msg, 'bad');
           this.toast(msg);
           break;
@@ -490,15 +538,18 @@ export class Hud {
         case 'HORDE_SPAWNED':
           this.push(
             state,
-            `Horda de ${p['size']} infectados entrou pelo ${T.spawner[p['spawnerId'] as string] ?? ''}`,
+            text('log.hordeSpawned', {
+              size: String(p['size']),
+              dir: T.spawner[p['spawnerId'] as string] ?? '',
+            }),
             'bad',
           );
           break;
         case 'ZOMBIE_SCREAMED':
-          this.push(state, '🔊 Um gritador berrou — tudo por perto vem ver', 'bad');
+          this.push(state, text('log.screamer'), 'bad');
           break;
         case 'SURVIVOR_TURNED': {
-          const msg = `${esc(String(p['name']).split(' ')[0] ?? '')} se transformou!`;
+          const msg = text('log.turned', { name: esc(String(p['name']).split(' ')[0] ?? '') });
           this.push(state, msg, 'bad');
           this.toast(msg);
           break;
@@ -506,7 +557,11 @@ export class Hud {
         case 'BARRICADE_BUILT':
           this.push(
             state,
-            `${this.squadName(state, p['squadId'])}: barricada pronta (${p['kitsLeft']} ${p['kitsLeft'] === 1 ? 'kit restante' : 'kits restantes'})`,
+            text('log.barricadeReady', {
+              squad: this.squadName(state, p['squadId']),
+              kits: String(p['kitsLeft']),
+              kitsWord: p['kitsLeft'] === 1 ? text('log.kitLeft') : text('log.kitsLeft'),
+            }),
             'good',
           );
           break;
@@ -531,12 +586,13 @@ export class Hud {
         m.weapon.magazineRounds === 0 &&
         m.weapon.reserveRounds === 0,
     ).length;
-    if (panic) tags.push(`<span class="tag bad">⚠ pânico ${panic}</span>`);
-    if (wounded) tags.push(`<span class="tag warn">✚ feridos ${wounded}</span>`);
-    if (noAmmo) tags.push(`<span class="tag warn">∅ sem munição ${noAmmo}</span>`);
+    if (panic) tags.push(`<span class="tag bad">${text('hud.panicTag', { n: panic })}</span>`);
+    if (wounded)
+      tags.push(`<span class="tag warn">${text('hud.woundedTag', { n: wounded })}</span>`);
+    if (noAmmo) tags.push(`<span class="tag warn">${text('hud.noAmmoTag', { n: noAmmo })}</span>`);
     if (!panic && !wounded)
       tags.push(
-        `<span class="tag ok">✓ ${members.some((m) => m.band !== 'calm') ? 'tenso' : 'calmo'}</span>`,
+        `<span class="tag ok">✓ ${members.some((m) => m.band !== 'calm') ? text('hud.tense') : text('hud.calm')}</span>`,
       );
     void state;
     return tags.join('');
@@ -550,47 +606,52 @@ export class Hud {
     const leader = members.find((m) => m.id === sq.leaderId);
     const color = sq.id === 'alfa' ? 'var(--alfa)' : 'var(--bravo)';
     const queued = sq.waypoints.length
-      ? ` · <span class="queued" data-testid="queue-${sq.id}">+${sq.waypoints.length} na fila</span>`
+      ? ` · <span class="queued" data-testid="queue-${sq.id}">${text('hud.queued', { n: sq.waypoints.length })}</span>`
       : '';
     const order =
-      (sq.order ? `${T.orders[sq.order.type]} · ${T.orderStatus[sq.order.status]}` : 'sem ordem') +
-      queued;
+      (sq.order
+        ? `${T.orders[sq.order.type]} · ${T.orderStatus[sq.order.status]}`
+        : text('hud.noOrder')) + queued;
     return `<div class="squad-card panel ${selected ? 'selected' : ''}" data-squad="${sq.id}" data-testid="squad-${sq.id}" style="border-left-color:${color}">
       <div class="name"><span class="kbd">${index + 1}</span>${esc(sq.displayName)} <span class="small">${alive.length}/${members.length}</span></div>
-      <div class="meta">Líder: ${leader && leader.alive ? esc(leader.name) : '—'}</div>
+      <div class="meta">${text('hud.leader', { name: leader && leader.alive ? esc(leader.name) : '—' })}</div>
       <div class="meta">${order}</div>
-      <div class="meta">${T.policy[sq.firePolicy]} · ${T.mode[sq.moveMode]} · <span title="Kits de barricada">🪵 ${sq.barricadeKits}</span></div>
-      <div>${alive.length ? this.statusTags(state, alive) : '<span class="tag bad">eliminado</span>'}</div>
+      <div class="meta">${T.policy[sq.firePolicy]} · ${T.mode[sq.moveMode]} · <span title="${text('hud.kitsTitle')}">🪵 ${sq.barricadeKits}</span></div>
+      <div>${alive.length ? this.statusTags(state, alive) : `<span class="tag bad">${text('hud.eliminated')}</span>`}</div>
     </div>`;
   }
 
   private unitCard(world: World, s: Survivor): string {
     const w = weaponDef(world, s);
     const ammo =
-      w.kind === 'melee' ? 'corpo a corpo' : `${s.weapon.magazineRounds}/${s.weapon.reserveRounds}`;
+      w.kind === 'melee'
+        ? text('hud.melee')
+        : `${s.weapon.magazineRounds}/${s.weapon.reserveRounds}`;
     const reason = s.reason ? (T.reasons[s.reason] ?? s.reason) : '';
     const act = s.alive
       ? `${T.activity[s.activity] ?? s.activity}${reason ? ` — ${reason}` : ''}`
-      : 'morto';
+      : text('hud.dead');
     const inf =
       s.infection !== 'healthy'
         ? `<span class="tag bad">${T.infection[s.infection]}</span>`
         : s.bitten
-          ? '<span class="tag warn">mordido</span>'
+          ? `<span class="tag warn">${text('hud.bitten')}</span>`
           : '';
     const hp = Math.max(0, Math.round(s.health));
     const lowAmmo =
       w.kind !== 'melee' &&
       s.weapon.magazineRounds + s.weapon.reserveRounds <= s.weapon.magazineCapacity;
     const band = s.panicked ? 'bad' : s.band === 'calm' ? 'ok' : 'warn';
-    const tip = `${s.name} — ${s.role}\nArma: ${w.displayName} (${ammo})\nVida ${hp}/${s.maxHealth} · Estresse ${Math.round(s.stress)} (${T.bands[s.band]}) · Fôlego ${Math.round(s.stamina)}\n${act}`;
+    const role = roleLabel(s.templateId, s.role, s.isObjectiveCivilian);
+    const weapon = weaponLabel(s.weapon.weaponId, w.displayName);
+    const tip = `${s.name} — ${role}\n${text('hud.weapon')}: ${weapon} (${ammo})\n${text('hud.health')} ${hp}/${s.maxHealth} · ${text('hud.stress')} ${Math.round(s.stress)} (${T.bands[s.band]}) · ${text('hud.stamina')} ${Math.round(s.stamina)}\n${act}`;
     return `<div class="unit panel ${s.alive ? '' : 'dead'} ${s.panicked ? 'panicking' : ''}" data-testid="unit-${s.id}" title="${esc(tip)}">
       <div class="head"><span class="n">${s.isLeader ? '★ ' : ''}${esc(s.name)}</span><span class="ammo ${lowAmmo ? 'low' : ''}">${ammo}</span></div>
-      <div class="r">${esc(s.role)} · ${esc(w.displayName)} ${inf}</div>
+      <div class="r">${esc(role)} · ${esc(weapon)} ${inf}</div>
       <div class="bars">
-        <span class="lbl" title="Vida">♥</span><div class="bar hp ${hp < s.maxHealth * 0.35 ? 'crit' : ''}"><i style="width:${pct(s.health, s.maxHealth)}%"></i></div><span class="num">${hp}</span>
-        <span class="lbl" title="Estresse">⚡</span><div class="bar st"><i style="width:${pct(s.stress)}%"></i></div><span class="num tag-${band}">${T.bands[s.band]}</span>
-        <span class="lbl" title="Fôlego">≋</span><div class="bar sta"><i style="width:${pct(s.stamina)}%"></i></div><span class="num">${Math.round(s.stamina)}</span>
+        <span class="lbl" title="${text('hud.life')}">♥</span><div class="bar hp ${hp < s.maxHealth * 0.35 ? 'crit' : ''}"><i style="width:${pct(s.health, s.maxHealth)}%"></i></div><span class="num">${hp}</span>
+        <span class="lbl" title="${text('hud.stress')}">⚡</span><div class="bar st"><i style="width:${pct(s.stress)}%"></i></div><span class="num tag-${band}">${T.bands[s.band]}</span>
+        <span class="lbl" title="${text('hud.stamina')}">≋</span><div class="bar sta"><i style="width:${pct(s.stamina)}%"></i></div><span class="num">${Math.round(s.stamina)}</span>
       </div>
       <div class="act">${act}</div>
     </div>`;
@@ -611,11 +672,11 @@ export class Hud {
     this.setHtml(els['alarm'], `<span class="alarm-pip lv${level}"></span>${T.alarm[level]}`);
     const recent = state.recentNoises.reduce((a, n) => a + n.intensity, 0);
     (els['noise'] as HTMLElement).style.width = `${pct(recent, 400)}%`;
-    (els['pausedFlag'] as HTMLElement).textContent = view.paused ? 'PAUSADO' : '';
+    (els['pausedFlag'] as HTMLElement).textContent = view.paused ? text('hud.paused') : '';
     this.setHtml(els['pauseLabel'], view.paused ? ICONS.play : ICONS.pause);
     this.root.querySelectorAll<HTMLElement>('[data-hint]').forEach((el) => {
-      el.dataset['base'] ??= el.title;
-      const title = `${el.dataset['base']} (${keyName(el.dataset['hint'] as Action)})`;
+      const base = el.dataset['title'] ? text(el.dataset['title']) : el.title;
+      const title = `${base} (${keyName(el.dataset['hint'] as Action)})`;
       if (el.title !== title) el.title = title;
     });
     this.root
@@ -676,7 +737,14 @@ export class Hud {
       .map((id) => state.survivors.find((s) => s.id === id))
       .filter((s) => s && s.alive && (s.panicked || s.activity === 'refusing'));
     if (panicked && panicked.length)
-      ctx = `Equipe não obedece totalmente: ${panicked.map((s) => `${esc(s!.name.split(' ')[0] as string)} (${T.reasons[s!.reason ?? ''] ?? T.activity[s!.activity]})`).join(', ')}`;
+      ctx = text('hud.disobey', {
+        who: panicked
+          .map(
+            (s) =>
+              `${esc(s!.name.split(' ')[0] as string)} (${T.reasons[s!.reason ?? ''] ?? T.activity[s!.activity]})`,
+          )
+          .join(', '),
+      });
     else if (sel?.order?.status === 'executing') ctx = '';
     this.setHtml(els['context'], ctx);
 
@@ -694,13 +762,13 @@ export class Hud {
         this.setHtml(
           banner,
           civIn
-            ? 'Transporte no local — embarcando…'
-            : `Transporte no local. Aguardando ${MT.person} na área de extração. <button data-act="confirmExtraction" data-testid="btn-confirm-extraction">Extrair sem ${MT.person} (sucesso parcial)</button>`,
+            ? text('hud.boarding')
+            : `${text('hud.waitingCivilian')} <button data-act="confirmExtraction" data-testid="btn-confirm-extraction">${text('hud.extractWithout')}</button>`,
         );
       } else {
         this.setHtml(
           banner,
-          `Extração: resistam na área — <b>${Math.floor(m.extractionHoldTicks / 10)}/${Math.round(m.extractionHoldRequiredTicks / 10)} s</b>${civIn ? '' : ` · ${MT.person} fora da área`}`,
+          `${text('hud.holdBanner', { held: Math.floor(m.extractionHoldTicks / 10), need: Math.round(m.extractionHoldRequiredTicks / 10) })}${civIn ? '' : ` · ${text('hud.civilianOut')}`}`,
         );
       }
     } else banner.style.display = 'none';

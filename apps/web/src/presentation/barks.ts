@@ -1,5 +1,5 @@
 import type { GameState, SimEvent, Survivor, Vec2 } from '@dead-sector/sim';
-import { MT } from '../ui/i18n';
+import { catalog, fill } from '../ui/i18n';
 
 /** A short spoken line shown above a survivor. Higher priority pre-empts lower ones. */
 export interface Bark {
@@ -8,41 +8,7 @@ export interface Bark {
   priority: 1 | 2 | 3 | 4;
 }
 
-const ORDER_LINES: Record<string, string[]> = {
-  move: ['Entendido.', 'Em movimento.', 'Vamos.', 'Certo, andando.'],
-  hold: ['Segurando aqui.', 'Posição.', 'Ninguém passa.'],
-  hide: ['Abaixem-se!', 'Escondam-se.', 'Silêncio, todo mundo.'],
-  retreat: ['Recuar!', 'Para trás, agora!', 'Saindo daqui!'],
-  regroup: ['Comigo!', 'Reagrupar.', 'Juntos, pessoal.'],
-  attack: ['Fogo nele!', 'Derrubem esse!', 'Concentrar fogo!'],
-  interact: ['Deixa comigo.', 'Me cubram.', 'Já vou.'],
-};
-
-const SPOT_WALKER = ['Contato!', 'Infectado à frente.', 'Tem um ali.', 'Olha lá...'];
-const SPOT_RUNNER = ['Corredor!', 'Um rápido vindo!', 'Esse aí corre!'];
-const NO_AMMO = ['Estou sem munição!', 'Acabou a munição!', 'Seco! Sem bala!'];
-const BITTEN = ['Ele me mordeu!', 'Aaah! Mordida!', 'Me pegou!'];
-const HURT = ['Fui atingido!', 'Argh!', 'Tô ferido!'];
-const PANIC_FLEE = ['Não dá! Tô fora!', 'Eu não fico aqui!', 'Corre, corre!'];
-const PANIC_FREEZE = ['Não consigo me mexer...', 'Não, não, não...', 'Eu… não…'];
-const RALLY = ['Tá... estou bem.', 'Voltei. Vamos.', 'Respira... certo.'];
-const NEW_LEADER = ['Eu assumo o comando!', 'Comigo agora!'];
-const SPOT_HEAVY = [
-  'Esse é grande!',
-  'Brutamontes! Mirem na cabeça!',
-  'Vai precisar de muita bala…',
-];
-const SPOT_SCREAMER = ['Gritador! Derrubem antes que berre!', 'Aquele ali vai gritar!'];
-const TURNED = ['Ele virou! Atirem!', 'Não… ela se transformou!', 'Afastem-se! Virou um deles!'];
-const HORDE = ['Tem uma horda vindo!', 'Escutem… são muitos.', 'Horda! Precisamos sair daqui.'];
-const BARRICADE = ['Porta travada.', 'Tábuas no lugar.', 'Isso deve segurar um tempo.'];
-const SCREAM_HEARD = ['Que grito foi esse?!', 'Agora todos sabem que estamos aqui.'];
-const SPOT_LINES: Record<string, string[]> = {
-  walker: SPOT_WALKER,
-  runner: SPOT_RUNNER,
-  heavy: SPOT_HEAVY,
-  screamer: SPOT_SCREAMER,
-};
+const lines = () => catalog().barks;
 
 /** Deterministic line choice from the event id so replays read the same. */
 function pick(lines: string[], key: string): string {
@@ -86,62 +52,70 @@ export function barksForEvents(events: SimEvent[], state: GameState): Bark[] {
     switch (e.type) {
       case 'ORDER_ISSUED': {
         const squad = state.squads.find((s) => s.id === p['squadId']);
-        const lines = ORDER_LINES[p['orderType'] as string];
-        if (squad && lines) say(surv(squad.leaderId), lines, e.id, 1);
+        const orderLines = lines().order[p['orderType'] as keyof ReturnType<typeof lines>['order']];
+        if (squad && orderLines) say(surv(squad.leaderId), orderLines, e.id, 1);
         break;
       }
       case 'ENEMY_SPOTTED':
         if (!p['reacquired'])
           say(
             nearestSquadMember(state, { x: p['x'] as number, y: p['y'] as number }),
-            SPOT_LINES[p['typeId'] as string] ?? SPOT_WALKER,
+            lines().spot[p['typeId'] as keyof ReturnType<typeof lines>['spot']] ??
+              lines().spot.walker,
             e.id,
             p['typeId'] === 'walker' ? 2 : 3,
           );
         break;
       case 'OUT_OF_AMMO':
-        say(surv(p['survivorId']), NO_AMMO, e.id, 3);
+        say(surv(p['survivorId']), lines().noAmmo, e.id, 3);
         break;
       case 'ACTOR_INJURED':
-        say(surv(p['actorId']), p['bitten'] ? BITTEN : HURT, e.id, p['bitten'] ? 4 : 3);
+        say(
+          surv(p['actorId']),
+          p['bitten'] ? lines().bitten : lines().hurt,
+          e.id,
+          p['bitten'] ? 4 : 3,
+        );
         break;
       case 'ACTOR_KILLED': {
         if (p['kind'] !== 'survivor') break;
         const dead = surv(p['actorId']);
         if (!dead) break;
         const line = dead.isObjectiveCivilian
-          ? [
-              `Perdemos ${MT.person}!`,
-              `${MT.personTag.charAt(0)}${MT.personTag.slice(1).toLowerCase()} caiu!`,
-            ]
-          : [`Perdemos ${firstName(dead)}!`, `Não! ${firstName(dead)}!`];
+          ? lines().lostPerson.map((s) => fill(s))
+          : lines().lostNamed.map((s) => fill(s, { name: firstName(dead) }));
         say(nearestSquadMember(state, dead.position, dead.id), line, e.id, 4);
         break;
       }
       case 'SURVIVOR_PANICKED':
-        say(surv(p['survivorId']), p['behaviour'] === 'flee' ? PANIC_FLEE : PANIC_FREEZE, e.id, 4);
+        say(
+          surv(p['survivorId']),
+          p['behaviour'] === 'flee' ? lines().panicFlee : lines().panicFreeze,
+          e.id,
+          4,
+        );
         break;
       case 'SURVIVOR_RALLIED':
-        say(surv(p['survivorId']), RALLY, e.id, 2);
+        say(surv(p['survivorId']), lines().rally, e.id, 2);
         break;
       case 'LEADER_CHANGED':
-        say(surv(p['leaderId']), NEW_LEADER, e.id, 3);
+        say(surv(p['leaderId']), lines().newLeader, e.id, 3);
         break;
       case 'OBJECTIVE_COMPLETED': {
         const id = p['objectiveId'] as string;
         if (id === 'rescueCivilian') {
           const civ = state.survivors.find((s) => s.isObjectiveCivilian);
-          say(
-            civ,
-            ['Graças a Deus... eu vou com vocês.', 'Vocês vieram! Vamos embora daqui.'],
-            e.id,
-            3,
-          );
+          say(civ, lines().civilianThanks, e.id, 3);
         } else if (id === 'collectMedicine') {
           const c =
             state.survivors.find((s) => s.alive && s.interaction?.targetId === 'cabinet') ??
             state.survivors.find((s) => s.alive && s.isLeader);
-          say(c, [`Peguei ${MT.item}!`, `${MT.itemDone} na mochila.`], e.id, 3);
+          say(
+            c,
+            lines().gotItem.map((s) => fill(s)),
+            e.id,
+            3,
+          );
         }
         break;
       }
@@ -152,34 +126,29 @@ export function barksForEvents(events: SimEvent[], state: GameState): Bark[] {
             { x: p['x'] as number, y: p['y'] as number },
             p['survivorId'] as string,
           ),
-          TURNED,
+          lines().turned,
           e.id,
           4,
         );
         break;
       case 'HORDE_INCOMING': {
         const leader = state.survivors.find((s) => s.alive && s.isLeader && !s.extracted);
-        say(leader, HORDE, e.id, 4);
+        say(leader, lines().horde, e.id, 4);
         break;
       }
       case 'BARRICADE_BUILT':
-        say(surv(p['byId']), BARRICADE, e.id, 2);
+        say(surv(p['byId']), lines().barricade, e.id, 2);
         break;
       case 'ZOMBIE_SCREAMED':
         say(
           nearestSquadMember(state, { x: p['x'] as number, y: p['y'] as number }),
-          SCREAM_HEARD,
+          lines().screamHeard,
           e.id,
           3,
         );
         break;
       case 'EXTRACTION_STARTED':
-        say(
-          surv(p['survivorId']),
-          ['Rádio ligado. Agora é aguentar!', 'Chamando resgate... segurem!'],
-          e.id,
-          3,
-        );
+        say(surv(p['survivorId']), lines().extraction, e.id, 3);
         break;
       default:
         break;

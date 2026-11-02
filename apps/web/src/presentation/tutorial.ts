@@ -1,6 +1,6 @@
 import type { GameState, SimEvent } from '@dead-sector/sim';
 import { keyName } from '../input/KeyBindings';
-import { MT } from '../ui/i18n';
+import { catalog, fill } from '../ui/i18n';
 
 /** A contextual hint, shown once per profile the first time its situation happens. */
 export interface Tip {
@@ -9,60 +9,43 @@ export interface Tip {
   text: string;
 }
 
-const TIPS: Record<string, () => Omit<Tip, 'id'>> = {
-  select: () => ({
-    title: 'Comando',
-    text: `Selecione um esquadrão (${keyName('squad1')}/${keyName('squad2')}, clique ou arraste uma caixa) e clique com o botão direito no chão para mover. A câmera anda com ${['panUp', 'panLeft', 'panDown', 'panRight'].map((a) => keyName(a as 'panUp')).join('')} (Shift acelera). ${keyName('pause')} pausa a qualquer momento. Todas as teclas podem ser trocadas em Opções → Controles.`,
-  }),
-  sneak: () => ({
-    title: 'Silêncio',
-    text: `${keyName('modeSneak')} deixa o esquadrão furtivo: mais lento, muito mais silencioso. Os anéis no chão mostram até onde cada som chega.`,
-  }),
-  contact: () => ({
-    title: 'Contato',
-    text: 'Infectados só reagem ao que veem e ouvem. Fique fora do campo de visão e evite barulho — ou clique direito sobre um deles para atacar.',
-  }),
-  noise: () => ({
-    title: 'Tiros chamam atenção',
-    text: `Cada disparo é ouvido longe e eleva o alerta do bairro. ${keyName('firePolicy')} troca a disciplina de fogo: responder, livre ou cessar.`,
-  }),
-  locked: () => ({
-    title: 'Porta trancada',
-    text: 'Clique direito na porta para arrombar. Leva tempo e faz barulho; o mecânico é o mais rápido.',
-  }),
-  bite: () => ({
-    title: 'Mordida',
-    text: 'Quem é mordido se transforma em poucos minutos. Mantenha o socorrista a até 4 m para ganhar tempo.',
-  }),
-  panic: () => ({
-    title: 'Pânico',
-    text: 'Em pânico, o sobrevivente ignora ordens até se recompor. Um líder por perto e menos ameaças à vista ajudam.',
-  }),
-  alarm: () => ({
-    title: 'Bairro em alerta',
-    text: 'Com o alerta alto chegam mais corredores — e em "Caçada", uma horda. Pare de atirar por um tempo para o bairro se acalmar.',
-  }),
-  horde: () => ({
-    title: 'Horda a caminho',
-    text: `Evite as avenidas por onde ela vai passar, barrique portas (${keyName('barricade')} com o cursor sobre a porta) ou termine o trabalho depressa.`,
-  }),
-  rescue: () => ({
-    title: 'Escolta',
-    text: `${MT.person.charAt(0).toUpperCase()}${MT.person.slice(1)} segue a equipe a pé e não luta. Se morrer, a missão fracassa — mantenha atrás do grupo.`,
-  }),
-  extraction: () => ({
-    title: 'Extração',
-    text: 'O rádio atrai infectados enquanto transmite. Segurem a área até o transporte chegar.',
-  }),
-  orders: () => ({
-    title: 'Planejar',
-    text: 'Shift + clique direito enfileira pontos de passagem; Ctrl + clique direito abre o menu de ordens no local.',
-  }),
-};
+const TIPS = [
+  'select',
+  'sneak',
+  'contact',
+  'noise',
+  'locked',
+  'bite',
+  'panic',
+  'alarm',
+  'horde',
+  'rescue',
+  'extraction',
+  'orders',
+] as const;
+
+function tipCopy(id: (typeof TIPS)[number]): Omit<Tip, 'id'> {
+  const tip = catalog().tips[id];
+  const pan = ['panUp', 'panLeft', 'panDown', 'panRight']
+    .map((a) => keyName(a as 'panUp'))
+    .join('');
+  return {
+    title: tip.title,
+    text: fill(tip.text, {
+      squad1: keyName('squad1'),
+      squad2: keyName('squad2'),
+      pan,
+      pause: keyName('pause'),
+      sneak: keyName('modeSneak'),
+      fire: keyName('firePolicy'),
+      barricade: keyName('barricade'),
+    }),
+  };
+}
 
 export function tip(id: string): Tip | null {
-  const t = TIPS[id];
-  return t ? { id, ...t() } : null;
+  if (!(TIPS as readonly string[]).includes(id)) return null;
+  return { id, ...tipCopy(id as (typeof TIPS)[number]) };
 }
 
 /** Tips due at mission start. */

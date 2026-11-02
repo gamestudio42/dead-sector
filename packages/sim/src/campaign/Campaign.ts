@@ -45,8 +45,59 @@ export interface SectorState {
   looted: boolean;
 }
 
+/**
+ * Something the shelter should tell the player. The simulation stores the kind and the numbers;
+ * the interface writes the sentence in the chosen language. `legacy` is a sentence already
+ * written by an older version.
+ */
+export type CampaignNotice =
+  | { kind: 'legacy'; text: string }
+  | { kind: 'did-not-return'; name: string }
+  | { kind: 'left-behind'; name: string }
+  | { kind: 'rescued-safe'; name: string }
+  | {
+      kind: 'brought';
+      food: number;
+      medicine: number;
+      ammo: number;
+      parts: number;
+      people: number;
+    }
+  | { kind: 'convoy'; count: number }
+  | { kind: 'noise-heat'; sector: string }
+  | { kind: 'sector-lost'; sector: string }
+  | { kind: 'infected-returned'; sector: string }
+  | { kind: 'shelter-surrounded'; sector: string }
+  | { kind: 'treated'; name: string }
+  | { kind: 'turned'; name: string }
+  | { kind: 'worsened'; name: string; stage: InfectionStage }
+  | { kind: 'starved'; lost: number }
+  | { kind: 'no-food' }
+  | { kind: 'recovered'; name: string; before: number; after: number }
+  | { kind: 'ammo-short' };
+
+/** Why a campaign ended. `legacy` keeps a sentence saved by an older version. */
+export type CampaignEnd =
+  | { kind: 'legacy'; text: string }
+  | { kind: 'evacuated'; count: number }
+  | { kind: 'no-fighters' }
+  | { kind: 'shelter-lost' }
+  | { kind: 'route-lost' }
+  | { kind: 'deadline' };
+
+/** Why an operation cannot start. Null means it can. The interface translates the code. */
+export type OperationBlock =
+  | 'campaign-over'
+  | 'no-plan'
+  | 'unknown'
+  | 'lost'
+  | 'already-operated'
+  | 'secured'
+  | 'nobody-to-evacuate'
+  | 'no-route';
+
 export interface CampaignState {
-  version: 2;
+  version: 3;
   campaignId: string;
   seed: number;
   /** Strategic RNG, separate from every mission's. */
@@ -64,15 +115,15 @@ export interface CampaignState {
   sectors: Record<string, SectorState>;
   rescued: string[];
   history: MissionRecordEntry[];
-  /** What the last operation or night did, in PT-BR, to show again after a reload. */
-  lastReport: string[];
+  /** What the last operation or night did, to show again after a reload. */
+  lastReport: CampaignNotice[];
   status: 'active' | 'won' | 'lost';
-  endReason: string | null;
+  endReason: CampaignEnd | null;
 }
 
-/** Lines shown after an operation or a night, in PT-BR (player-facing). */
+/** Notices shown after an operation or a night. */
 export interface CampaignReport {
-  lines: string[];
+  lines: CampaignNotice[];
   turnedOvernight: string[];
 }
 
@@ -124,7 +175,7 @@ export function newCampaign(content: ContentBundle, campaignId: string, seed = 1
   });
   const { population, ...stock } = def.start;
   const c: CampaignState = {
-    version: 2,
+    version: 3,
     campaignId,
     seed,
     rngState: seedToRngState(seed),
@@ -154,13 +205,38 @@ export function newCampaign(content: ContentBundle, campaignId: string, seed = 1
 /** Version 1 was a fixed list of three missions: those already done become secured sectors. */
 const V1_ORDER = ['ferrugem', 'ferrovia', 'centro'];
 
+function asNotices(raw: unknown): CampaignNotice[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) =>
+    typeof item === 'string' ? { kind: 'legacy', text: item } : (item as CampaignNotice),
+  );
+}
+
+function asEnd(raw: unknown): CampaignEnd | null {
+  if (raw == null) return null;
+  if (typeof raw === 'string') return { kind: 'legacy', text: raw };
+  return raw as CampaignEnd;
+}
+
 /** Reads a stored campaign of any version; null when it cannot be used. */
 export function migrateCampaign(content: ContentBundle, raw: unknown): CampaignState | null {
-  const old = raw as Partial<CampaignState> & { missionIndex?: number; supplies?: number };
+  const old = raw as Omit<Partial<CampaignState>, 'version'> & {
+    version?: number;
+    missionIndex?: number;
+    supplies?: number;
+  };
   if (!old || !Array.isArray(old.roster) || !old.campaignId || !content.campaigns[old.campaignId])
     return null;
-  if (old.version === 2) return old as CampaignState;
-  if ((old as { version?: number }).version !== 1) return null;
+  if (old.version === 2 || old.version === 3) {
+    const current = old as CampaignState;
+    return {
+      ...current,
+      version: 3,
+      lastReport: asNotices(current.lastReport),
+      endReason: asEnd(current.endReason),
+    };
+  }
+  if (old.version !== 1) return null;
   const def = defOf(content, old.campaignId);
   const history = old.history ?? [];
   const rescued = old.rescued ?? [];
@@ -192,28 +268,27 @@ export function sectorStatus(def: CampaignDef, c: CampaignState, sectorId: strin
   return s.infestation >= def.thresholds.infestedFrom ? 'infested' : 'contested';
 }
 
-/** Why an operation cannot start in this sector right now (PT-BR); null when it can. */
+/** Why an operation cannot start in this sector right now; null when it can. */
 export function operationBlockReason(
   content: ContentBundle,
   c: CampaignState,
   sectorId: string,
-): string | null {
+): OperationBlock | null {
   const def = defOf(content, c.campaignId);
   const sec = def.sectors.find((s) => s.id === sectorId);
   if (!sec) throw new Error(`Unknown sector ${sectorId}`);
-  if (c.status !== 'active') return 'A campanha terminou.';
-  if (!sec.missionId) return 'Ainda não há plano de operação para este setor.';
+  if (c.status !== 'active') return 'campaign-over';
+  if (!sec.missionId) return 'no-plan';
   const status = sectorStatus(def, c, sectorId);
-  if (status === 'unknown') return 'Setor desconhecido: assegure um vizinho primeiro.';
-  if (status === 'lost') return 'Setor perdido para os infectados.';
-  if (c.operatedToday) return 'Já houve uma operação hoje. Encerre o dia.';
-  if (status === 'secured' && sec.evacuates === 0) return 'Setor já assegurado.';
-  if (sec.evacuates > 0 && status === 'secured' && c.population === 0)
-    return 'Não há mais ninguém para evacuar.';
+  if (status === 'unknown') return 'unknown';
+  if (status === 'lost') return 'lost';
+  if (c.operatedToday) return 'already-operated';
+  if (status === 'secured' && sec.evacuates === 0) return 'secured';
+  if (sec.evacuates > 0 && status === 'secured' && c.population === 0) return 'nobody-to-evacuate';
   const connected = sec.neighbors.some(
     (n) => n === def.shelterSectorId || sectorStatus(def, c, n) === 'secured',
   );
-  if (!connected) return 'Sem rota: assegure um setor vizinho primeiro.';
+  if (!connected) return 'no-route';
   return null;
 }
 
@@ -252,19 +327,19 @@ function checkEnd(def: CampaignDef, c: CampaignState): void {
   if (c.status !== 'active') return;
   if (c.evacuated >= def.victory.evacuateGoal) {
     c.status = 'won';
-    c.endReason = `${c.evacuated} pessoas saíram do setor.`;
+    c.endReason = { kind: 'evacuated', count: c.evacuated };
   } else if (!c.roster.some((r) => r.alive)) {
     c.status = 'lost';
-    c.endReason = 'Não restou ninguém para lutar.';
+    c.endReason = { kind: 'no-fighters' };
   } else if (c.sectors[def.shelterSectorId]!.lost) {
     c.status = 'lost';
-    c.endReason = 'Os infectados tomaram o abrigo.';
+    c.endReason = { kind: 'shelter-lost' };
   } else if (!def.sectors.some((s) => s.evacuates > 0 && !c.sectors[s.id]!.lost)) {
     c.status = 'lost';
-    c.endReason = 'A rota de evacuação caiu.';
+    c.endReason = { kind: 'route-lost' };
   } else if (c.day > def.victory.deadlineDays) {
     c.status = 'lost';
-    c.endReason = 'O prazo acabou antes da evacuação.';
+    c.endReason = { kind: 'deadline' };
   }
 }
 
@@ -284,7 +359,7 @@ export function applyOperationResult(
   if (!sec) throw new Error(`Unknown sector ${sectorId}`);
   const next = clone(campaign);
   const state = next.sectors[sectorId]!;
-  const lines: string[] = [];
+  const lines: CampaignNotice[] = [];
   const deaths: string[] = [];
   const outcome = final.mission.status;
   const success = outcome === 'success' || outcome === 'partial';
@@ -298,14 +373,14 @@ export function applyOperationResult(
       r.alive = false;
       r.health = 0;
       deaths.push(s.name);
-      lines.push(`${s.name} não voltou.`);
+      lines.push({ kind: 'did-not-return', name: s.name });
       continue;
     }
     // left behind on a successful extraction counts as lost too
     if (success && !s.extracted) {
       r.alive = false;
       deaths.push(s.name);
-      lines.push(`${s.name} ficou para trás.`);
+      lines.push({ kind: 'left-behind', name: s.name });
       continue;
     }
     r.health = Math.max(1, Math.round(s.health));
@@ -320,7 +395,7 @@ export function applyOperationResult(
   if (rescued) {
     next.rescued.push(rescued);
     next.population += 1;
-    lines.push(`${rescued} está a salvo no abrigo.`);
+    lines.push({ kind: 'rescued-safe', name: rescued });
   }
   if (success && final.mission.medicineCollected) {
     const pay = (v: number) => (state.looted ? Math.floor(v / 2) : v);
@@ -332,20 +407,15 @@ export function applyOperationResult(
     next.stock.parts += got.parts;
     next.population += pay(people);
     state.looted = true;
-    const bits = [
-      got.food && `${got.food} de comida`,
-      got.medicine && `${got.medicine} de remédios`,
-      got.ammo && `${got.ammo} balas`,
-      got.parts && `${got.parts} peças`,
-      pay(people) && `${pay(people)} pessoa(s)`,
-    ].filter(Boolean);
-    if (bits.length) lines.push(`Trouxeram ${bits.join(', ')}.`);
+    const brought = pay(people);
+    if (got.food || got.medicine || got.ammo || got.parts || brought)
+      lines.push({ kind: 'brought', ...got, people: brought });
   }
   if (success && sec.evacuates > 0) {
     const moved = Math.min(sec.evacuates, next.population);
     next.population -= moved;
     next.evacuated += moved;
-    if (moved) lines.push(`Um comboio levou ${moved} pessoas para fora do setor.`);
+    if (moved) lines.push({ kind: 'convoy', count: moved });
   }
   state.infestation = clamp(
     state.infestation +
@@ -353,8 +423,7 @@ export function applyOperationResult(
   );
   const heat = Math.round(final.stats.totalNoise / def.migration.noisePerHeat);
   state.noise += heat;
-  if (heat >= 10)
-    lines.push(`O barulho em ${sec.displayName} vai atrair infectados dos arredores.`);
+  if (heat >= 10) lines.push({ kind: 'noise-heat', sector: sec.displayName });
 
   next.history.push({ missionId: final.missionId, outcome, deaths, rescued });
   next.operatedToday = true;
@@ -378,15 +447,17 @@ export function treatInfection(
   t.infection = 'healthy';
   t.bitten = false;
   next.stock.medicine -= 1;
-  next.lastReport = [
-    ...next.lastReport,
-    `Tratamento aplicado em ${nameOf(content, templateId)}: infecção eliminada.`,
-  ];
+  next.lastReport = [...next.lastReport, { kind: 'treated', name: nameOf(content, templateId) }];
   return next;
 }
 
 /** Infected move along the connections: towards emptier sectors and towards noise. */
-function migrate(def: CampaignDef, c: CampaignState, rng: SeededRng, lines: string[]): void {
+function migrate(
+  def: CampaignDef,
+  c: CampaignState,
+  rng: SeededRng,
+  lines: CampaignNotice[],
+): void {
   const m = def.migration;
   const before = Object.fromEntries(
     def.sectors.map((s) => [s.id, sectorStatus(def, c, s.id)]),
@@ -419,16 +490,16 @@ function migrate(def: CampaignDef, c: CampaignState, rng: SeededRng, lines: stri
     if (!s.lost && Math.max(peak, s.infestation) >= 100) {
       s.lost = true;
       s.revealed = true;
-      lines.push(`${sec.displayName} foi perdido para os infectados.`);
+      lines.push({ kind: 'sector-lost', sector: sec.displayName });
       continue;
     }
     const now = sectorStatus(def, c, sec.id);
     if (sec.id !== def.shelterSectorId && before[sec.id] === 'secured' && now !== 'secured')
-      lines.push(`Infectados voltaram a ${sec.displayName}.`);
+      lines.push({ kind: 'infected-returned', sector: sec.displayName });
   }
   const shelter = def.sectors.find((s) => s.id === def.shelterSectorId)!;
   if (c.sectors[shelter.id]!.infestation >= def.thresholds.infestedFrom)
-    lines.push(`Infectados cercam ${shelter.displayName}.`);
+    lines.push({ kind: 'shelter-surrounded', sector: shelter.displayName });
 }
 
 /**
@@ -442,7 +513,7 @@ export function endDay(
   const def = defOf(content, campaign.campaignId);
   const next = clone(campaign);
   const rng = new SeededRng(next);
-  const lines: string[] = [];
+  const lines: CampaignNotice[] = [];
   const turnedOvernight: string[] = [];
 
   for (const r of next.roster) {
@@ -452,10 +523,10 @@ export function endDay(
     if (stage === 'turn') {
       r.alive = false;
       turnedOvernight.push(name);
-      lines.push(`${name} se transformou durante a noite.`);
+      lines.push({ kind: 'turned', name });
     } else {
       r.infection = stage;
-      lines.push(`${name} piorou: agora está ${STAGE_PT[stage]}.`);
+      lines.push({ kind: 'worsened', name, stage });
     }
   }
 
@@ -467,9 +538,7 @@ export function endDay(
     // whoever does not fight gives way first: the hungry leave or do not wake up
     const lost = Math.min(next.population, 1 + Math.floor((need - campaign.stock.food) / 2));
     next.population -= lost;
-    lines.push(
-      lost ? `Faltou comida: ${lost} pessoa(s) a menos no abrigo.` : 'Faltou comida no abrigo.',
-    );
+    lines.push(lost ? { kind: 'starved', lost } : { kind: 'no-food' });
   }
 
   let shortOfAmmo = false;
@@ -480,7 +549,7 @@ export function endDay(
     const before = r.health;
     r.health = Math.min(t.maxHealth, r.health + Math.round(t.maxHealth * def.healFraction));
     if (r.health > before && before < t.maxHealth)
-      lines.push(`${firstName(t.name)} se recuperou (vida ${before} → ${r.health}).`);
+      lines.push({ kind: 'recovered', name: firstName(t.name), before, after: r.health });
     const w = content.weapons[t.weaponId];
     if (w && w.magazineCapacity > 0) {
       const missing = w.magazineCapacity + t.reserveRounds - r.ammo;
@@ -493,7 +562,7 @@ export function endDay(
     }
   }
 
-  if (shortOfAmmo) lines.push('A munição do estoque não bastou para rearmar todo mundo.');
+  if (shortOfAmmo) lines.push({ kind: 'ammo-short' });
 
   migrate(def, next, rng, lines);
   next.day += 1;
@@ -503,13 +572,6 @@ export function endDay(
   next.lastReport = lines;
   return { campaign: next, report: { lines, turnedOvernight } };
 }
-
-const STAGE_PT: Record<InfectionStage, string> = {
-  healthy: 'bem',
-  exposed: 'exposto',
-  infected: 'infectado',
-  critical: 'em estado crítico',
-};
 
 function nameOf(content: ContentBundle, templateId: string): string {
   return content.survivors[templateId]?.name ?? templateId;

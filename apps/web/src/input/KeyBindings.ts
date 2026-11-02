@@ -1,3 +1,5 @@
+import { catalog } from '../ui/i18n';
+
 /**
  * Rebindable keyboard shortcuts. Bindings use `KeyboardEvent.code` (physical key), so they work
  * the same on ABNT2, US or other layouts. Esc is reserved for menus and cannot be rebound.
@@ -82,9 +84,9 @@ const ARROWS: Record<Action, Slots> = {
   panRight: ['ArrowRight', null],
 };
 
-export const PRESETS: Record<PresetId, { label: string; slots: Record<Action, Slots> }> = {
-  wasd: { label: 'WASD (padrão)', slots: WASD },
-  arrows: { label: 'Setas (clássico)', slots: ARROWS },
+export const PRESETS: Record<PresetId, { slots: Record<Action, Slots> }> = {
+  wasd: { slots: WASD },
+  arrows: { slots: ARROWS },
 };
 
 /** Primary key of every action in the default layout. */
@@ -92,31 +94,19 @@ export const DEFAULT_BINDINGS: Record<Action, string> = Object.fromEntries(
   Object.entries(WASD).map(([a, [p]]) => [a, p]),
 ) as Record<Action, string>;
 
-export const ACTION_LABELS: Record<Action, string> = {
-  squad1: 'Selecionar esquadrão 1',
-  squad2: 'Selecionar esquadrão 2',
-  squad3: 'Selecionar esquadrão 3',
-  squad4: 'Selecionar esquadrão 4',
-  modeSneak: 'Modo furtivo',
-  modeMove: 'Modo normal',
-  modeSprint: 'Modo correr',
-  hold: 'Manter posição',
-  hide: 'Esconder',
-  retreat: 'Retirada',
-  regroup: 'Reagrupar no líder',
-  firePolicy: 'Disciplina de fogo',
-  barricade: 'Barricar porta/janela sob o cursor',
-  pause: 'Pausar / retomar',
-  speed: 'Velocidade 1× / 2×',
-  quicksave: 'Salvamento rápido',
-  quickload: 'Carregar salvamento rápido',
-  mute: 'Ligar/desligar som',
-  debug: 'Sobreposição de depuração',
-  panUp: 'Câmera: cima',
-  panDown: 'Câmera: baixo',
-  panLeft: 'Câmera: esquerda',
-  panRight: 'Câmera: direita',
-};
+/** Label of a key action in the language the player is reading. */
+export function actionLabel(action: Action): string {
+  return catalog().actions[action];
+}
+
+/** Label of a keyboard layout in the language the player is reading. */
+export function presetLabel(id: PresetId): string {
+  return catalog().presets[id];
+}
+
+export const ACTION_LABELS: Record<Action, string> = new Proxy({} as Record<Action, string>, {
+  get: (_target, prop) => catalog().actions[prop as Action],
+});
 
 const STORE_KEY = 'dead-sector:keys';
 export const RESERVED_CODES = new Set(['Escape']);
@@ -127,7 +117,7 @@ export function keyLabel(code: string): string {
   if (code.startsWith('Digit')) return code.slice(5);
   if (code.startsWith('Numpad')) return `Num ${code.slice(6)}`;
   const names: Record<string, string> = {
-    Space: 'Espaço',
+    Space: catalog().options.keySpace,
     Tab: 'Tab',
     Backquote: '`',
     ArrowUp: '↑',

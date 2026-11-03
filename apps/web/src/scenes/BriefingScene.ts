@@ -4,9 +4,19 @@ import { AudioEngine } from '../audio/AudioEngine';
 import { Backdrop } from '../render/Backdrop';
 import { clearUi, uiRoot } from '../ui/dom';
 import { CampaignStore } from '../ui/CampaignStore';
-import { MT, setMissionTexts, T } from '../ui/i18n';
+import {
+  catalog,
+  missionBriefing,
+  missionTitle,
+  MT,
+  roleLabel,
+  setMissionTexts,
+  T,
+  text,
+  weaponLabel,
+} from '../ui/i18n';
 import { baseMap, drawMissionMarks } from '../ui/MapCanvas';
-import { CAMPAIGN_ID, MISSION_ID } from './MenuScene';
+import { MISSION_ID } from './MenuScene';
 import {
   carryOver,
   missionSeed,
@@ -34,16 +44,12 @@ export class BriefingScene extends Phaser.Scene {
     this.backdrop = new Backdrop(this, missionId);
     const content = loadContent();
     const mission = content.missions[missionId]!;
-    setMissionTexts(mission.texts);
+    setMissionTexts(mission.texts, missionId);
     const world = this.backdrop.world;
     let seed = mission.canonicalSeed;
     let campaign: CampaignState | null = null;
     clearUi();
-    const STAGE: Record<string, string> = {
-      exposed: 'exposto',
-      infected: 'infectado',
-      critical: 'crítico',
-    };
+    const stage = catalog().campaign.stage;
 
     const roster = mission.squads
       .map((sq) => {
@@ -51,12 +57,12 @@ export class BriefingScene extends Phaser.Scene {
           .map((id) => {
             const t = content.survivors[id]!;
             const w = content.weapons[t.weaponId];
-            return `<tr data-member="${id}"><td>${t.isLeader ? '★ ' : ''}${t.name}</td><td>${t.role}</td><td>${w?.displayName ?? t.weaponId}</td>
-              <td>${pips(t.courage)}</td><td>${pips(t.marksmanship)}</td><td>${pips(t.stealth)}</td><td class="state" data-state="${id}">pronto</td></tr>`;
+            return `<tr data-member="${id}"><td>${t.isLeader ? '★ ' : ''}${t.name}</td><td>${roleLabel(id, t.role)}</td><td>${weaponLabel(t.weaponId, w?.displayName ?? t.weaponId)}</td>
+              <td>${pips(t.courage)}</td><td>${pips(t.marksmanship)}</td><td>${pips(t.stealth)}</td><td class="state" data-state="${id}">${text('briefing.ready')}</td></tr>`;
           })
           .join('');
-        return `<h4 style="color:${SQUAD_CSS[sq.id]}">Esquadrão ${sq.displayName}</h4>
-          <table class="roster"><tr><th>Nome</th><th>Função</th><th>Arma</th><th>Coragem</th><th>Pontaria</th><th>Furtividade</th><th>Estado</th></tr>${rows}</table>`;
+        return `<h4 style="color:${SQUAD_CSS[sq.id]}">${text('briefing.squad', { name: sq.displayName })}</h4>
+          <table class="roster"><tr><th>${text('briefing.name')}</th><th>${text('briefing.role')}</th><th>${text('briefing.weapon')}</th><th>${text('briefing.courage')}</th><th>${text('briefing.aim')}</th><th>${text('briefing.stealth')}</th><th>${text('briefing.state')}</th></tr>${rows}</table>`;
       })
       .join('');
 
@@ -64,35 +70,35 @@ export class BriefingScene extends Phaser.Scene {
     screen.className = 'screen briefing-screen';
     screen.innerHTML = `
       <div class="card panel briefing-card" data-testid="briefing">
-        <div class="subtitle" data-el="kicker">${inCampaign ? 'Campanha · ' + content.campaigns[CAMPAIGN_ID]!.displayName : 'Missão avulsa'} — briefing de operação</div>
-        <h2>${mission.displayName}${mission.isNight ? ' <span class="night-tag">noite</span>' : ''}</h2>
+        <div class="subtitle" data-el="kicker">${inCampaign ? text('briefing.campaignKicker', { name: catalog().campaign.displayName }) : text('briefing.singleKicker')}</div>
+        <h2>${missionTitle(missionId, mission.displayName)}${mission.isNight ? ` <span class="night-tag">${text('briefing.night')}</span>` : ''}</h2>
         <div class="campaign-status small" data-el="campaignStatus" hidden></div>
         <div class="briefing-grid">
           <div class="map-col">
             <canvas data-el="map" width="${world.width * PX}" height="${world.height * PX}"></canvas>
             <div class="map-legend small">
               <span><i style="background:#5aa9ff"></i>Alfa</span><span><i style="background:#ffad4d"></i>Bravo</span>
-              <span><i class="dash"></i>Perímetro: ${MT.area}</span><span><i style="background:#7fbf6a"></i>Extração</span>
-              <span><i style="background:#e0563e"></i>Entradas de infectados</span>
+              <span><i class="dash"></i>${text('briefing.perimeter', { area: MT.area })}</span><span><i style="background:#7fbf6a"></i>${text('briefing.extraction')}</span>
+              <span><i style="background:#e0563e"></i>${text('briefing.entrances')}</span>
             </div>
           </div>
           <div class="info-col">
-            <p class="briefing">${mission.briefing}</p>
-            <h4>Objetivos</h4>
+            <p class="briefing">${missionBriefing(missionId, mission.briefing)}</p>
+            <h4>${text('briefing.objectives')}</h4>
             <ol class="obj-list">${['enterPerimeter', 'collectMedicine', 'rescueCivilian', 'activateExtraction', 'holdExtraction'].map((id) => `<li>${T.objectives[id]}</li>`).join('')}</ol>
-            <h4>Informações</h4>
+            <h4>${text('briefing.intel')}</h4>
             <ul class="intel">${MT.intel.map((i) => `<li>${i}</li>`).join('')}</ul>
-            <p class="small">Tempo limite: ${Math.round(mission.timeLimitSeconds / 60)} min · Falha se ${MT.person} morrer ou se todos caírem.</p>
+            <p class="small">${text('briefing.timeLimit', { minutes: Math.round(mission.timeLimitSeconds / 60), person: MT.person })}</p>
           </div>
         </div>
-        <details class="roster-wrap" ${inCampaign ? 'open' : ''}><summary>Equipe (${mission.squads.reduce((n, s) => n + s.memberIds.length, 0)} sobreviventes)</summary>${roster}</details>
+        <details class="roster-wrap" ${inCampaign ? 'open' : ''}><summary>${text('briefing.roster', { n: mission.squads.reduce((n, s) => n + s.memberIds.length, 0) })}</summary>${roster}</details>
         <div class="row briefing-actions">
-          <span class="small">Semente: <b data-el="seed">${seed}</b> <span data-el="seedNote">(canônica)</span></span>
-          <button data-act="seed" title="Mesma missão com posições e eventos diferentes">Nova semente</button>
-          <button data-act="canon">Canônica</button>
+          <span class="small">${text('briefing.seed')} <b data-el="seed">${seed}</b> <span data-el="seedNote">${text('briefing.canonical')}</span></span>
+          <button data-act="seed" title="${text('briefing.newSeedTitle')}">${text('briefing.newSeed')}</button>
+          <button data-act="canon">${text('briefing.canon')}</button>
           <span style="flex:1"></span>
-          <button data-act="back" data-testid="btn-back">Voltar</button>
-          <button data-act="deploy" class="primary" data-testid="btn-deploy">Iniciar operação ▶</button>
+          <button data-act="back" data-testid="btn-back">${text('briefing.back')}</button>
+          <button data-act="deploy" class="primary" data-testid="btn-deploy">${text('briefing.deploy')}</button>
         </div>
       </div>`;
     uiRoot().appendChild(screen);
@@ -144,13 +150,19 @@ export class BriefingScene extends Phaser.Scene {
       g.fillText(text, Math.max(2, Math.min(x, canvas.width - w - 2)), Math.max(11, y));
     };
     label(MT.area.toUpperCase(), o.perimeter.x0 * PX + 4, o.perimeter.y0 * PX - 4);
-    label('EXTRAÇÃO', o.extraction.zone.x0 * PX + 2, o.extraction.zone.y0 * PX - 4);
+    label(
+      text('briefing.extractionMark'),
+      o.extraction.zone.x0 * PX + 2,
+      o.extraction.zone.y0 * PX - 4,
+    );
 
     const audio = AudioEngine.get();
     const setSeed = (s: number, canon: boolean) => {
       seed = s;
       q('[data-el=seed]').textContent = String(s);
-      q('[data-el=seedNote]').textContent = canon ? '(canônica)' : '(variação)';
+      q('[data-el=seedNote]').textContent = canon
+        ? text('briefing.canonical')
+        : text('briefing.variation');
     };
     q('[data-act=seed]').onclick = () => setSeed(Math.floor(Math.random() * 1_000_000), false);
     q('[data-act=canon]').onclick = () => setSeed(mission.canonicalSeed, true);
@@ -168,24 +180,34 @@ export class BriefingScene extends Phaser.Scene {
         const tries = c.history.filter((h) => h.missionId === missionId).length;
         seed = missionSeed(content, c, missionId);
         q('[data-el=seed]').textContent = String(seed);
-        q('[data-el=seedNote]').textContent = tries ? `(tentativa ${tries + 1})` : '(canônica)';
+        q('[data-el=seedNote]').textContent = tries
+          ? text('briefing.attempt', { n: tries + 1 })
+          : text('briefing.canonical');
         const alive = c.roster.filter((r) => r.alive).length;
         const status = q('[data-el=campaignStatus]');
         status.hidden = false;
-        status.textContent = `${alive}/${c.roster.length} na equipe · ${c.stock.medicine} remédios · ${c.stock.ammo} balas no estoque · ${c.evacuated} evacuados`;
+        status.textContent = text('briefing.stock', {
+          alive,
+          roster: c.roster.length,
+          medicine: c.stock.medicine,
+          ammo: c.stock.ammo,
+          evacuated: c.evacuated,
+        });
         for (const r of c.roster) {
           const cell = screen.querySelector<HTMLElement>(`[data-state="${r.templateId}"]`);
           if (!cell) continue;
           const t = content.survivors[r.templateId]!;
           if (!r.alive) {
-            cell.textContent = 'morto';
+            cell.textContent = text('briefing.dead');
             cell.className = 'state dead';
             cell.parentElement?.classList.add('fallen');
             continue;
           }
-          const bits = [`vida ${r.health}/${t.maxHealth}`];
-          if (r.infection !== 'healthy') bits.push(`infecção: ${STAGE[r.infection]}`);
-          if (content.weapons[t.weaponId]!.magazineCapacity > 0) bits.push(`${r.ammo} balas`);
+          const bits = [text('briefing.life', { hp: r.health, max: t.maxHealth })];
+          if (r.infection !== 'healthy')
+            bits.push(text('briefing.infection', { stage: stage[r.infection] }));
+          if (content.weapons[t.weaponId]!.magazineCapacity > 0)
+            bits.push(text('briefing.rounds', { n: r.ammo }));
           cell.textContent = bits.join(' · ');
           cell.className = `state ${r.infection !== 'healthy' ? 'infected' : r.health < t.maxHealth * 0.6 ? 'hurt' : ''}`;
         }

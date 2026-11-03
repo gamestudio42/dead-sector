@@ -13,6 +13,9 @@ import {
 import { captionFor } from '../src/audio/captions';
 import { gradeFor } from '../src/presentation/grade';
 import { emptyRecord, recordEvents, recordTraces } from '../src/presentation/timeline';
+import { setLocale } from '../src/ui/i18n';
+
+setLocale('pt-BR');
 
 function playToEnd(plan: PlanStep[]) {
   const sim = GameSimulation.create('a-ultima-farmacia', 1337, loadContent());

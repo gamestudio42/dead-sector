@@ -1,31 +1,17 @@
 import { AudioEngine } from '../audio/AudioEngine';
 import {
-  ACTION_LABELS,
+  actionLabel,
   KeyBindings,
   keyLabel,
   keyName,
   PRESETS,
+  presetLabel,
   type Action,
   type PresetId,
 } from '../input/KeyBindings';
 import { uiRoot } from './dom';
+import { getLocale, LOCALES, LOCALE_NAMES, setLocale, text, type Locale } from './i18n';
 import { Settings, type LightingMode, type Quality } from './SaveStore';
-
-/** Mouse controls are fixed; keyboard shortcuts are rebindable below them. */
-const MOUSE: [string, string][] = [
-  ['Clique esq.', 'Selecionar esquadrão (Shift: adicionar/remover)'],
-  ['Arrastar esq.', 'Caixa de seleção: todos os esquadrões dentro (Shift: somar)'],
-  [
-    'Clique dir.',
-    'Mover no modo atual · sobre infectado: atacar · sobre porta, armário, civil ou rádio: interagir',
-  ],
-  ['Shift + dir.', 'Adicionar ponto à fila (executa quando a ordem atual termina)'],
-  ['Ctrl + dir.', 'Menu de ordens no local (mover, furtivo, correr, ir e manter, ir e esconder…)'],
-  ['Minimapa', 'Clique: mover câmera · botão direito: mover os esquadrões selecionados'],
-  ['Shift + câmera', 'Câmera rápida (segure Shift enquanto move a câmera pelo teclado)'],
-  ['Roda · botão do meio', 'Zoom · arrastar a câmera'],
-  ['Esc', 'Menu de pausa (fixo)'],
-];
 
 const ACTION_ORDER: Action[] = [
   'squad1',
@@ -56,22 +42,30 @@ const ACTION_ORDER: Action[] = [
 const bindingRows = () =>
   ACTION_ORDER.map((a) => {
     const alt = KeyBindings.getSecondary(a);
-    return `<div class="bind-row"><span>${ACTION_LABELS[a]}</span>
-      <button class="bind" data-bind="${a}" data-slot="0" data-testid="bind-${a}" title="Tecla principal: clique e pressione a nova tecla">${keyLabel(KeyBindings.get(a))}</button>
-      <button class="bind alt ${alt ? '' : 'empty'}" data-bind="${a}" data-slot="1" data-testid="bind-${a}-alt" title="Tecla alternativa: clique e pressione uma tecla (Delete limpa)">${alt ? keyLabel(alt) : '—'}</button></div>`;
+    return `<div class="bind-row"><span>${actionLabel(a)}</span>
+      <button class="bind" data-bind="${a}" data-slot="0" data-testid="bind-${a}" title="${text('options.bindPrimary')}">${keyLabel(KeyBindings.get(a))}</button>
+      <button class="bind alt ${alt ? '' : 'empty'}" data-bind="${a}" data-slot="1" data-testid="bind-${a}-alt" title="${text('options.bindAlt')}">${alt ? keyLabel(alt) : '—'}</button></div>`;
   }).join('');
-
-const TABS = [
-  ['audio', 'Áudio'],
-  ['video', 'Vídeo'],
-  ['access', 'Acessibilidade'],
-  ['controls', 'Controles'],
-] as const;
 
 const range = (key: string, label: string, value: number) =>
   `<label class="opt"><span>${label}</span><input type="range" min="0" max="100" step="5" data-opt="${key}" value="${Math.round(value * 100)}" /><output>${Math.round(value * 100)}%</output></label>`;
 const check = (key: string, label: string, value: boolean, hint = '') =>
   `<label class="opt"><span>${label}${hint ? `<small>${hint}</small>` : ''}</span><input type="checkbox" data-opt="${key}" ${value ? 'checked' : ''} /></label>`;
+
+const mouseRows = () => {
+  const rows: [string, string][] = [
+    [text('options.mouse.left'), text('options.mouse.leftDo')],
+    [text('options.mouse.drag'), text('options.mouse.dragDo')],
+    [text('options.mouse.right'), text('options.mouse.rightDo')],
+    [text('options.mouse.shiftRight'), text('options.mouse.shiftRightDo')],
+    [text('options.mouse.ctrlRight'), text('options.mouse.ctrlRightDo')],
+    [text('options.mouse.minimap'), text('options.mouse.minimapDo')],
+    [text('options.mouse.shiftCam'), text('options.mouse.shiftCamDo')],
+    [text('options.mouse.wheel'), text('options.mouse.wheelDo')],
+    [text('options.mouse.esc'), text('options.mouse.escDo')],
+  ];
+  return rows.map(([k, v]) => `<span class="kbd">${k}</span><span>${v}</span>`).join('');
+};
 
 /** Modal options screen (shared by the main menu and the in-mission pause flow). */
 export function openOptions(onClose: () => void): HTMLDivElement {
@@ -79,53 +73,71 @@ export function openOptions(onClose: () => void): HTMLDivElement {
   const m = document.createElement('div');
   m.className = 'overlay-menu options';
   m.dataset['testid'] = 'options';
-  m.innerHTML = `<div class="card panel options-card" role="dialog" aria-label="Opções">
-    <div class="options-head"><h3>Opções</h3><button data-act="close" data-testid="btn-options-close" aria-label="Fechar">✕</button></div>
-    <div class="tabs">${TABS.map(([id, label], i) => `<button data-tab="${id}" class="${i === 0 ? 'active' : ''}">${label}</button>`).join('')}</div>
-    <section data-pane="audio">
-      ${range('volume', 'Volume geral', Settings.volume)}
-      ${range('sfxVolume', 'Efeitos', Settings.sfxVolume)}
-      ${range('ambienceVolume', 'Ambiente e tensão', Settings.ambienceVolume)}
-      ${check('muted', 'Sem som', Settings.muted, `Tecla ${keyName('mute')} durante a missão`)}
+  const tabs = [
+    ['audio', 'options.audio'],
+    ['video', 'options.video'],
+    ['access', 'options.access'],
+    ['controls', 'options.controls'],
+  ] as const;
+  const languages = LOCALES.map(
+    (id) =>
+      `<option value="${id}" ${id === getLocale() ? 'selected' : ''}>${LOCALE_NAMES[id]}</option>`,
+  ).join('');
+
+  const paint = (active = 'audio') => {
+    m.innerHTML = `<div class="card panel options-card" role="dialog" aria-label="${text('options.title')}">
+    <div class="options-head"><h3>${text('options.title')}</h3><button data-act="close" data-testid="btn-options-close" aria-label="${text('options.close')}">✕</button></div>
+    <label class="opt"><span>${text('options.language')}</span>
+      <select data-opt="locale" data-testid="locale-select">${languages}</select></label>
+    <div class="tabs">${tabs.map(([id, label]) => `<button data-tab="${id}" class="${id === active ? 'active' : ''}">${text(label)}</button>`).join('')}</div>
+    <section data-pane="audio" ${active === 'audio' ? '' : 'hidden'}>
+      ${range('volume', text('options.volume'), Settings.volume)}
+      ${range('sfxVolume', text('options.sfx'), Settings.sfxVolume)}
+      ${range('ambienceVolume', text('options.ambience'), Settings.ambienceVolume)}
+      ${check('muted', text('options.mute'), Settings.muted, text('options.muteHint', { key: keyName('mute') }))}
     </section>
-    <section data-pane="video" hidden>
-      <label class="opt"><span>Iluminação<small>Vale a partir da próxima missão</small></span>
-        <select data-opt="lighting"><option value="dusk">Crepúsculo</option><option value="day">Dia</option></select></label>
-      <label class="opt"><span>Qualidade gráfica<small>Baixa desliga a luz dinâmica — vale a partir da próxima missão</small></span>
-        <select data-opt="quality"><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label>
-      ${check('showFps', 'Mostrar FPS', Settings.showFps)}
-      ${check('blood', 'Sangue', Settings.blood)}
-      <label class="opt"><span>Escala da interface</span>
+    <section data-pane="video" ${active === 'video' ? '' : 'hidden'}>
+      <label class="opt"><span>${text('options.lighting')}<small>${text('options.lightingHint')}</small></span>
+        <select data-opt="lighting"><option value="dusk">${text('options.dusk')}</option><option value="day">${text('options.day')}</option></select></label>
+      <label class="opt"><span>${text('options.quality')}<small>${text('options.qualityHint')}</small></span>
+        <select data-opt="quality"><option value="high">${text('options.high')}</option><option value="medium">${text('options.medium')}</option><option value="low">${text('options.low')}</option></select></label>
+      ${check('showFps', text('options.fps'), Settings.showFps)}
+      ${check('blood', text('options.blood'), Settings.blood)}
+      <label class="opt"><span>${text('options.hudScale')}</span>
         <select data-opt="hudScale"><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></label>
     </section>
-    <section data-pane="access" hidden>
-      ${check('captions', 'Legendas de sons', Settings.captions, 'Mostra tiros, rosnados e portas com direção e distância')}
-      ${check('contrast', 'Alto contraste', Settings.contrast, 'Painéis opacos, texto maior e barras com contorno')}
-      ${check('shake', 'Tremor de câmera e flashes', Settings.shake, 'Desligue para reduzir movimento na tela')}
-      ${check('tips', 'Dicas de tutorial', Settings.tips, 'Aparecem uma vez, quando a situação acontece')}
-      <label class="opt"><span>Rever todas as dicas<small>Mostra de novo as dicas já vistas</small></span><button data-act="resetTips">Rever</button></label>
-      <p class="small">Cores sempre vêm acompanhadas de ícones ou texto. Pausa e velocidade nunca penalizam o jogador.</p>
+    <section data-pane="access" ${active === 'access' ? '' : 'hidden'}>
+      ${check('captions', text('options.captions'), Settings.captions, text('options.captionsHint'))}
+      ${check('contrast', text('options.contrast'), Settings.contrast, text('options.contrastHint'))}
+      ${check('shake', text('options.shake'), Settings.shake, text('options.shakeHint'))}
+      ${check('tips', text('options.tips'), Settings.tips, text('options.tipsHint'))}
+      <label class="opt"><span>${text('options.resetTips')}<small>${text('options.resetTipsHint')}</small></span><button data-act="resetTips">${text('options.reset')}</button></label>
+      <p class="small">${text('options.accessNote')}</p>
     </section>
-    <section data-pane="controls" hidden>
-      <div class="controls-grid">${MOUSE.map(([k, v]) => `<span class="kbd">${k}</span><span>${v}</span>`).join('')}</div>
-      <label class="opt"><span>Velocidade da câmera<small>Segure Shift para mover 2,5× mais rápido</small></span>
+    <section data-pane="controls" ${active === 'controls' ? '' : 'hidden'}>
+      <div class="controls-grid">${mouseRows()}</div>
+      <label class="opt"><span>${text('options.camera')}<small>${text('options.cameraHint')}</small></span>
         <input type="range" min="50" max="200" step="10" data-opt="cameraSpeed" value="${Math.round(Settings.cameraSpeed * 100)}" /><output>${Math.round(Settings.cameraSpeed * 100)}%</output></label>
-      <h4 class="bind-head">Teclado
+      <h4 class="bind-head">${text('options.keyboard')}
         <span class="presets">${(Object.keys(PRESETS) as PresetId[])
           .map(
             (id) =>
-              `<button data-preset="${id}" data-testid="preset-${id}" class="small-btn">${PRESETS[id].label}</button>`,
+              `<button data-preset="${id}" data-testid="preset-${id}" class="small-btn">${presetLabel(id)}</button>`,
           )
           .join('')}</span></h4>
-      <div class="bind-cols small"><span></span><span>Principal</span><span>Alternativa</span></div>
+      <div class="bind-cols small"><span></span><span>${text('options.primary')}</span><span>${text('options.alternate')}</span></div>
       <div class="bindings" data-el="bindings">${bindingRows()}</div>
-      <p class="small" data-el="bindNote">Clique numa tecla e pressione a nova. Se ela já estiver em uso, as duas ações trocam de tecla. Delete limpa uma tecla alternativa.</p>
+      <p class="small" data-el="bindNote">${text('options.bindNote')}</p>
     </section>
   </div>`;
+    q<HTMLSelectElement>('[data-opt=locale]').value = getLocale();
+    q<HTMLSelectElement>('[data-opt=lighting]').value = Settings.lighting;
+    q<HTMLSelectElement>('[data-opt=hudScale]').value = String(Settings.hudScale);
+    q<HTMLSelectElement>('[data-opt=quality]').value = Settings.quality;
+  };
+
   const q = <T extends HTMLElement>(sel: string) => m.querySelector(sel) as T;
-  q<HTMLSelectElement>('[data-opt=lighting]').value = Settings.lighting;
-  q<HTMLSelectElement>('[data-opt=hudScale]').value = String(Settings.hudScale);
-  q<HTMLSelectElement>('[data-opt=quality]').value = Settings.quality;
+  paint();
 
   const close = () => {
     m.remove();
@@ -144,17 +156,22 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       capturing = null;
       const note = q('[data-el=bindNote]');
       if (e.code === 'Escape') {
-        note.textContent = 'Troca cancelada.';
+        note.textContent = text('options.bindCancelled');
       } else if (slot === 1 && (e.code === 'Delete' || e.code === 'Backspace')) {
         KeyBindings.clearSecondary(action);
-        note.textContent = `${ACTION_LABELS[action]}: sem tecla alternativa.`;
+        note.textContent = text('options.bindCleared', { action: actionLabel(action) });
       } else {
         const r = KeyBindings.set(action, e.code, slot);
         note.textContent = r.refused
-          ? `${keyLabel(e.code)} não pode ser usada aqui: deixaria uma ação sem tecla.`
+          ? text('options.bindRefused', { key: keyLabel(e.code) })
           : r.swapped
-            ? `${ACTION_LABELS[action]}: ${keyLabel(e.code)} · ${ACTION_LABELS[r.swapped]} ficou com ${KeyBindings.codes(r.swapped).map(keyLabel).join(' / ')}.`
-            : `${ACTION_LABELS[action]}: ${keyLabel(e.code)}.`;
+            ? text('options.bindSwapped', {
+                action: actionLabel(action),
+                key: keyLabel(e.code),
+                other: actionLabel(r.swapped),
+                keys: KeyBindings.codes(r.swapped).map(keyLabel).join(' / '),
+              })
+            : text('options.bindSet', { action: actionLabel(action), key: keyLabel(e.code) });
         audio.uiClick();
       }
       refreshBindings();
@@ -179,7 +196,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       refreshBindings();
       const btn = q(`[data-bind=${capturing.action}][data-slot="${capturing.slot}"]`);
       btn.classList.add('capturing');
-      btn.textContent = 'Pressione…';
+      btn.textContent = text('options.press');
       return;
     }
     if (t.closest('[data-act=resetTips]')) {
@@ -194,7 +211,9 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       KeyBindings.applyPreset(id);
       capturing = null;
       refreshBindings();
-      q('[data-el=bindNote]').textContent = `Esquema aplicado: ${PRESETS[id].label}.`;
+      q('[data-el=bindNote]').textContent = text('options.presetApplied', {
+        preset: presetLabel(id),
+      });
       audio.uiClick();
       return;
     }
@@ -211,6 +230,15 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     const el = e.target as HTMLInputElement | HTMLSelectElement;
     const key = el.dataset['opt'];
     if (!key) return;
+    if (key === 'locale') {
+      const next = el.value as Locale;
+      if (next === getLocale()) return;
+      const active = m.querySelector<HTMLElement>('[data-tab].active')?.dataset['tab'] ?? 'audio';
+      setLocale(next);
+      paint(active);
+      audio.uiClick();
+      return;
+    }
     if (el instanceof HTMLInputElement && el.type === 'range') {
       const v = Number(el.value) / 100;
       (el.nextElementSibling as HTMLOutputElement).value = `${el.value}%`;

@@ -1,5 +1,5 @@
 import type { GameState, SimEvent, Vec2 } from '@dead-sector/sim';
-import { T } from '../ui/i18n';
+import { T, text } from '../ui/i18n';
 
 export interface TimelineEntry {
   tick: number;
@@ -28,51 +28,50 @@ export function recordEvents(rec: MissionRecord, events: SimEvent[], state: Game
     const p = e.payload;
     switch (e.type) {
       case 'OBJECTIVE_COMPLETED':
-        add(T.objectives[p['objectiveId'] as string] ?? 'Objetivo concluído', 'good');
+        add(T.objectives[p['objectiveId'] as string] ?? text('timeline.objectiveFallback'), 'good');
         break;
       case 'ACTOR_KILLED':
         if (p['kind'] === 'survivor' && p['cause'] !== 'turned') {
           const s = state.survivors.find((m) => m.id === p['actorId']);
           if (s) rec.deaths.push({ x: s.position.x, y: s.position.y, survivor: true });
-          add(`${first(state, p['actorId'])} morreu`, 'bad');
+          add(text('timeline.died', { name: first(state, p['actorId']) }), 'bad');
         }
         break;
       case 'ACTOR_INJURED':
-        if (p['bitten']) add(`${first(state, p['actorId'])} foi mordido`, 'bad');
+        if (p['bitten']) add(text('timeline.bitten', { name: first(state, p['actorId']) }), 'bad');
         break;
       case 'SURVIVOR_PANICKED':
-        add(`${first(state, p['survivorId'])} entrou em pânico`, 'warn');
+        add(text('timeline.panic', { name: first(state, p['survivorId']) }), 'warn');
         break;
       case 'LEADER_CHANGED':
-        if (p['leaderId']) add(`${first(state, p['leaderId'])} assumiu a liderança`, 'warn');
+        if (p['leaderId'])
+          add(text('timeline.leader', { name: first(state, p['leaderId']) }), 'warn');
         break;
       case 'DOOR_CHANGED':
-        if (p['broken']) add('Infectados arrombaram uma porta', 'warn');
+        if (p['broken']) add(text('timeline.door'), 'warn');
         break;
       case 'EXTRACTION_STARTED':
-        add('Rádio de extração ativado', 'info');
+        add(text('timeline.radio'), 'info');
         break;
       case 'SURVIVOR_TURNED':
         rec.deaths.push({ x: p['x'] as number, y: p['y'] as number, survivor: true });
-        add(`${String(p['name']).split(' ')[0]} se transformou`, 'bad');
+        add(text('timeline.turned', { name: String(p['name']).split(' ')[0] ?? '' }), 'bad');
         break;
       case 'HORDE_SPAWNED':
-        add(`Horda de ${p['size']} infectados chegou`, 'bad');
+        add(text('timeline.horde', { size: String(p['size']) }), 'bad');
         break;
       case 'ALARM_CHANGED':
-        if ((p['level'] as number) === 3)
-          add('Alerta máximo: o bairro inteiro está caçando', 'bad');
+        if ((p['level'] as number) === 3) add(text('timeline.alarm'), 'bad');
         break;
       case 'BARRICADE_BUILT':
-        add('Barricada erguida', 'info');
+        add(text('timeline.barricade'), 'info');
         break;
       case 'REINFORCEMENT_SPAWNED':
-        if (state.mission.reinforcementsSpawned === 1)
-          add('Primeiros reforços atraídos pelo barulho', 'warn');
+        if (state.mission.reinforcementsSpawned === 1) add(text('timeline.reinforcements'), 'warn');
         break;
       case 'MISSION_ENDED':
         add(
-          T.outcome[p['status'] as string] ?? 'Fim da missão',
+          T.outcome[p['status'] as string] ?? text('timeline.missionEndFallback'),
           p['status'] === 'failed' ? 'bad' : 'good',
         );
         break;

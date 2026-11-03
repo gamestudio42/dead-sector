@@ -12,6 +12,7 @@ import {
 } from '../src/input/KeyBindings';
 import { commandsForRightClick, spreadTargets, targetAt } from '../src/input/OrderController';
 import { squadsInRect } from '../src/input/SelectionController';
+import { browserLocale, getLocale } from '../src/ui/i18n';
 
 /** Version 1 storage held one key per action, the classic layout. */
 const PRESETS_V1 = Object.fromEntries(
@@ -100,6 +101,11 @@ describe('key bindings', () => {
   it('Escape is reserved for menus', () => {
     expect(KeyBindings.set('pause', 'Escape').refused).toBe(true);
     expect(KeyBindings.get('pause')).toBe('Space');
+  });
+
+  it('keeps Portuguese outside a browser even when Node reports English', () => {
+    expect(browserLocale(['en-US'])).toBe('en');
+    expect(getLocale()).toBe('pt-BR');
   });
 
   it('labels keys for PT-BR players and names them live', () => {

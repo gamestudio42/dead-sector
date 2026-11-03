@@ -48,7 +48,7 @@ import { LightingRenderer } from '../render/LightingRenderer';
 import { MapRenderer } from '../render/MapRenderer';
 import { CampaignStore } from '../ui/CampaignStore';
 import { ContextMenu } from '../ui/ContextMenu';
-import { setMissionTexts } from '../ui/i18n';
+import { setMissionTexts, text } from '../ui/i18n';
 import { clearUi, uiRoot } from '../ui/dom';
 import { Hud, POLICY_CYCLE } from '../ui/Hud';
 import { Minimap } from '../ui/Minimap';
@@ -139,7 +139,7 @@ export class TacticalScene extends Phaser.Scene {
           this.reinforcements,
         );
         window.setTimeout(
-          () => this.hud.toast(`Salvamento inválido: ${(err as Error).message}`),
+          () => this.hud.toast(text('toasts.badSave', { message: (err as Error).message })),
           50,
         );
       }
@@ -152,7 +152,7 @@ export class TacticalScene extends Phaser.Scene {
         this.reinforcements,
       );
     this.missionId = this.sim.state.missionId;
-    setMissionTexts(this.sim.world.mission.texts);
+    setMissionTexts(this.sim.world.mission.texts, this.missionId);
     this.clock = new FixedStepClock();
     this.clock.paused = !!data.paused;
     this.eventCounts = {};
@@ -254,6 +254,7 @@ export class TacticalScene extends Phaser.Scene {
     this.lightR.destroy();
     this.camCtl.destroy();
     this.hud.destroy();
+    this.minimap.destroy();
     this.pauseMenu?.remove();
     this.pauseMenu = null;
     this.optionsEl?.remove();
@@ -288,7 +289,7 @@ export class TacticalScene extends Phaser.Scene {
   /** Plain select replaces the selection; additive (Shift) toggles the squad in or out. */
   private select(id: string, additive = false): void {
     if (!this.sim.state.squads.some((s) => s.id === id)) {
-      this.hud.toast('Esquadrão inexistente nesta missão');
+      this.hud.toast(text('toasts.missingSquad'));
       return;
     }
     if (!additive) return this.setSelection([id]);
@@ -298,7 +299,7 @@ export class TacticalScene extends Phaser.Scene {
 
   private rightClick(p: Vec2, opts: RightClickOptions = {}): void {
     const ids = this.orderable();
-    if (!ids.length) return this.hud.toast('Selecione um esquadrão (1, 2, clique ou arraste)');
+    if (!ids.length) return this.hud.toast(text('toasts.selectSquad'));
     for (const cmd of commandsForRightClick(this.sim.world, this.sim.state, ids, p, opts))
       this.issue(cmd);
   }
@@ -321,7 +322,7 @@ export class TacticalScene extends Phaser.Scene {
   /** Ctrl + right click: every order that makes sense at this spot, with its consequence. */
   private openContextMenu(p: Vec2, sx: number, sy: number): void {
     const ids = this.orderable();
-    if (!ids.length) return this.hud.toast('Selecione um esquadrão primeiro');
+    if (!ids.length) return this.hud.toast(text('toasts.selectFirst'));
     const st = this.sim.state;
     const busy = ids.some((id) => {
       const o = st.squads.find((s) => s.id === id)?.order;
@@ -341,9 +342,7 @@ export class TacticalScene extends Phaser.Scene {
       );
       items.push({
         label: barrier.label,
-        hint: kits
-          ? `Usa 1 kit (${kits} disponíveis) · martelar faz barulho`
-          : 'Sem kits de barricada',
+        hint: kits ? text('context.useKit', { kits }) : text('context.noKits'),
         disabled: kits === 0,
         run: () => this.barricade(barrier.id),
       });
@@ -351,26 +350,34 @@ export class TacticalScene extends Phaser.Scene {
     if (target)
       items.push({
         label: target.label,
-        hint: target.kind === 'attack' ? 'Concentrar fogo neste alvo' : 'O mais próximo executa',
+        hint: target.kind === 'attack' ? text('context.focus') : text('context.nearest'),
         run: go({}),
       });
     items.push(
-      { label: 'Mover aqui', hint: 'Passo normal', run: go({ moveType: 'move' }) },
-      { label: 'Furtivo até aqui', hint: 'Lento e silencioso', run: go({ moveType: 'sneak' }) },
       {
-        label: 'Correr até aqui',
-        hint: 'Rápido, barulhento, cansa',
+        label: text('context.move'),
+        hint: text('context.moveHint'),
+        run: go({ moveType: 'move' }),
+      },
+      {
+        label: text('context.sneak'),
+        hint: text('context.sneakHint'),
+        run: go({ moveType: 'sneak' }),
+      },
+      {
+        label: text('context.sprint'),
+        hint: text('context.sprintHint'),
         run: go({ moveType: 'sprint' }),
       },
       {
-        label: 'Adicionar como próximo ponto',
-        hint: 'Mesmo que Shift + clique direito',
+        label: text('context.queue'),
+        hint: text('context.queueHint'),
         disabled: !busy,
         run: go({ queue: true }),
       },
       {
-        label: 'Ir e manter posição',
-        hint: 'Move até aqui e segura',
+        label: text('context.hold'),
+        hint: text('context.holdHint'),
         run: () => {
           this.rightClick(p, { moveType: 'move' });
           for (const id of ids)
@@ -378,8 +385,8 @@ export class TacticalScene extends Phaser.Scene {
         },
       },
       {
-        label: 'Ir e esconder-se',
-        hint: 'Move até aqui e evita contato',
+        label: text('context.hide'),
+        hint: text('context.hideHint'),
         run: () => {
           this.rightClick(p, { moveType: 'sneak' });
           for (const id of ids)
@@ -387,7 +394,7 @@ export class TacticalScene extends Phaser.Scene {
         },
       },
       {
-        label: 'Parar (cancela a fila)',
+        label: text('context.stop'),
         disabled: !ids.some(
           (id) => (st.squads.find((s) => s.id === id)?.waypoints.length ?? 0) > 0,
         ),
@@ -398,7 +405,7 @@ export class TacticalScene extends Phaser.Scene {
         },
       },
     );
-    this.menu.show(sx, sy, `Ordens — ${names}`, items);
+    this.menu.show(sx, sy, text('context.title', { names }), items);
   }
 
   /** Barricade with the first selected squad that still has plank kits. */
@@ -406,7 +413,7 @@ export class TacticalScene extends Phaser.Scene {
     const id = this.orderable().find(
       (sq) => (this.sim.state.squads.find((s) => s.id === sq)?.barricadeKits ?? 0) > 0,
     );
-    if (!id) return this.hud.toast('Sem kits de barricada nos esquadrões selecionados');
+    if (!id) return this.hud.toast(text('toasts.noKits'));
     this.issue({ type: 'issueOrder', squadId: id, payload: { type: 'barricade', targetEntityId } });
   }
 
@@ -457,12 +464,12 @@ export class TacticalScene extends Phaser.Scene {
   private async saveGame(): Promise<void> {
     await SaveStore.save(QUICKSAVE, serializeState(this.sim.state));
     await CampaignStore.setQuicksaveMode(this.inCampaign);
-    this.hud.toast(`Jogo salvo (tick ${this.sim.tick})`);
+    this.hud.toast(text('toasts.saved', { tick: this.sim.tick }));
   }
 
   private async loadGame(): Promise<void> {
     const data = await SaveStore.load(QUICKSAVE);
-    if (!data) return this.hud.toast('Nenhum salvamento encontrado');
+    if (!data) return this.hud.toast(text('toasts.noSave'));
     this.scene.restart({ save: data, campaign: this.inCampaign });
   }
 
@@ -473,8 +480,11 @@ export class TacticalScene extends Phaser.Scene {
     this.pauseMenu?.style.setProperty('display', 'none');
     this.optionsEl = openOptions(() => {
       this.optionsEl = null;
-      if (this.pauseMenu) this.pauseMenu.style.removeProperty('display');
-      else this.clock.paused = wasPaused;
+      if (this.pauseMenu) {
+        this.pauseMenu.remove();
+        this.pauseMenu = null;
+        this.togglePauseMenu();
+      } else this.clock.paused = wasPaused;
     });
   }
 
@@ -488,10 +498,10 @@ export class TacticalScene extends Phaser.Scene {
     this.clock.paused = true;
     const m = document.createElement('div');
     m.className = 'overlay-menu';
-    m.innerHTML = `<div class="card panel"><h3>Pausa</h3>
-      <button data-a="resume">Retomar</button><button data-a="save">Salvar</button><button data-a="load">Carregar</button>
-      <button data-a="options">Opções</button>
-      <button data-a="restart">Reiniciar missão</button><button data-a="menu">Sair para o menu</button></div>`;
+    m.innerHTML = `<div class="card panel"><h3>${text('pause.title')}</h3>
+      <button data-a="resume">${text('pause.resume')}</button><button data-a="save">${text('pause.save')}</button><button data-a="load">${text('pause.load')}</button>
+      <button data-a="options">${text('pause.options')}</button>
+      <button data-a="restart">${text('pause.restart')}</button><button data-a="menu">${text('pause.menu')}</button></div>`;
     m.addEventListener('click', (e) => {
       const a = (e.target as HTMLElement).dataset['a'];
       if (a === 'resume') this.togglePauseMenu();
@@ -544,14 +554,14 @@ export class TacticalScene extends Phaser.Scene {
       case 'squad4': {
         const sq = this.sim.state.squads[Number(action.slice(5)) - 1];
         if (sq) this.select(sq.id, e.shiftKey);
-        else this.hud.toast('Esquadrão inexistente nesta missão');
+        else this.hud.toast(text('toasts.missingSquad'));
         return;
       }
       case 'firePolicy':
         return this.cyclePolicy();
       case 'barricade': {
         const b = barrierAt(this.sim.state, this.cursor);
-        if (!b) return this.hud.toast('Aponte o cursor para uma porta ou janela');
+        if (!b) return this.hud.toast(text('toasts.aimBarrier'));
         return this.barricade(b.id);
       }
       default:

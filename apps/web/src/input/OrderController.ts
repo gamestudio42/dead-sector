@@ -6,7 +6,7 @@ import {
   type Vec2,
   type World,
 } from '@dead-sector/sim';
-import { MT } from '../ui/i18n';
+import { text } from '../ui/i18n';
 
 export type ClickTarget =
   | { kind: 'attack'; id: string; label: string }
@@ -14,9 +14,9 @@ export type ClickTarget =
   | null;
 
 const INTERACT_LABELS: Record<string, () => string> = {
-  cabinet: () => `Recolher ${MT.item}`,
-  civilian: () => `Resgatar ${MT.person}`,
-  beacon: () => 'Ativar o rádio',
+  cabinet: () => text('interact.collect'),
+  civilian: () => text('interact.rescue'),
+  beacon: () => text('interact.radio'),
 };
 
 /** What a right click at `p` would act on: a visible infected, an available interactable, or nothing. */
@@ -26,7 +26,7 @@ export function targetAt(world: World, state: GameState, p: Vec2): ClickTarget {
     .map((c) => ({ c, d: Math.hypot(c.position.x - p.x, c.position.y - p.y) }))
     .filter((x) => x.d < 0.9)
     .sort((a, b) => a.d - b.d)[0];
-  if (contact) return { kind: 'attack', id: contact.c.zombieId, label: 'Atacar infectado' };
+  if (contact) return { kind: 'attack', id: contact.c.zombieId, label: text('interact.attack') };
   const civ = state.survivors.find((s) => s.isObjectiveCivilian);
   const civKnown =
     civ &&
@@ -37,17 +37,17 @@ export function targetAt(world: World, state: GameState, p: Vec2): ClickTarget {
     .filter((x) => x.d < (x.i.kind === 'door' ? 0.75 : x.i.kind === 'cabinet' ? 1.3 : 1))
     .sort((a, b) => a.d - b.d)[0];
   if (!target) return null;
-  let label = INTERACT_LABELS[target.i.kind]?.() ?? 'Interagir';
+  let label = INTERACT_LABELS[target.i.kind]?.() ?? text('interact.interact');
   if (target.i.kind === 'door') {
     const door = state.doors.find((d) => d.id === target.i.id);
     label =
       door && door.barricade > 0
-        ? 'Remover a barricada'
+        ? text('interact.remove')
         : door?.locked
-          ? 'Arrombar a porta'
+          ? text('interact.force')
           : door?.open
-            ? 'Fechar a porta'
-            : 'Abrir a porta';
+            ? text('interact.close')
+            : text('interact.open');
   }
   return { kind: 'interact', id: target.i.id, label, interactKind: target.i.kind };
 }
@@ -61,7 +61,10 @@ export function barrierAt(state: GameState, p: Vec2): { id: string; label: strin
     const dd = Math.hypot(d.cell.x + 0.5 - p.x, d.cell.y + 0.5 - p.y);
     if (dd < bestD) {
       bestD = dd;
-      best = { id: d.id, label: d.kind === 'window' ? 'Barricar a janela' : 'Barricar a porta' };
+      best = {
+        id: d.id,
+        label: d.kind === 'window' ? text('interact.window') : text('interact.door'),
+      };
     }
   }
   return best;

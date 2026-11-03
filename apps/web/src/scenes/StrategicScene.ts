@@ -8,26 +8,22 @@ import {
   sectorStatus,
   treatInfection,
   type CampaignState,
-  type SectorStatus,
 } from '@dead-sector/sim';
 import { AudioEngine } from '../audio/AudioEngine';
 import { Backdrop } from '../render/Backdrop';
 import { CampaignStore } from '../ui/CampaignStore';
 import { clearUi, uiRoot } from '../ui/dom';
+import {
+  catalog,
+  formatBlock,
+  formatEnd,
+  formatNotice,
+  missionTitle,
+  roleLabel,
+  sectorBlurb,
+  text,
+} from '../ui/i18n';
 import { CAMPAIGN_ID, MISSION_ID } from './MenuScene';
-
-const STATUS: Record<SectorStatus, string> = {
-  unknown: 'Desconhecido',
-  infested: 'Infestado',
-  contested: 'Disputado',
-  secured: 'Assegurado',
-  lost: 'Perdido',
-};
-const STAGE: Record<string, string> = {
-  exposed: 'exposto',
-  infected: 'infectado',
-  critical: 'crítico',
-};
 
 /** Between operations: the shelter's stock and people, and the map of the sector. */
 export class StrategicScene extends Phaser.Scene {
@@ -140,7 +136,7 @@ export class StrategicScene extends Phaser.Scene {
         return `<button class="sector ${status} ${shelter ? 'shelter' : ''} ${this.selected === s.id ? 'selected' : ''}"
           style="left:${s.pos.x}%;top:${s.pos.y}%" data-sector="${s.id}" data-testid="sector-${s.id}" data-status="${status}">
           <i></i><b>${status === 'unknown' ? '???' : s.displayName}</b>
-          <small>${status === 'unknown' ? STATUS.unknown : shelter ? 'Abrigo' : `${STATUS[status]} · ${Math.round(c.sectors[s.id]!.infestation)}%`}</small>
+          <small>${status === 'unknown' ? text('strategic.status.unknown') : shelter ? text('strategic.shelterTag') : `${text(`strategic.status.${status}`)} · ${Math.round(c.sectors[s.id]!.infestation)}%`}</small>
         </button>`;
       })
       .join('');
@@ -153,14 +149,15 @@ export class StrategicScene extends Phaser.Scene {
         const t = content.survivors[r.templateId]!;
         const w = content.weapons[t.weaponId]!;
         if (!r.alive)
-          return `<tr class="fallen"><td>${t.name}</td><td>${t.role}</td><td colspan="3" class="state dead">morto</td></tr>`;
+          return `<tr class="fallen"><td>${t.name}</td><td>${roleLabel(r.templateId, t.role)}</td><td colspan="3" class="state dead">${text('strategic.dead')}</td></tr>`;
         const infected = r.infection !== 'healthy';
-        return `<tr><td>${t.isLeader ? '★ ' : ''}${t.name}</td><td>${t.role}</td>
+        const stage = catalog().campaign.stage[r.infection];
+        return `<tr><td>${t.isLeader ? '★ ' : ''}${t.name}</td><td>${roleLabel(r.templateId, t.role)}</td>
           <td>${r.health}/${t.maxHealth}</td><td>${w.magazineCapacity > 0 ? r.ammo : '—'}</td>
           <td class="state ${infected ? 'infected' : ''}">${
             infected
-              ? `${STAGE[r.infection]} <button data-treat="${r.templateId}" data-testid="treat-${r.templateId}" ${c.stock.medicine > 0 ? '' : 'disabled'} title="Gasta 1 remédio">Tratar</button>`
-              : 'bem'
+              ? `${stage} <button data-treat="${r.templateId}" data-testid="treat-${r.templateId}" ${c.stock.medicine > 0 ? '' : 'disabled'} title="${text('strategic.treatTip')}">${text('strategic.treat')}</button>`
+              : text('strategic.fine')
           }</td></tr>`;
       })
       .join('');
@@ -169,29 +166,29 @@ export class StrategicScene extends Phaser.Scene {
       <div class="card panel strategic-card" data-testid="strategic">
         <div class="strategic-head">
           <div>
-            <div class="subtitle">Campanha · ${def.displayName}</div>
-            <h2 data-testid="campaign-day">Dia ${Math.min(c.day, def.victory.deadlineDays)} de ${def.victory.deadlineDays}</h2>
+            <div class="subtitle">${text('strategic.kicker', { name: catalog().campaign.displayName })}</div>
+            <h2 data-testid="campaign-day">${text('strategic.day', { day: Math.min(c.day, def.victory.deadlineDays), total: def.victory.deadlineDays })}</h2>
           </div>
           <div class="stock-chips">
-            ${chip('Evacuados', `<span data-testid="evacuated">${c.evacuated}</span>/${def.victory.evacuateGoal}`, 'Pessoas fora do setor. Chegue à meta antes do prazo.')}
-            ${chip('Abrigo', `<span data-testid="population">${c.population}</span>`, 'Pessoas no abrigo que não lutam')}
-            ${chip('Comida', `<span data-testid="stock-food">${c.stock.food}</span>`, `Consumo: ${foodNeed} por dia para ${c.population + fighters} pessoas`, c.stock.food < foodNeed * 2)}
-            ${chip('Remédios', `<span data-testid="stock-medicine">${c.stock.medicine}</span>`, 'Cada um elimina a infecção de uma pessoa')}
-            ${chip('Munição', `<span data-testid="stock-ammo">${c.stock.ammo}</span>`, 'As equipes se rearmam daqui ao fim de cada dia', c.stock.ammo < 20)}
-            ${chip('Peças', `${c.stock.parts}`, 'Ainda sem uso: servirão para melhorar o abrigo')}
+            ${chip(text('strategic.evacuated'), `<span data-testid="evacuated">${c.evacuated}</span>/${def.victory.evacuateGoal}`, text('strategic.evacuatedTip'))}
+            ${chip(text('strategic.shelter'), `<span data-testid="population">${c.population}</span>`, text('strategic.shelterTip'))}
+            ${chip(text('strategic.food'), `<span data-testid="stock-food">${c.stock.food}</span>`, text('strategic.foodTip', { need: foodNeed, people: c.population + fighters }), c.stock.food < foodNeed * 2)}
+            ${chip(text('strategic.medicine'), `<span data-testid="stock-medicine">${c.stock.medicine}</span>`, text('strategic.medicineTip'))}
+            ${chip(text('strategic.ammo'), `<span data-testid="stock-ammo">${c.stock.ammo}</span>`, text('strategic.ammoTip'), c.stock.ammo < 20)}
+            ${chip(text('strategic.parts'), `${c.stock.parts}`, text('strategic.partsTip'))}
           </div>
         </div>
         <div class="row strategic-actions">
-          <button data-act="menu" data-testid="btn-strategic-menu">Menu principal</button>
+          <button data-act="menu" data-testid="btn-strategic-menu">${text('strategic.menu')}</button>
           <span style="flex:1"></span>
           ${
             c.status === 'active'
-              ? `<span class="small">Ao fim do dia: −${foodNeed} de comida, infecções avançam, hordas se movem.</span>
-                 <button data-act="endDay" class="${c.operatedToday ? 'primary' : ''}" data-testid="btn-end-day">Encerrar o dia</button>`
-              : '<button data-act="restart" class="primary" data-testid="btn-new-campaign">Nova campanha</button>'
+              ? `<span class="small">${text('strategic.nightNote', { need: foodNeed })}</span>
+                 <button data-act="endDay" class="${c.operatedToday ? 'primary' : ''}" data-testid="btn-end-day">${text('strategic.endDay')}</button>`
+              : `<button data-act="restart" class="primary" data-testid="btn-new-campaign">${text('strategic.newCampaign')}</button>`
           }
         </div>
-        ${c.status === 'active' ? '' : `<div class="campaign-end ${c.status}" data-testid="campaign-end"><h3>${c.status === 'won' ? 'Evacuação concluída' : 'Campanha perdida'}</h3><p>${c.endReason ?? ''}</p></div>`}
+        ${c.status === 'active' ? '' : `<div class="campaign-end ${c.status}" data-testid="campaign-end"><h3>${c.status === 'won' ? text('strategic.won') : text('strategic.lost')}</h3><p>${formatEnd(c.endReason)}</p></div>`}
         <div class="strategic-grid">
           <div class="sector-map" data-testid="sector-map">
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${edges}</svg>
@@ -200,10 +197,10 @@ export class StrategicScene extends Phaser.Scene {
           <div class="sector-side">${this.sectorPanel()}</div>
         </div>
         <div class="strategic-grid lower">
-          <table class="roster"><tr><th>Equipe</th><th>Função</th><th>Vida</th><th>Balas</th><th>Estado</th></tr>${roster}</table>
+          <table class="roster"><tr><th>${text('strategic.team')}</th><th>${text('strategic.role')}</th><th>${text('strategic.health')}</th><th>${text('strategic.rounds')}</th><th>${text('strategic.state')}</th></tr>${roster}</table>
           <div class="interlude" data-testid="campaign-report">
-            <h4>Último relatório</h4>
-            <ul>${c.lastReport.map((l) => `<li>${l}</li>`).join('') || '<li>Nada a relatar ainda.</li>'}</ul>
+            <h4>${text('strategic.report')}</h4>
+            <ul>${c.lastReport.map((l) => `<li>${formatNotice(l)}</li>`).join('') || `<li>${text('strategic.nothing')}</li>`}</ul>
           </div>
         </div>
       </div>`;
@@ -214,43 +211,43 @@ export class StrategicScene extends Phaser.Scene {
     const def = content.campaigns[CAMPAIGN_ID]!;
     const c = this.campaign;
     if (!this.selected)
-      return `<p class="briefing">${def.intro}</p><p class="small">Escolha um setor no mapa. Meta: ${def.victory.evacuateGoal} pessoas fora do setor até o dia ${def.victory.deadlineDays}.</p>`;
+      return `<p class="briefing">${catalog().campaign.intro}</p><p class="small">${text('strategic.goal', { goal: def.victory.evacuateGoal, day: def.victory.deadlineDays })}</p>`;
     const sec = def.sectors.find((s) => s.id === this.selected)!;
     const state = c.sectors[sec.id]!;
     const status = sectorStatus(def, c, sec.id);
     if (status === 'unknown')
-      return `<h3>Setor desconhecido</h3><p class="small">Assegure um setor vizinho para saber o que há aqui.</p>`;
+      return `<h3>${text('strategic.unknownTitle')}</h3><p class="small">${text('strategic.unknownBody')}</p>`;
     const block = operationBlockReason(content, c, sec.id);
     const pay = (v: number) => (state.looted ? Math.floor(v / 2) : v);
     const r = sec.reward;
     const reward = [
-      pay(r.food) && `${pay(r.food)} comida`,
-      pay(r.medicine) && `${pay(r.medicine)} remédios`,
-      pay(r.ammo) && `${pay(r.ammo)} balas`,
-      pay(r.parts) && `${pay(r.parts)} peças`,
-      pay(r.people) && `${pay(r.people)} pessoa(s)`,
+      pay(r.food) && text('strategic.foodBit', { n: pay(r.food) }),
+      pay(r.medicine) && text('strategic.medicineBit', { n: pay(r.medicine) }),
+      pay(r.ammo) && text('strategic.ammoBit', { n: pay(r.ammo) }),
+      pay(r.parts) && text('strategic.partsBit', { n: pay(r.parts) }),
+      pay(r.people) && text('strategic.peopleBit', { n: pay(r.people) }),
     ].filter(Boolean);
     const mission = sec.missionId ? content.missions[sec.missionId] : null;
     return `<h3 data-testid="sector-name">${sec.displayName}</h3>
-      <div class="small sector-status ${status}">${STATUS[status]}</div>
-      <p>${sec.blurb}</p>
-      <div class="meter-row"><small>Infestação</small><span class="meter"><i style="width:${state.infestation}%"></i></span><b>${Math.round(state.infestation)}%</b></div>
-      ${state.noise >= 2 ? `<p class="small warn-text">Barulho recente: atrai infectados dos vizinhos.</p>` : ''}
+      <div class="small sector-status ${status}">${text(`strategic.status.${status}`)}</div>
+      <p>${sectorBlurb(sec.id, sec.blurb)}</p>
+      <div class="meter-row"><small>${text('strategic.infestation')}</small><span class="meter"><i style="width:${state.infestation}%"></i></span><b>${Math.round(state.infestation)}%</b></div>
+      ${state.noise >= 2 ? `<p class="small warn-text">${text('strategic.noiseWarn')}</p>` : ''}
       ${
         mission
-          ? `<h4>${mission.displayName}${mission.isNight ? ' <span class="night-tag">noite</span>' : ''}</h4>
+          ? `<h4>${missionTitle(mission.id, mission.displayName)}${mission.isNight ? ` <span class="night-tag">${text('menu.night')}</span>` : ''}</h4>
              <ul class="intel">
-               ${reward.length ? `<li>Recompensa${state.looted ? ' (já saqueado: metade)' : ''}: ${reward.join(', ')}</li>` : ''}
-               ${sec.evacuates ? `<li>Evacua até ${sec.evacuates} pessoas do abrigo</li>` : ''}
-               <li>Reforços inimigos: ×${reinforcementMultiplier(state.infestation).toFixed(1).replace('.', ',')}</li>
-               <li>Custo: a operação do dia; balas gastas só voltam do estoque; mortes são permanentes</li>
+               ${reward.length ? `<li>${text('strategic.reward', { looted: state.looted ? text('strategic.looted') : '', bits: reward.join(', ') })}</li>` : ''}
+               ${sec.evacuates ? `<li>${text('strategic.evac', { n: sec.evacuates })}</li>` : ''}
+               <li>${text('strategic.reinforcements', { n: reinforcementMultiplier(state.infestation).toFixed(1).replace('.', ',') })}</li>
+               <li>${text('strategic.cost')}</li>
              </ul>`
           : ''
       }
       ${
         block
-          ? `<p class="small" data-testid="sector-block">${block}</p>`
-          : `<button data-act="operate" class="primary" data-testid="btn-operate">Preparar operação ▶</button>`
+          ? `<p class="small" data-testid="sector-block">${formatBlock(block)}</p>`
+          : `<button data-act="operate" class="primary" data-testid="btn-operate">${text('strategic.operate')}</button>`
       }`;
   }
 

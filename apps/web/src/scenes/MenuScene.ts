@@ -7,6 +7,7 @@ import { CampaignStore } from '../ui/CampaignStore';
 import { desktop } from '../ui/desktop';
 import { clearUi, uiRoot } from '../ui/dom';
 import { openOptions } from '../ui/OptionsPanel';
+import { catalog, missionTitle, text } from '../ui/i18n';
 import { applyContrast, SaveStore } from '../ui/SaveStore';
 
 export const MISSION_ID = 'a-ultima-farmacia';
@@ -14,13 +15,13 @@ export const CAMPAIGN_ID = 'ferrugem';
 export const QUICKSAVE = 'quicksave';
 
 const LIBRARIES: [string, string, string][] = [
-  ['Phaser', 'motor de renderização 2D', 'MIT'],
-  ['Zod', 'validação do conteúdo', 'MIT'],
-  ['Vite', 'build e servidor de desenvolvimento', 'MIT'],
-  ['TypeScript', 'linguagem', 'Apache-2.0'],
-  ['Vitest', 'testes', 'MIT'],
-  ['Playwright', 'testes no navegador', 'Apache-2.0'],
-  ['ESLint · Prettier', 'qualidade de código', 'MIT'],
+  ['Phaser', 'credits.lib.phaser', 'MIT'],
+  ['Zod', 'credits.lib.zod', 'MIT'],
+  ['Vite', 'credits.lib.vite', 'MIT'],
+  ['TypeScript', 'credits.lib.typescript', 'Apache-2.0'],
+  ['Vitest', 'credits.lib.vitest', 'MIT'],
+  ['Playwright', 'credits.lib.playwright', 'Apache-2.0'],
+  ['ESLint · Prettier', 'credits.lib.eslint', 'MIT'],
 ];
 
 function showCredits(): void {
@@ -28,18 +29,15 @@ function showCredits(): void {
   m.className = 'overlay-menu';
   m.dataset['testid'] = 'credits';
   m.innerHTML = `<div class="card panel credits-card">
-    <div class="options-head"><h3>Créditos</h3><button data-act="close" aria-label="Fechar">✕</button></div>
-    <p>Dead Sector é um projeto original: código, mapas, missões, regras, textos, arte e sons foram criados para ele.
-    Toda a arte é desenhada em código e todo o som é sintetizado em tempo real — nenhum arquivo de terceiros.</p>
-    <p class="small">Inspirado na <i>mecânica</i> de jogos clássicos de tática de esquadrões; nenhum mapa, interface,
-    fonte, logo ou código de outros jogos foi usado.</p>
-    <h4>Bibliotecas</h4>
-    <table class="stats">${LIBRARIES.map(([n, r, l]) => `<tr><td>${n}</td><td>${r}</td><td>${l}</td></tr>`).join('')}</table>
-    <h4>Licença e código-fonte</h4>
-    <p class="small">Software livre sob a GNU Affero General Public License, versão 3 ou posterior
-    (AGPL-3.0-or-later). Copyright (c) 2026 Marcel Savegnago. O código-fonte completo está em
+    <div class="options-head"><h3>${text('credits.title')}</h3><button data-act="close" aria-label="${text('credits.close')}">✕</button></div>
+    <p>${text('credits.original')}</p>
+    <p class="small">${text('credits.inspired')}</p>
+    <h4>${text('credits.libraries')}</h4>
+    <table class="stats">${LIBRARIES.map(([n, r, l]) => `<tr><td>${n}</td><td>${text(r)}</td><td>${l}</td></tr>`).join('')}</table>
+    <h4>${text('credits.licenseTitle')}</h4>
+    <p class="small">${text('credits.license')}
     <a href="https://github.com/gamestudio42/dead-sector" target="_blank" rel="noopener" data-testid="source-link">github.com/gamestudio42/dead-sector</a>.</p>
-    <p class="small">Versão ${__BUILD_ID__} · Game Studio 42</p>
+    <p class="small">${text('credits.version', { version: __BUILD_ID__ })}</p>
   </div>`;
   m.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
@@ -61,32 +59,33 @@ export class MenuScene extends Phaser.Scene {
     this.backdrop = new Backdrop(this, MISSION_ID);
     const content = loadContent();
     const campaign = content.campaigns[CAMPAIGN_ID]!;
+    const campName = catalog().campaign.displayName;
     clearUi();
     const screen = document.createElement('div');
     screen.className = 'screen title-screen';
     screen.innerHTML = `
       <div class="title-block" data-testid="menu">
         <h1 class="title">DEAD <span>SECTOR</span></h1>
-        <div class="subtitle">Tática em tempo real pausável</div>
+        <div class="subtitle">${text('menu.subtitle')}</div>
         <nav class="menu-buttons">
-          <button data-act="campaign" data-testid="btn-campaign"><b data-el="campaignLabel">Campanha: ${campaign.displayName}</b><small data-el="campaignSub">Evacue o abrigo em ${campaign.victory.deadlineDays} dias · perdas permanentes</small></button>
-          <button data-act="new" data-testid="btn-new-mission"><b>Missão avulsa</b><small>Jogar uma missão sem consequências</small></button>
+          <button data-act="campaign" data-testid="btn-campaign"><b data-el="campaignLabel">${text('menu.campaign', { name: campName })}</b><small data-el="campaignSub">${text('menu.campaignSub', { days: campaign.victory.deadlineDays })}</small></button>
+          <button data-act="new" data-testid="btn-new-mission"><b>${text('menu.single')}</b><small>${text('menu.singleSub')}</small></button>
           <div class="mission-pick" data-el="pick" hidden>
             ${Object.values(content.missions)
               .map(
                 (m) =>
-                  `<button data-mission="${m.id}" data-testid="pick-${m.id}"><b>${m.displayName}</b><small>${content.maps[m.mapId]!.displayName}${m.isNight ? ' · noite' : ''}</small></button>`,
+                  `<button data-mission="${m.id}" data-testid="pick-${m.id}"><b>${missionTitle(m.id, m.displayName)}</b><small>${content.maps[m.mapId]!.displayName}${m.isNight ? ` · ${text('menu.night')}` : ''}</small></button>`,
               )
               .join('')}
           </div>
-          <button data-act="continue" data-testid="btn-continue" disabled><b>Continuar</b><small>Salvamento rápido</small></button>
-          <button data-act="options" data-testid="btn-menu-options"><b>Opções</b><small>Áudio, vídeo, acessibilidade e controles</small></button>
-          <button data-act="credits" data-testid="btn-credits"><b>Créditos</b><small>Autoria e bibliotecas</small></button>
-          ${desktop ? '<button data-act="quit" data-testid="btn-quit"><b>Sair</b><small>Fechar o jogo</small></button>' : ''}
+          <button data-act="continue" data-testid="btn-continue" disabled><b>${text('menu.continue')}</b><small>${text('menu.continueSub')}</small></button>
+          <button data-act="options" data-testid="btn-menu-options"><b>${text('menu.options')}</b><small>${text('menu.optionsSub')}</small></button>
+          <button data-act="credits" data-testid="btn-credits"><b>${text('menu.credits')}</b><small>${text('menu.creditsSub')}</small></button>
+          ${desktop ? `<button data-act="quit" data-testid="btn-quit"><b>${text('menu.quit')}</b><small>${text('menu.quitSub')}</small></button>` : ''}
         </nav>
-        <p class="tagline">Cada disparo é ouvido. Cada decisão cobra seu preço.</p>
+        <p class="tagline">${text('menu.tagline')}</p>
       </div>
-      <div class="build-note small">Dead Sector ${__BUILD_ID__} · AGPL-3.0 · <a href="https://github.com/gamestudio42/dead-sector" target="_blank" rel="noopener">código-fonte</a></div>`;
+      <div class="build-note small">Dead Sector ${__BUILD_ID__} · AGPL-3.0 · <a href="https://github.com/gamestudio42/dead-sector" target="_blank" rel="noopener">${text('menu.source')}</a></div>`;
     uiRoot().appendChild(screen);
     const q = <T extends HTMLElement>(sel: string) => screen.querySelector(sel) as T;
     const audio = AudioEngine.get();
@@ -96,13 +95,19 @@ export class MenuScene extends Phaser.Scene {
       if (!c || c.status !== 'active') return;
       saved = c;
       const alive = c.roster.filter((r) => r.alive).length;
-      q('[data-el=campaignLabel]').textContent =
-        `Continuar campanha: dia ${c.day} de ${campaign.victory.deadlineDays}`;
-      q('[data-el=campaignSub]').textContent =
-        `${alive}/${c.roster.length} na equipe · ${c.evacuated}/${campaign.victory.evacuateGoal} evacuados · nova campanha nas opções abaixo`;
+      q('[data-el=campaignLabel]').textContent = text('menu.continueCampaign', {
+        day: c.day,
+        days: campaign.victory.deadlineDays,
+      });
+      q('[data-el=campaignSub]').textContent = text('menu.continueCampaignSub', {
+        alive,
+        roster: c.roster.length,
+        evacuated: c.evacuated,
+        goal: campaign.victory.evacuateGoal,
+      });
       const restart = document.createElement('button');
       restart.dataset['act'] = 'newCampaign';
-      restart.innerHTML = '<b>Nova campanha</b><small>Descarta a campanha em andamento</small>';
+      restart.innerHTML = `<b>${text('menu.newCampaign')}</b><small>${text('menu.newCampaignSub')}</small>`;
       q('[data-act=campaign]').after(restart);
     });
 
@@ -134,7 +139,7 @@ export class MenuScene extends Phaser.Scene {
           return;
         case 'options':
           screen.style.visibility = 'hidden';
-          openOptions(() => (screen.style.visibility = ''));
+          openOptions(() => this.scene.restart());
           return;
       }
     });

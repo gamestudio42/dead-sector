@@ -27,7 +27,7 @@ function trackErrors(page: Page): string[] {
 }
 
 async function startMission(page: Page): Promise<void> {
-  await page.goto('/');
+  await page.goto('/?lang=pt-BR');
   await page.getByTestId('btn-new-mission').click();
   await page.getByTestId('pick-a-ultima-farmacia').click();
   await expect(page.getByTestId('briefing')).toBeVisible();
@@ -142,7 +142,7 @@ test('save and load restore the exact simulation state', async ({ page }) => {
   expect(loaded.tick).toBeGreaterThanOrEqual(saved.tick);
   if (loaded.tick === saved.tick) expect(loaded.rng).toBe(saved.rng);
   // the menu offers to continue from the quicksave
-  await page.goto('/');
+  await page.goto('/?lang=pt-BR');
   await expect(page.getByTestId('btn-continue')).toBeEnabled();
 });
 
@@ -196,7 +196,7 @@ test('options pause the mission, apply settings and persist panel layout', async
   // collapse the event log; the choice survives a reload
   await page.locator('[data-toggle=log]').click();
   await expect(page.locator('[data-panel=log]')).toHaveClass(/collapsed/);
-  await page.goto('/');
+  await page.goto('/?lang=pt-BR');
   await page.getByTestId('btn-new-mission').click();
   await page.getByTestId('pick-a-ultima-farmacia').click();
   await page.getByTestId('btn-deploy').click();
@@ -334,7 +334,7 @@ test('default keys: WASD pans the camera, Shift pans faster, orders on Q/E/Z/X/C
 });
 
 test('the quit button exists only inside the desktop shell', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?lang=pt-BR');
   await expect(page.getByTestId('menu')).toBeVisible();
   await expect(page.getByTestId('btn-quit')).toHaveCount(0);
   await page.addInitScript(() => {
@@ -348,7 +348,7 @@ test('the quit button exists only inside the desktop shell', async ({ page }) =>
 for (const id of ['sinal-fraco', 'plantao-noturno'])
   test(`mission ${id} loads its own map, texts and objectives`, async ({ page }) => {
     const errors = trackErrors(page);
-    await page.goto('/');
+    await page.goto('/?lang=pt-BR');
     await page.getByTestId('btn-new-mission').click();
     await page.getByTestId(`pick-${id}`).click();
     await expect(page.getByTestId('briefing')).toBeVisible();
@@ -363,7 +363,7 @@ for (const id of ['sinal-fraco', 'plantao-noturno'])
 
 test('campaign: strategic map, operations, losses and days persist', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?lang=pt-BR');
   await page.getByTestId('btn-campaign').click();
   await expect(page.getByTestId('strategic')).toBeVisible();
   await expect(page.getByTestId('campaign-day')).toHaveText('Dia 1 de 12');
@@ -402,7 +402,7 @@ test('campaign: strategic map, operations, losses and days persist', async ({ pa
   await page.screenshot({ path: `${SHOTS}/strategic-day2-1280x720.png` });
 
   // the campaign survives a reload of the page, and the next mission deploys who is left
-  await page.goto('/');
+  await page.goto('/?lang=pt-BR');
   await expect(page.getByTestId('btn-campaign')).toContainText('Continuar campanha: dia 2');
   await page.getByTestId('btn-campaign').click();
   await expect(page.getByTestId('campaign-day')).toHaveText('Dia 2 de 12');
@@ -428,7 +428,7 @@ test('installable app: manifest, offline start after the first visit, credits wi
   context,
 }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?lang=pt-BR');
   await expect(page.getByTestId('menu')).toBeVisible();
   const manifest = await page.evaluate(async () => {
     const href = document.querySelector('link[rel=manifest]')!.getAttribute('href')!;

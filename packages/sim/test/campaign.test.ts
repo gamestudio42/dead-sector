@@ -114,12 +114,12 @@ describe('strategic layer: decisions have explicit costs', () => {
   it('only sectors connected to the shelter can be operated, once a day', () => {
     const c = newCampaign(content, 'ferrugem');
     expect(sectorStatus(def, c, 'centro')).toBe('unknown');
-    expect(operationBlockReason(content, c, 'centro')).toMatch(/desconhecido/);
-    expect(operationBlockReason(content, c, 'avenida')).toMatch(/plano/);
+    expect(operationBlockReason(content, c, 'centro')).toBe('unknown');
+    expect(operationBlockReason(content, c, 'avenida')).toBe('no-plan');
     expect(operationBlockReason(content, c, 'ferrugem')).toBeNull();
     const after = applyOperationResult(content, c, 'ferrugem', finished(c)).campaign;
     expect(after.operatedToday).toBe(true);
-    expect(operationBlockReason(content, after, 'ferrovia')).toMatch(/hoje/);
+    expect(operationBlockReason(content, after, 'ferrovia')).toBe('already-operated');
     // a loud run can undo the sector overnight; a quiet one keeps the way open
     const quiet = {
       ...after,
@@ -152,7 +152,7 @@ describe('strategic layer: decisions have explicit costs', () => {
     const hungry = { ...c, stock: { ...c.stock, food: 0 } };
     const r = endDay(content, hungry);
     expect(r.campaign.population).toBeLessThan(c.population);
-    expect(r.report.lines.join()).toMatch(/comida/);
+    expect(r.report.lines.some((l) => l.kind === 'starved' || l.kind === 'no-food')).toBe(true);
   });
 
   it('squads rearm from the stock, and an empty stock means they stay short', () => {
@@ -164,7 +164,7 @@ describe('strategic layer: decisions have explicit costs', () => {
     const next = endDay(content, c).campaign;
     expect(next.roster.find((x) => x.templateId === 'alfa-marksman')!.ammo).toBe(6);
     expect(next.stock.ammo).toBe(0);
-    expect(next.lastReport.join()).toMatch(/munição/);
+    expect(next.lastReport.some((l) => l.kind === 'ammo-short')).toBe(true);
     expect(full).toBeGreaterThan(6);
   });
 
@@ -204,12 +204,12 @@ describe('strategic layer: decisions have explicit costs', () => {
     const r = endDay(content, c).campaign;
     expect(sectorStatus(def, r, 'centro')).toBe('lost');
     expect(r.status).toBe('active');
-    expect(operationBlockReason(content, r, 'centro')).toMatch(/perdido/);
+    expect(operationBlockReason(content, r, 'centro')).toBe('lost');
 
     c.sectors['ferrovia']!.infestation = 100;
     const out = endDay(content, c).campaign;
     expect(out.status).toBe('lost');
-    expect(out.endReason).toMatch(/evacuação/);
+    expect(out.endReason).toEqual({ kind: 'route-lost' });
   });
 
   it('the deadline and the shelter falling both end the campaign', () => {
@@ -220,7 +220,7 @@ describe('strategic layer: decisions have explicit costs', () => {
     overrun.sectors['abrigo']!.infestation = 100;
     const o = endDay(content, overrun).campaign;
     expect(o.status).toBe('lost');
-    expect(o.endReason).toMatch(/abrigo/);
+    expect(o.endReason).toEqual({ kind: 'shelter-lost' });
   });
 
   it('reinforcements follow the infestation of the sector on the day', () => {
@@ -270,7 +270,7 @@ describe('strategic layer: decisions have explicit costs', () => {
       status: 'active',
     };
     const c = migrateCampaign(content, v1)!;
-    expect(c.version).toBe(2);
+    expect(c.version).toBe(3);
     expect(c.roster[0]!.alive).toBe(false);
     expect(c.stock.medicine).toBe(3);
     expect(c.population).toBe(def.start.population + 2);
@@ -281,6 +281,20 @@ describe('strategic layer: decisions have explicit costs', () => {
     expect(c.sectors['centro']!.revealed).toBe(true);
     expect(migrateCampaign(content, { version: 9, roster: [], campaignId: 'ferrugem' })).toBeNull();
     expect(migrateCampaign(content, null)).toBeNull();
+  });
+
+  it('keeps sentences written by version 2 and reads them as legacy notices', () => {
+    const fresh = newCampaign(content, 'ferrugem');
+    const v2 = {
+      ...fresh,
+      version: 2 as unknown as CampaignState['version'],
+      lastReport: ['Os infectados tomaram o abrigo.'] as unknown as CampaignState['lastReport'],
+      endReason: 'A rota de evacuação caiu.' as unknown as CampaignState['endReason'],
+    };
+    const c = migrateCampaign(content, v2)!;
+    expect(c.version).toBe(3);
+    expect(c.lastReport).toEqual([{ kind: 'legacy', text: 'Os infectados tomaram o abrigo.' }]);
+    expect(c.endReason).toEqual({ kind: 'legacy', text: 'A rota de evacuação caiu.' });
   });
 });
 

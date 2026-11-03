@@ -6,16 +6,26 @@ import { CAMPAIGN_ID } from './MenuScene';
 import { gradeFor } from '../presentation/grade';
 import { emptyRecord, type MissionRecord } from '../presentation/timeline';
 import { clearUi, uiRoot } from '../ui/dom';
-import { fmtTime, MT, T } from '../ui/i18n';
+import {
+  fmtTime,
+  formatNotice,
+  missionTitle,
+  MT,
+  roleLabel,
+  setMissionTexts,
+  T,
+  text,
+} from '../ui/i18n';
 import { baseMap, drawMissionMarks, fogLayer } from '../ui/MapCanvas';
 
 const PX = 3;
 const SQUAD_CSS: Record<string, string> = { alfa: '#5aa9ff', bravo: '#ffad4d' };
-const STATUS: Record<string, string> = {
-  extracted: 'retirado',
-  alive: 'deixado para trás',
-  dead: 'morto',
-};
+const statusLabel = (id: string): string =>
+  id === 'extracted'
+    ? text('debrief.statusExtracted')
+    : id === 'dead'
+      ? text('debrief.statusDead')
+      : text('debrief.statusLeft');
 const STATUS_ICON: Record<string, string> = { extracted: '✓', alive: '…', dead: '✗' };
 
 export class DebriefScene extends Phaser.Scene {
@@ -26,6 +36,8 @@ export class DebriefScene extends Phaser.Scene {
   create(data: { state: GameState; record?: MissionRecord; campaign?: boolean }): void {
     clearUi();
     const state = data.state;
+    const mission = loadContent().missions[state.missionId];
+    if (mission) setMissionTexts(mission.texts, state.missionId);
     const rec = data.record ?? emptyRecord();
     const d = buildDebrief(state);
     const grade = gradeFor(d);
@@ -39,7 +51,7 @@ export class DebriefScene extends Phaser.Scene {
       <div class="card panel debrief-card" data-testid="debrief">
         <div class="debrief-head">
           <div>
-            <div class="subtitle">Debriefing — ${world.mission.displayName}</div>
+            <div class="subtitle">${text('debrief.title', { mission: missionTitle(state.missionId, world.mission.displayName) })}</div>
             <h2 class="outcome ${d.outcome}" data-testid="debrief-outcome">${T.outcome[d.outcome]}</h2>
             <p class="briefing">${T.endReason[d.reason ?? ''] ?? ''}</p>
           </div>
@@ -49,18 +61,18 @@ export class DebriefScene extends Phaser.Scene {
         <div class="debrief-grid">
           <div>
             <canvas data-el="route" width="${world.width * PX}" height="${world.height * PX}"></canvas>
-            <div class="small">Trajeto das equipes · ✗ baixas</div>
+            <div class="small">${text('debrief.route')}</div>
           </div>
           <div class="debrief-side">
             <div class="stat-tiles">
-              ${tile('Duração', fmtTime(d.durationSeconds))}
-              ${tile('Retirados', `<span data-testid="debrief-extracted">${d.extracted}</span>`, `${d.dead} mortos`)}
-              ${tile('Abates', String(d.zombiesKilled), `${Math.round(d.hitRate * 100)}% de ${d.shotsFired} disparos`)}
-              ${tile('Ruído total', String(d.totalNoise), `${d.reinforcements} reforços atraídos`)}
-              ${tile('Suprimentos', d.medicineRecovered ? MT.itemDone : 'Nenhum')}
-              ${tile(MT.personTag.charAt(0) + MT.personTag.slice(1).toLowerCase(), d.civilianExtracted ? 'A salvo' : 'Não retirada(o)')}
+              ${tile(text('debrief.duration'), fmtTime(d.durationSeconds))}
+              ${tile(text('debrief.extracted'), `<span data-testid="debrief-extracted">${d.extracted}</span>`, text('debrief.dead', { n: d.dead }))}
+              ${tile(text('debrief.kills'), String(d.zombiesKilled), text('debrief.hitRate', { rate: Math.round(d.hitRate * 100), shots: d.shotsFired }))}
+              ${tile(text('debrief.noise'), String(d.totalNoise), text('debrief.reinforcements', { n: d.reinforcements }))}
+              ${tile(text('debrief.supplies'), d.medicineRecovered ? MT.itemDone : text('debrief.none'))}
+              ${tile(MT.personTag.charAt(0) + MT.personTag.slice(1).toLowerCase(), d.civilianExtracted ? text('debrief.safe') : text('debrief.notExtracted'))}
             </div>
-            <h4>Linha do tempo</h4>
+            <h4>${text('debrief.timeline')}</h4>
             <ol class="timeline">${
               rec.timeline.length
                 ? rec.timeline
@@ -69,23 +81,26 @@ export class DebriefScene extends Phaser.Scene {
                         `<li class="${e.tone}"><span class="t">${fmtTime(e.tick / 10)}</span>${e.text}</li>`,
                     )
                     .join('')
-                : '<li class="info">Sem registro (missão carregada de um salvamento)</li>'
+                : `<li class="info">${text('debrief.emptyTimeline')}</li>`
             }</ol>
           </div>
         </div>
         <table class="stats">
-          <tr><th></th><th>Sobrevivente</th><th>Função</th><th>Estado</th><th>Vida</th><th>Infecção</th><th>Abates</th><th>Disparos</th></tr>
+          <tr><th></th><th>${text('debrief.survivor')}</th><th>${text('debrief.role')}</th><th>${text('debrief.state')}</th><th>${text('debrief.health')}</th><th>${text('debrief.infection')}</th><th>${text('debrief.kills')}</th><th>${text('debrief.shots')}</th></tr>
           ${d.survivors
-            .map(
-              (s) =>
-                `<tr class="st-${s.status}"><td style="color:${SQUAD_CSS[s.squadId ?? ''] ?? '#f0e6d6'}">${STATUS_ICON[s.status]}</td><td>${s.name}</td><td>${s.role}</td><td>${STATUS[s.status]}</td><td>${s.health}</td><td>${T.infection[s.infection]}${s.bitten ? ' (mordido)' : ''}</td><td>${s.kills}</td><td>${s.shotsFired}</td></tr>`,
-            )
+            .map((s) => {
+              const who = state.survivors.find((x) => x.id === s.id);
+              const role = who
+                ? roleLabel(who.templateId, s.role, who.isObjectiveCivilian)
+                : s.role;
+              return `<tr class="st-${s.status}"><td style="color:${SQUAD_CSS[s.squadId ?? ''] ?? '#f0e6d6'}">${STATUS_ICON[s.status]}</td><td>${s.name}</td><td>${role}</td><td>${statusLabel(s.status)}</td><td>${s.health}</td><td>${T.infection[s.infection]}${s.bitten ? ` ${text('debrief.bitten')}` : ''}</td><td>${s.kills}</td><td>${s.shotsFired}</td></tr>`;
+            })
             .join('')}
         </table>
         <section class="interlude" data-el="interlude" data-testid="interlude" hidden></section>
         <div class="row" data-el="actions">
-          <button data-act="again" class="primary" data-testid="btn-again">Jogar novamente</button>
-          <button data-act="menu" data-testid="btn-menu">Menu principal</button>
+          <button data-act="again" class="primary" data-testid="btn-again">${text('debrief.again')}</button>
+          <button data-act="menu" data-testid="btn-menu">${text('debrief.menu')}</button>
         </div>
       </div>`;
     uiRoot().appendChild(screen);
@@ -149,24 +164,24 @@ export class DebriefScene extends Phaser.Scene {
     const box = screen.querySelector('[data-el=interlude]') as HTMLElement;
     const head =
       next.status === 'won'
-        ? 'Evacuação concluída.'
+        ? text('debrief.won')
         : next.status === 'lost'
-          ? 'Campanha perdida.'
+          ? text('debrief.lost')
           : state.mission.status === 'failed'
-            ? 'A operação falhou: o setor piorou e quem caiu não volta.'
-            : 'De volta ao abrigo.';
+            ? text('debrief.failed')
+            : text('debrief.shelter');
     const alive = next.roster.filter((r) => r.alive).length;
     box.hidden = false;
     box.innerHTML = `<h4>${head}</h4>
-      <ul>${report.lines.map((l) => `<li>${l}</li>`).join('') || '<li>Sem novidades.</li>'}</ul>
-      <p class="small">${alive}/${next.roster.length} na equipe · ${next.stock.medicine} remédios · ${next.stock.ammo} balas · ${next.evacuated} evacuados</p>`;
+      <ul>${report.lines.map((l) => `<li>${formatNotice(l)}</li>`).join('') || `<li>${text('debrief.noNews')}</li>`}</ul>
+      <p class="small">${text('debrief.stock', { alive, roster: next.roster.length, medicine: next.stock.medicine, ammo: next.stock.ammo, evacuated: next.evacuated })}</p>`;
     const actions = screen.querySelector('[data-el=actions]') as HTMLElement;
     const again = actions.querySelector('[data-act=again]') as HTMLButtonElement;
     again.remove();
     const go = document.createElement('button');
     go.className = 'primary';
     go.dataset['testid'] = 'btn-to-shelter';
-    go.textContent = 'Voltar ao abrigo ▶';
+    go.textContent = text('debrief.toShelter');
     go.onclick = () => this.scene.start('Strategic');
     actions.prepend(go);
   }

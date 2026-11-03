@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadContent } from '@dead-sector/content';
 import { createPlanRunner, GameSimulation, MISSION_PLANS, tickPlan } from '@dead-sector/sim';
 import { startTips, tip, tipsForEvents } from '../src/presentation/tutorial';
-import { MT, setMissionTexts, T } from '../src/ui/i18n';
+import { MT, setLocale, setMissionTexts, T } from '../src/ui/i18n';
 
 describe('contextual tutorial', () => {
   it('opens with the command tip, once', () => {
@@ -36,7 +36,8 @@ describe('mission texts', () => {
     const c = loadContent();
     for (const id of ['sinal-fraco', 'plantao-noturno', 'a-ultima-farmacia']) {
       const m = c.missions[id]!;
-      setMissionTexts(m.texts);
+      setLocale('pt-BR');
+      setMissionTexts(m.texts, id);
       expect(T.objectives['collectMedicine']).toBe(m.texts.objectives.collectMedicine);
       expect(T.endReason['civilianDied']).toContain(m.texts.person.slice(2));
       expect(MT.itemTag).toBe(m.texts.itemTag);

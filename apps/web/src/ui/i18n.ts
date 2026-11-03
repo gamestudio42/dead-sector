@@ -25,7 +25,8 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 function readLanguages(): readonly string[] {
-  if (typeof navigator === 'undefined') return [];
+  // Node 22+ exposes navigator for the process locale. That is not a player.
+  if (typeof document === 'undefined' || typeof navigator === 'undefined') return [];
   if (navigator.languages?.length) return navigator.languages;
   return navigator.language ? [navigator.language] : [];
 }

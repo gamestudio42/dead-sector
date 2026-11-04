@@ -113,7 +113,9 @@ Every key can be rebound in Opções → Controles, with a second key per action
 between the **WASD** layout (default) and the **Setas** classic layout (camera on the arrows,
 `Q`/`W`/`E` modes). Games and the campaign save in the browser. In
 Chrome or Edge the game can be installed as an app that runs full screen and offline.
-On Linux a desktop build is packaged as a snap (Snap Store listing pending).
+On Linux a desktop build is packaged as a snap (Snap Store listing pending). The store banner
+is `snap/store/banner.jpg`: upload that file, still named `banner.jpg`. It is not inside the snap. The store banner
+is `snap/store/banner.jpg`: upload that file, still named `banner.jpg`. It is not inside the snap.
 
 ## Develop
 

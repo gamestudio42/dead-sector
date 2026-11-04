@@ -36,7 +36,7 @@
 
 1. **Read the briefing.** Each operation shows the known areas, the entries where infected arrive,
    the objectives and what your squads know about the threat. Pick the route before you move.
-2. **Move like you mean it.** Sneak, walk or sprint: speed costs noise and stamina. Close doors to
+2. **Move like you mean it.** Sneak, walk or sprint (`Z`, `X`, `C`): speed costs noise and stamina. Close doors to
    muffle sound, hide in bushes, and watch the rings on the ground to see how far each sound carries.
 3. **Choose when to fight.** Fire discipline decides who shoots and when. Every shot raises the
    neighbourhood's alarm, brings runners and, at the top, a roaming horde through the avenues.
@@ -76,6 +76,17 @@ The debriefing grades the run and maps every route and loss.
 </td>
 </tr>
 </table>
+
+<p align="center">
+  <img src="docs/screenshots/campaign.png" alt="The Setor Ferrugem campaign map on day one: the shelter, two known sectors and the evacuation goal" width="920">
+</p>
+
+## Status
+
+The campaign is playable. Each day you choose an operation on the map of Setor Ferrugem, the dead
+stay dead, and the goal is to evacuate the shelter before day 12. Still open: choosing who
+deploys, recruits, shelter upgrades, operations beyond the three missions, and campaign
+difficulties. See the [project status](docs/STATUS.md).
 
 ## Play
 
@@ -121,14 +132,7 @@ pnpm dev        # http://localhost:5173  (?debug=1 shows sight, sound and AI sta
 | `pnpm build`   | Static build in `apps/web/dist`, relative paths, runs from any folder     |
 | `pnpm desktop` | Build and open the Electron desktop app                                   |
 
-Every push to `main` runs the checks and publishes `apps/web/dist` to the `gh-pages` branch
-(GitHub Pages must deploy from that branch). Each pull request publishes a preview at
-`/pr-preview/pr-<number>/` and comments the link; closing the pull request removes it. A pull
-request from a fork only uploads the built site, and a workflow on `main` publishes it after
-checking that the artifact belongs to that pull request. The first run from a new contributor
-waits for approval. The build uses relative paths, so it runs from any folder. The Snap
-workflow builds `snap/snapcraft.yaml`, installs it and runs the desktop smoke test. First
-Playwright run: `pnpm --filter @dead-sector/game exec playwright install chromium`.
+First Playwright run: `pnpm --filter @dead-sector/game exec playwright install chromium`.
 
 The simulation is a pure TypeScript package with fixed 100 ms ticks and a seeded RNG; it never
 touches Phaser, the DOM or the clock. The Phaser view and the HTML interface only send commands and
@@ -140,12 +144,9 @@ read state. See the [project status](docs/STATUS.md), [architecture](docs/archit
 ## Licence
 
 Dead Sector is free software under the GNU Affero General Public License, version 3 or any later
-version ([`AGPL-3.0-or-later`](LICENSE)), following the
-[Game Studio 42](https://github.com/gamestudio42) default for complete games. If you run a modified
-version for other people, including as a website or over a network, you must offer them its source
-under the same licence. Copyright (c) 2026 Marcel Savegnago.
+version ([`AGPL-3.0-or-later`](LICENSE)). Copyright (c) 2026 Marcel Savegnago. If you run a
+modified version for other people, including as a website or over a network, you must offer
+them its source under the same licence.
 
-Its code, maps, missions, rules, procedural art and synthesized sound are original. The game is
-mechanically inspired by classic squad-tactics games; no code, maps, interface or assets were
-copied. Every asset is listed in the [asset register](ASSETS.md). See [LICENSE](LICENSE) and
-[AGENTS.md](AGENTS.md) for project rules.
+Code, maps, missions, rules, procedural art and synthesized sound are original. Every asset is
+listed in the [asset register](ASSETS.md).

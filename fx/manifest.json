@@ -60,6 +60,66 @@
       "lastCoverage": 0,
       "sha256": "eac5f0c0cd1f1f5af6c908fad490d8084b9b0c1808f44122d913877441b7ad33",
       "bytes": 28673
+    },
+    "plank_splinters": {
+      "frames": 15,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 30,
+      "peakFrame": 10,
+      "peakCoverage": 0.138,
+      "maxAlpha": 255,
+      "lastCoverage": 0.007,
+      "sha256": "0a6f47c77574151b91da78e688b09756b1cb891e78c2821869211bac2b3ef939",
+      "bytes": 14465
+    },
+    "glass_shatter": {
+      "frames": 12,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 30,
+      "peakFrame": 0,
+      "peakCoverage": 0.139,
+      "maxAlpha": 255,
+      "lastCoverage": 0.001,
+      "sha256": "db9289f8249d30b40dcf9f01b19b1065122eadeb675772dff676a6400afe49b1",
+      "bytes": 9862
+    },
+    "scream_burst": {
+      "frames": 18,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 30,
+      "peakFrame": 10,
+      "peakCoverage": 0.488,
+      "maxAlpha": 245,
+      "lastCoverage": 0,
+      "sha256": "99fa7f379bcbede4c74b86549c67c6ad0042dd364b5649a1efdd3ad733588c66",
+      "bytes": 73128
+    },
+    "infected_death": {
+      "frames": 18,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 30,
+      "peakFrame": 9,
+      "peakCoverage": 0.3,
+      "maxAlpha": 255,
+      "lastCoverage": 0,
+      "sha256": "efb41f4c2630aa4b0ecc3c84c02577dcd786d4509e9f340db1da37facb746ca2",
+      "bytes": 91718
+    },
+    "door_splinters": {
+      "frames": 15,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 30,
+      "peakFrame": 9,
+      "peakCoverage": 0.248,
+      "maxAlpha": 255,
+      "lastCoverage": 0,
+      "sha256": "bdeadb0a3b2dc0b5d7ffb49f5475e92dacf65b11e686ab09534a709c01160d16",
+      "bytes": 23317
     }
   }
 }

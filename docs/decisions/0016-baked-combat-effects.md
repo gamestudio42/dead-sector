@@ -16,7 +16,12 @@ EffectCraft, a headless effects tool, for VFX in other games.
 - **A bake that looks fine is not trusted**: the script decodes every frame and refuses an effect that is nearly
   invisible, starts late or is still visible on its last frame. The manifest records the tool version, frame layout
   and hash of what shipped, and a unit test checks the strips against it.
-- **Drawn at the size the game uses** (16 px cells): 32–96 px frames at 30 fps, about 280 KB in total.
+- **Ambient loops** (wreck fire, wreck smoke, the radio beacon's pulse) are built only from properties that are
+  periodic in time, including the flames' noise evolution. The bake renders one frame past the period and refuses a
+  loop unless that frame matches the first; all three measure 0/255. Wrecks keep the particle plume as the fallback,
+  and the beacon pulses on every graphics quality because it marks the objective.
+- **Drawn at the size the game uses** (16 px cells): 32–96 px frames at 15–30 fps. Sheets wrap onto more rows so
+  none is wider than 4096 px, a limit many GPUs have.
 - **Information stays drawn by the game**: the screamer's hearing radius is still a ring sized from the rules; the
   baked shriek only marks its source.
 - **Never required**: every effect falls back to the old particles when its sheet did not load or 48 are already

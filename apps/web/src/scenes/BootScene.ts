@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ContentValidationError, loadContent } from '@dead-sector/content';
+import { createFxAnims, loadFxSheets } from '../render/fxSheets';
 import { buildSpriteTextures } from '../render/SpriteFactory';
 import { uiRoot } from '../ui/dom';
 import { text } from '../ui/i18n';
@@ -8,6 +9,14 @@ import { text } from '../ui/i18n';
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
+  }
+
+  preload(): void {
+    loadFxSheets(this);
+    // a missing sheet must not stop the game: the effects fall back to code-drawn particles
+    this.load.on('loaderror', (file: Phaser.Loader.File) =>
+      console.warn(`fx sheet missing: ${file.key}`),
+    );
   }
 
   create(): void {
@@ -22,6 +31,7 @@ export class BootScene extends Phaser.Scene {
     const weapons: Record<string, string> = {};
     for (const [id, t] of Object.entries(content.survivors)) weapons[id] = t.weaponId;
     buildSpriteTextures(this, weapons);
+    createFxAnims(this);
     this.scene.start('Menu');
   }
 }

@@ -3,6 +3,7 @@ import type { GameState, SimEvent, World } from '@dead-sector/sim';
 import { uiRoot } from '../ui/dom';
 import { Settings } from '../ui/SaveStore';
 import { CELL, DEPTH, SQUAD_COLORS } from './constants';
+import { fxAnimKey, hasFx, type FxName } from './fxSheets';
 import type { LightingRenderer } from './LightingRenderer';
 
 interface Fx {
@@ -28,6 +29,8 @@ const NOISE_COLORS: Record<string, number> = {
 };
 
 const MAX_DECALS = 140;
+/** Baked effects alive at once; a firefight beyond this keeps only the particles. */
+const MAX_SPRITES = 48;
 
 /**
  * Short-lived feedback driven only by sim events: tracers, muzzle flashes, impact particles,
@@ -43,6 +46,7 @@ export class EffectsRenderer {
   private ichor: Phaser.GameObjects.Particles.ParticleEmitter;
   private glass: Phaser.GameObjects.Particles.ParticleEmitter;
   private decals: Phaser.GameObjects.Image[] = [];
+  private sprites = 0;
   private vignette: HTMLDivElement;
 
   constructor(
@@ -150,6 +154,41 @@ export class EffectsRenderer {
     );
   }
 
+  /**
+   * Plays a baked effect once at a point in cells; false when it is unavailable (sheet not loaded
+   * or too many on screen), so the caller can fall back to particles.
+   */
+  private play(
+    name: FxName,
+    x: number,
+    y: number,
+    o: { scale?: number; rotation?: number; originX?: number; add?: boolean; depth?: number } = {},
+  ): boolean {
+    if (!hasFx(this.scene, name) || this.sprites >= MAX_SPRITES) return false;
+    const s = this.scene.add
+      .sprite(x * CELL, y * CELL, `fx-sheet-${name}`, 0)
+      .setOrigin(o.originX ?? 0.5, 0.5)
+      .setScale(o.scale ?? 0.5)
+      .setRotation(o.rotation ?? Math.random() * Math.PI * 2)
+      .setDepth(o.depth ?? DEPTH.particles);
+    if (o.add) s.setBlendMode(Phaser.BlendModes.ADD);
+    this.sprites++;
+    s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      this.sprites--;
+      s.destroy();
+    });
+    s.play(fxAnimKey(name));
+    return true;
+  }
+
+  /** A hit on an infected: ichor, or dust when blood is off. */
+  private hitSplash(x: number, y: number, count: number): void {
+    if (Settings.blood) {
+      if (!this.play('ichor_hit', x, y)) this.ichor.explode(count, x * CELL, y * CELL);
+    } else if (!this.play('dust_puff', x, y, { scale: 0.35 }))
+      this.dust.explode(count, x * CELL, y * CELL);
+  }
+
   private decal(x: number, y: number, scale: number): void {
     if (!Settings.blood) return;
     const img = this.scene.add
@@ -203,25 +242,45 @@ export class EffectsRenderer {
           });
           const mx = (fx + Math.cos(ang) * 0.55) * CELL;
           const my = (fy + Math.sin(ang) * 0.55) * CELL;
-          const flash = this.scene.add
-            .image(mx, my, 'fx-flash')
-            .setBlendMode(Phaser.BlendModes.ADD)
-            .setDepth(DEPTH.glow)
-            .setRotation(ang)
-            .setScale(p['weaponId'] === 'shotgun' ? 0.75 : 0.5, 0.35);
-          this.scene.tweens.add({
-            targets: flash,
-            alpha: 0,
-            scaleX: 0.9,
-            duration: 70,
-            onComplete: () => flash.destroy(),
-          });
-          this.lighting.flash(fx, fy, p['weaponId'] === 'shotgun' ? 9 : 6.5);
-          this.sparks.explode(4, mx, my);
+          const shotgun = p['weaponId'] === 'shotgun';
+          const baked = this.play(
+            'muzzle_flash',
+            fx + Math.cos(ang) * 0.35,
+            fy + Math.sin(ang) * 0.35,
+            {
+              rotation: ang,
+              originX: 0,
+              scale: shotgun ? 0.62 : 0.45,
+              add: true,
+              depth: DEPTH.glow,
+            },
+          );
+          if (!baked) {
+            const flash = this.scene.add
+              .image(mx, my, 'fx-flash')
+              .setBlendMode(Phaser.BlendModes.ADD)
+              .setDepth(DEPTH.glow)
+              .setRotation(ang)
+              .setScale(shotgun ? 0.75 : 0.5, 0.35);
+            this.scene.tweens.add({
+              targets: flash,
+              alpha: 0,
+              scaleX: 0.9,
+              duration: 70,
+              onComplete: () => flash.destroy(),
+            });
+          }
+          this.lighting.flash(fx, fy, shotgun ? 9 : 6.5);
+          this.sparks.explode(baked ? 2 : 4, mx, my);
           if (p['hit']) {
-            (Settings.blood ? this.ichor : this.dust).explode(8, tx * CELL, ty * CELL);
+            this.hitSplash(tx, ty, 8);
             if (Math.random() < 0.35) this.decal(tx, ty, 0.1 + Math.random() * 0.08);
-          } else this.dust.explode(5, tx * CELL, ty * CELL);
+          } else {
+            // a miss hits the ground or a wall: sparks and a little dust
+            const sparked = this.play('impact_sparks', tx, ty, { add: true, depth: DEPTH.glow });
+            const puffed = this.play('dust_puff', tx, ty, { scale: 0.3 });
+            if (!sparked && !puffed) this.dust.explode(5, tx * CELL, ty * CELL);
+          }
           if (this.onScreen(fx, fy, 0))
             this.shake(
               p['weaponId'] === 'shotgun' ? 90 : 45,
@@ -231,12 +290,7 @@ export class EffectsRenderer {
         }
         case 'MELEE_ATTACK': {
           const t = state.zombies.find((z) => z.id === p['targetId']);
-          if (t && p['hit'])
-            (Settings.blood ? this.ichor : this.dust).explode(
-              7,
-              t.position.x * CELL,
-              t.position.y * CELL,
-            );
+          if (t && p['hit']) this.hitSplash(t.position.x, t.position.y, 7);
           break;
         }
         case 'NOISE_EMITTED': {
@@ -277,9 +331,12 @@ export class EffectsRenderer {
           const s = state.survivors.find((m) => m.id === p['actorId']);
           if (!s) break;
           if (Settings.blood) {
-            this.blood.explode(p['bitten'] ? 14 : 9, s.position.x * CELL, s.position.y * CELL);
+            const scale = p['bitten'] ? 0.65 : 0.5;
+            if (!this.play('blood_hit', s.position.x, s.position.y, { scale }))
+              this.blood.explode(p['bitten'] ? 14 : 9, s.position.x * CELL, s.position.y * CELL);
             this.decal(s.position.x, s.position.y, 0.12 + Math.random() * 0.08);
-          } else this.dust.explode(6, s.position.x * CELL, s.position.y * CELL);
+          } else if (!this.play('dust_puff', s.position.x, s.position.y, { scale: 0.4 }))
+            this.dust.explode(6, s.position.x * CELL, s.position.y * CELL);
           if (!s.isObjectiveCivilian || s.rescued) {
             this.shake(p['bitten'] ? 200 : 120, p['bitten'] ? 0.006 : 0.0035);
             this.hitVignette(!!p['bitten']);

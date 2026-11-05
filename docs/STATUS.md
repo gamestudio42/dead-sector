@@ -82,6 +82,9 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   shelter screen. Not yet: choosing who deploys, recruits, sector operations beyond the three missions, shelter
   upgrades, campaign difficulties (ADR 0015). Stock and migration values are provisional, checked only by scripted runs.
 
+- **Baked combat effects**: muzzle flash, impact sparks, blood, ichor and dust rendered with EffectCraft from recipes
+  in `tools/vfx`, checked for alpha and recorded in a manifest; particles remain as the fallback (ADR 0016).
+
 ## Verification evidence
 
 - `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **119/119** ✓ (plus the opt-in balance report).

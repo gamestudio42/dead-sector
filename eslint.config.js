@@ -40,7 +40,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.mjs', 'apps/desktop/scripts/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'apps/desktop/scripts/**/*.mjs', 'tools/**/*.mjs'],
     languageOptions: { globals: { URL: 'readonly', console: 'readonly', process: 'readonly' } },
   },
   {

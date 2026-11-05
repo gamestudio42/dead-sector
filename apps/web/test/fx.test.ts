@@ -23,19 +23,27 @@ describe('baked combat effects', () => {
         'muzzle_flash',
         'plank_splinters',
         'scream_burst',
+        'wreck_fire',
+        'wreck_smoke',
+        'beacon_pulse',
       ].sort(),
     );
   });
 
   for (const [name, e] of effects)
-    it(`${name}: the strip matches its manifest and was verified transparent at the end`, () => {
+    it(`${name}: the strip matches its manifest and passed its bake checks`, () => {
       const png = sheet(name);
       expect(createHash('sha256').update(png).digest('hex')).toBe(e.sha256);
       // PNG IHDR: width and height are big-endian at bytes 16 and 20; colour type 6 is RGBA
-      expect(png.readUInt32BE(16)).toBe(e.frames * e.frameWidth);
-      expect(png.readUInt32BE(20)).toBe(e.frameHeight);
+      // frames run left to right and wrap onto more rows when a strip would be too wide
+      const columns = 'columns' in e ? e.columns : e.frames;
+      expect(png.readUInt32BE(16)).toBe(columns * e.frameWidth);
+      expect(png.readUInt32BE(20)).toBe(Math.ceil(e.frames / columns) * e.frameHeight);
+      expect(png.readUInt32BE(16)).toBeLessThanOrEqual(4096);
       expect(png[25]).toBe(6);
-      expect(e.lastCoverage).toBeLessThanOrEqual(0.01);
-      expect(e.maxAlpha).toBeGreaterThanOrEqual(128);
+      // a one-shot effect must end transparent; a loop must meet its own first frame
+      if ('loop' in e && e.loop) expect(e.loopSeam).toBeLessThanOrEqual(24);
+      else expect(e.lastCoverage).toBeLessThanOrEqual(0.01);
+      expect(e.maxAlpha).toBeGreaterThanOrEqual(name === 'wreck_smoke' ? 64 : 128);
     });
 });

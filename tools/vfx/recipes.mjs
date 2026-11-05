@@ -85,6 +85,60 @@ function ring(layer, o) {
   ];
 }
 
+/**
+ * A blob that cycles forever: phase `u` runs 0→1 every `period` seconds (offset by `phase`), and every
+ * property is a function of u that starts and ends at the same value, so the loop has no seam.
+ */
+function cycle(layer, o) {
+  const u = `(((time / ${o.period}) + ${o.phase}) % 1)`;
+  return [
+    {
+      command: 'layer.newShape',
+      params: { kind: 'ellipse', name: layer, size: o.size, fill: o.color },
+    },
+    fx(layer, 'Gaussian Blur'),
+    set(layer, 'effects/#1/blurriness', o.blur),
+    // tongues of flame: noise that evolves one full cycle per period, so it loops too
+    ...(o.turbulence
+      ? [
+          fx(layer, 'Turbulent Displace'),
+          set(layer, 'effects/#2/amount', o.turbulence),
+          set(layer, 'effects/#2/size', 10),
+          set(layer, 'effects/#2/evolutionOptions/cycleEvolution', true),
+          set(layer, 'effects/#2/evolutionOptions/cycle', 1),
+          {
+            command: 'prop.setExpression',
+            params: { layer, path: 'effects/#2/evolution', expression: `360 * time / ${o.period}` },
+          },
+        ]
+      : []),
+    {
+      command: 'prop.setExpression',
+      params: {
+        layer,
+        path: 'transform/position',
+        expression: `var u = ${u}; [${o.from[0]} + (${o.to[0] - o.from[0]}) * u + ${o.sway ?? 0} * Math.sin(2 * Math.PI * (u * 2 + ${o.phase})), ${o.from[1]} + (${o.to[1] - o.from[1]}) * u, 0]`,
+      },
+    },
+    {
+      command: 'prop.setExpression',
+      params: {
+        layer,
+        path: 'transform/scale',
+        expression: `var u = ${u}; var k = ${o.scale[0]} + (${o.scale[1] - o.scale[0]}) * u; [k, k, 100]`,
+      },
+    },
+    {
+      command: 'prop.setExpression',
+      params: {
+        layer,
+        path: 'transform/opacity',
+        expression: `${o.opacity} * Math.sin(Math.PI * ${u})`,
+      },
+    },
+  ];
+}
+
 export const RECIPES = {
   // Points right; the game rotates it to the shot and anchors its left edge at the muzzle.
   muzzle_flash: {
@@ -399,6 +453,129 @@ export const RECIPES = {
         death: '#241c0c',
         seed: 13,
       }),
+    ],
+  },
+  // Flames over a burnt-out wreck, seen from above: a one-second loop, added on top of the map.
+  wreck_fire: {
+    width: 64,
+    height: 64,
+    duration: 1,
+    loop: true,
+    layers: () =>
+      [0, 1, 2, 3, 4].flatMap((n) => [
+        ...cycle(`outer${n}`, {
+          period: 1,
+          phase: n / 5,
+          size: [22, 22],
+          color: '#c2361a',
+          turbulence: 40,
+          blur: 3,
+          from: [26 + n * 3, 44],
+          to: [24 + n * 4, 18],
+          sway: 3,
+          scale: [100, 40],
+          opacity: 85,
+        }),
+        ...cycle(`mid${n}`, {
+          period: 1,
+          phase: (n + 0.4) / 5,
+          size: [15, 15],
+          color: '#ff7a1e',
+          blur: 2,
+          turbulence: 30,
+          from: [27 + n * 2.5, 44],
+          to: [26 + n * 3, 24],
+          sway: 2,
+          scale: [100, 30],
+          opacity: 95,
+        }),
+        ...cycle(`core${n}`, {
+          period: 0.5,
+          phase: (n + 0.7) / 5,
+          size: [8, 8],
+          color: '#ffe08a',
+          blur: 1.5,
+          from: [29 + n * 1.5, 44],
+          to: [29 + n * 1.5, 32],
+          sway: 1.5,
+          scale: [100, 40],
+          opacity: 100,
+        }),
+      ]),
+  },
+  // Smoke drifting off a wreck towards the upper right: slow, so 10 fps over three seconds is enough.
+  wreck_smoke: {
+    width: 96,
+    height: 96,
+    duration: 3,
+    fps: 10,
+    loop: true,
+    // a thin plume: its densest pixel stays translucent
+    minAlpha: 64,
+    layers: () =>
+      [0, 1, 2, 3, 4, 5].flatMap((n) =>
+        cycle(`puff${n}`, {
+          period: 3,
+          phase: n / 6,
+          size: [26, 26],
+          color: n % 2 ? '#4f4842' : '#3d3732',
+          blur: 6,
+          from: [26, 76],
+          to: [80, 14],
+          sway: 4,
+          scale: [35, 170],
+          opacity: 75,
+        }),
+      ),
+  },
+  // The radio beacon calling the evacuation: a steady glow and a ring sent out every 1.2 s.
+  beacon_pulse: {
+    width: 48,
+    height: 48,
+    duration: 1.2,
+    loop: true,
+    layers: () => [
+      {
+        command: 'layer.newShape',
+        params: {
+          kind: 'ellipse',
+          name: 'ring',
+          size: [40, 40],
+          fill: null,
+          stroke: '#9fe870',
+          strokeWidth: 3,
+        },
+      },
+      fx('ring', 'Glow'),
+      {
+        command: 'prop.setExpression',
+        params: {
+          layer: 'ring',
+          path: 'transform/scale',
+          expression: 'var u = (time / 1.2) % 1; var k = 15 + 85 * u; [k, k, 100]',
+        },
+      },
+      {
+        command: 'prop.setExpression',
+        params: {
+          layer: 'ring',
+          path: 'transform/opacity',
+          expression: 'var u = (time / 1.2) % 1; 100 * (1 - u) * (1 - u)',
+        },
+      },
+      {
+        command: 'layer.newShape',
+        params: { kind: 'ellipse', name: 'core', size: [8, 8], fill: '#d8ffb0' },
+      },
+      fx('core', 'Glow'),
+      {
+        command: 'prop.setExpression',
+        params: {
+          layer: 'core',
+          path: 'transform/opacity',
+          expression: '70 + 30 * Math.cos(2 * Math.PI * time / 1.2)',
+        },
+      },
     ],
   },
 };

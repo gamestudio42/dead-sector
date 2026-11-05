@@ -23,7 +23,7 @@
 ## DONE
 
 - Combat effects baked with EffectCraft (flash, sparks, blood, ichor, dust, splinters, glass, shriek, infected
-  death), with alpha checks, manifest and
+  death) and ambient loops (wreck fire and smoke, radio beacon), with alpha and loop-seam checks, manifest and
   particle fallback (ADR 0016).
 
 - Phase 6, stages 6.1 and 6.2: strategic layer with sector map, shelter, stock, daily turn, horde migration,

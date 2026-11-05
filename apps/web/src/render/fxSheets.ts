@@ -28,12 +28,19 @@ export function createFxAnims(scene: Phaser.Scene): void {
       key,
       frames: scene.anims.generateFrameNumbers(sheet, { start: 0, end: e.frames - 1 }),
       frameRate: e.fps,
+      repeat: 'loop' in e && e.loop ? -1 : 0,
     });
   }
 }
 
 export function hasFx(scene: Phaser.Scene, name: FxName): boolean {
   return scene.anims.exists(fxAnimKey(name));
+}
+
+/** Starts a looping effect on a sprite at a random frame, so neighbouring copies do not pulse together. */
+export function playLoop(sprite: Phaser.GameObjects.Sprite, name: FxName): void {
+  const frames = manifest.effects[name].frames;
+  sprite.play({ key: fxAnimKey(name), startFrame: Math.floor(Math.random() * frames) });
 }
 
 export const FX_SHEETS = manifest.effects;

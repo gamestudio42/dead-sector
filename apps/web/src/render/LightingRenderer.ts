@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameState, Vec2, World } from '@dead-sector/sim';
 import type { LightingMode, Quality } from '../ui/SaveStore';
 import { CELL, DEPTH } from './constants';
+import { hasFx, playLoop } from './fxSheets';
 
 /** Lighting buffer resolution relative to world pixels (lights are soft, so 1/4 is plenty). */
 const RES = 4;
@@ -29,6 +30,10 @@ export class LightingRenderer {
   private glows: Phaser.GameObjects.Image[] = [];
   private flashes: Flash[] = [];
   private smoke: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
+  private loops: Phaser.GameObjects.Sprite[] = [];
+  /** What each burning wreck draws, by index into `burning`: hidden until the squad has explored it. */
+  private wreckParts: { setVisible(v: boolean): unknown }[][] = [];
+  private beacon: Phaser.GameObjects.Sprite | null = null;
   private frame = 0;
 
   constructor(
@@ -62,27 +67,46 @@ export class LightingRenderer {
         .setDepth(DEPTH.lighting);
     }
     for (const b of quality === 'low' ? [] : burning) {
-      this.glows.push(
-        scene.add
-          .image(b.x * CELL, b.y * CELL, 'fx-glow')
+      const glow = scene.add
+        .image(b.x * CELL, b.y * CELL, 'fx-glow')
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(DEPTH.glow)
+        .setScale(1.3)
+        .setVisible(false);
+      this.glows.push(glow);
+      // baked flames and smoke loops; the old particle plume stays as the fallback
+      if (hasFx(scene, 'wreck_fire') && hasFx(scene, 'wreck_smoke')) {
+        const fire = scene.add
+          .sprite(b.x * CELL, b.y * CELL - 4, 'fx-sheet-wreck_fire')
           .setBlendMode(Phaser.BlendModes.ADD)
           .setDepth(DEPTH.glow)
-          .setScale(1.3),
-      );
-      this.smoke.push(
-        scene.add
-          .particles(b.x * CELL, b.y * CELL, 'fx-puff', {
-            lifespan: { min: 2500, max: 4200 },
-            speedX: { min: 4, max: 14 },
-            speedY: { min: -16, max: -6 },
-            scale: { start: 0.35, end: 1.6 },
-            alpha: { start: 0.32, end: 0 },
-            tint: [0x2a2622, 0x3a3430, 0x1c1a18],
-            frequency: 260,
-            rotate: { min: 0, max: 360 },
-          })
-          .setDepth(DEPTH.particles),
-      );
+          .setScale(0.55);
+        const smoke = scene.add
+          .sprite(b.x * CELL, b.y * CELL, 'fx-sheet-wreck_smoke')
+          .setOrigin(26 / 96, 76 / 96)
+          .setDepth(DEPTH.particles)
+          .setScale(0.9);
+        playLoop(fire, 'wreck_fire');
+        playLoop(smoke, 'wreck_smoke');
+        this.loops.push(fire.setVisible(false), smoke.setVisible(false));
+        this.wreckParts.push([glow, fire, smoke]);
+        continue;
+      }
+      const plume = scene.add
+        .particles(b.x * CELL, b.y * CELL, 'fx-puff', {
+          lifespan: { min: 2500, max: 4200 },
+          speedX: { min: 4, max: 14 },
+          speedY: { min: -16, max: -6 },
+          scale: { start: 0.35, end: 1.6 },
+          alpha: { start: 0.32, end: 0 },
+          tint: [0x2a2622, 0x3a3430, 0x1c1a18],
+          frequency: 260,
+          rotate: { min: 0, max: 360 },
+        })
+        .setDepth(DEPTH.particles)
+        .setVisible(false);
+      this.smoke.push(plume);
+      this.wreckParts.push([glow, plume]);
     }
   }
 
@@ -105,12 +129,21 @@ export class LightingRenderer {
     now: number,
     survivorLights: (cb: (x: number, y: number, angle: number) => void) => void,
   ): void {
+    // a fire is part of the map: it shows once its cell has been explored, never through the fog
+    const known = this.burning.map(
+      (p) => (state.fog.cells[Math.floor(p.y) * this.world.width + Math.floor(p.x)] ?? 0) > 0,
+    );
+    this.wreckParts.forEach((parts, i) => parts.forEach((o) => o.setVisible(!!known[i])));
     const flicker = (k: number) =>
       0.82 + 0.1 * Math.sin(now / 90 + k * 7) + 0.08 * Math.sin(now / 37 + k * 3);
     this.glows.forEach((gl, i) =>
       gl.setAlpha(0.55 * flicker(i)).setScale(1.2 + 0.15 * flicker(i + 1)),
     );
     this.flashes = this.flashes.filter((f) => now - f.born < f.ttl);
+    this.pulseBeacon(
+      this.world.mission.objectives.extraction.beacon,
+      state.mission.extractionActive,
+    );
     const rt = this.rt;
     if (!rt) return;
     // medium quality redraws the light map every other frame (flashes still show)
@@ -136,15 +169,36 @@ export class LightingRenderer {
       active ? 5 + Math.sin(now / 180) : 2.2,
       active ? 0.95 : 0.6,
     );
-    this.burning.forEach((p, i) => this.eraseLight(p.x * CELL, p.y * CELL, 6.5 * flicker(i), 0.85));
+    this.burning.forEach((p, i) => {
+      if (known[i]) this.eraseLight(p.x * CELL, p.y * CELL, 6.5 * flicker(i), 0.85);
+    });
     for (const f of this.flashes) {
       const t = 1 - (now - f.born) / f.ttl;
       this.eraseLight(f.x * CELL, f.y * CELL, f.radius, t);
     }
   }
 
+  /** The radio's pulse while it calls the evacuation (also on low quality: it marks the objective). */
+  private pulseBeacon(b: Vec2, active: boolean): void {
+    if (!active) {
+      this.beacon?.setVisible(false);
+      return;
+    }
+    if (!this.beacon && hasFx(this.scene, 'beacon_pulse')) {
+      this.beacon = this.scene.add
+        .sprite(b.x * CELL, b.y * CELL, 'fx-sheet-beacon_pulse')
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(DEPTH.glow)
+        .setScale(0.9);
+      playLoop(this.beacon, 'beacon_pulse');
+    }
+    this.beacon?.setVisible(true);
+  }
+
   destroy(): void {
     this.rt?.destroy();
+    for (const l of this.loops) l.destroy();
+    this.beacon?.destroy();
     for (const g of this.glows) g.destroy();
     for (const s of this.smoke) s.destroy();
     this.light.destroy();

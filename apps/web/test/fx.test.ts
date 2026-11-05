@@ -12,7 +12,18 @@ describe('baked combat effects', () => {
 
   it('ships the effects the renderer plays', () => {
     expect(Object.keys(manifest.effects).sort()).toEqual(
-      ['blood_hit', 'dust_puff', 'ichor_hit', 'impact_sparks', 'muzzle_flash'].sort(),
+      [
+        'blood_hit',
+        'door_splinters',
+        'dust_puff',
+        'glass_shatter',
+        'ichor_hit',
+        'impact_sparks',
+        'infected_death',
+        'muzzle_flash',
+        'plank_splinters',
+        'scream_burst',
+      ].sort(),
     );
   });
 

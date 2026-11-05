@@ -343,19 +343,34 @@ export class EffectsRenderer {
           }
           break;
         }
-        case 'ACTOR_KILLED':
-          if (p['kind'] === 'survivor') this.shake(260, 0.007);
+        case 'ACTOR_KILLED': {
+          if (p['kind'] === 'survivor') {
+            this.shake(260, 0.007);
+            break;
+          }
+          const z = state.zombies.find((zz) => zz.id === p['actorId']);
+          if (!z || !visible(z.position.x, z.position.y)) break;
+          if (Settings.blood)
+            this.play('infected_death', z.position.x, z.position.y, { scale: 0.5 });
+          else this.play('dust_puff', z.position.x, z.position.y, { scale: 0.5 });
           break;
+        }
         case 'DOOR_CHANGED': {
           const d = state.doors.find((door) => door.id === p['doorId']);
           if (!d) break;
           const cx = (d.cell.x + 0.5) * CELL;
           const cy = (d.cell.y + 0.5) * CELL;
+          const at = { x: d.cell.x + 0.5, y: d.cell.y + 0.5 };
           if (p['broken'] && p['window']) {
-            this.glass.explode(16, cx, cy);
+            if (!this.play('glass_shatter', at.x, at.y, { scale: 0.55, add: true }))
+              this.glass.explode(16, cx, cy);
           } else if (p['broken'] || p['barricadeBroken']) {
-            this.debris.explode(18, cx, cy);
-            this.dust.explode(10, cx, cy);
+            const name = p['barricadeBroken'] ? 'plank_splinters' : 'door_splinters';
+            if (this.play(name, at.x, at.y, { scale: 0.6 })) this.debris.explode(6, cx, cy);
+            else {
+              this.debris.explode(18, cx, cy);
+              this.dust.explode(10, cx, cy);
+            }
           } else if (typeof p['barricade'] === 'number' && (p['barricade'] as number) > 0) {
             this.dust.explode(8, cx, cy);
           }
@@ -363,6 +378,12 @@ export class EffectsRenderer {
         }
         case 'ZOMBIE_SCREAMED': {
           if (!visible(p['x'] as number, p['y'] as number)) break;
+          this.play('scream_burst', p['x'] as number, p['y'] as number, {
+            scale: 0.6,
+            rotation: 0,
+            add: true,
+            depth: DEPTH.glow,
+          });
           this.fx.push({
             kind: 'ring',
             x: p['x'] as number,

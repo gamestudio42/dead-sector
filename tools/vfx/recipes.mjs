@@ -60,6 +60,31 @@ function blob(layer, o) {
   ];
 }
 
+/** A ring that grows and fades: a shout or a shockwave seen from above. */
+function ring(layer, o) {
+  return [
+    {
+      command: 'layer.newShape',
+      params: {
+        kind: 'ellipse',
+        name: layer,
+        size: o.size,
+        fill: null,
+        stroke: o.color,
+        strokeWidth: o.width,
+      },
+    },
+    fx(layer, 'Glow'),
+    key(layer, 'transform/scale', 0, [o.scale[0], o.scale[0], 100]),
+    key(layer, 'transform/scale', o.start, [o.scale[0], o.scale[0], 100]),
+    key(layer, 'transform/scale', o.end, [o.scale[1], o.scale[1], 100]),
+    key(layer, 'transform/opacity', 0, 0),
+    key(layer, 'transform/opacity', o.start, 0),
+    key(layer, 'transform/opacity', o.start + 0.034, 100),
+    key(layer, 'transform/opacity', o.end, 0),
+  ];
+}
+
 export const RECIPES = {
   // Points right; the game rotates it to the shot and anchors its left edge at the muzzle.
   muzzle_flash: {
@@ -209,6 +234,170 @@ export const RECIPES = {
         scale: [50, 120],
         opacity: [60, 40],
         end: 0.4,
+      }),
+    ],
+  },
+  // A door kicked or bashed in: dark splinters thrown wide and a puff of dust.
+  door_splinters: {
+    width: 64,
+    height: 64,
+    duration: 0.5,
+    layers: () => [
+      ...blob('dust', {
+        size: [24, 24],
+        color: '#7d756a',
+        blur: 4,
+        from: [32, 32],
+        scale: [40, 140],
+        opacity: [70, 55],
+        end: 0.466,
+      }),
+      ...burst('chips', 64, {
+        velocity: 9,
+        resistance: 3,
+        longevity: 0.34,
+        type: 6, // tri-polygons read as splinters
+        birthSize: 2.4,
+        deathSize: 1.6,
+        sizeVariation: 70,
+        rate: 14,
+        emit: 0.04,
+        birth: '#7a5232',
+        death: '#4a3322',
+        seed: 11,
+      }),
+    ],
+  },
+  // A barricade giving way: fewer, bigger and lighter planks than a door.
+  plank_splinters: {
+    width: 64,
+    height: 64,
+    duration: 0.5,
+    layers: () => [
+      ...blob('dust', {
+        size: [20, 20],
+        color: '#8a8274',
+        blur: 4,
+        from: [32, 32],
+        scale: [40, 120],
+        opacity: [60, 45],
+        end: 0.466,
+      }),
+      ...burst('planks', 64, {
+        velocity: 7,
+        resistance: 3,
+        longevity: 0.4,
+        type: 5, // motion polygons stretch along their flight
+        birthSize: 3.2,
+        deathSize: 2.4,
+        sizeVariation: 50,
+        rate: 8,
+        emit: 0.04,
+        birth: '#a07a4a',
+        death: '#6e5232',
+        seed: 5,
+      }),
+    ],
+  },
+  glass_shatter: {
+    width: 64,
+    height: 64,
+    duration: 0.4,
+    layers: () => [
+      ...burst('shards', 64, {
+        velocity: 10,
+        resistance: 3,
+        longevity: 0.3,
+        type: 6,
+        birthSize: 1.8,
+        deathSize: 1,
+        sizeVariation: 70,
+        rate: 18,
+        emit: 0.03,
+        birth: '#e8f6ff',
+        death: '#8fc0dc',
+        add: true,
+        seed: 2,
+      }),
+      {
+        command: 'layer.newShape',
+        params: { kind: 'ellipse', name: 'glint', size: [14, 14], fill: '#ffffff' },
+      },
+      fx('glint', 'Glow'),
+      key('glint', 'transform/opacity', 0, 100),
+      key('glint', 'transform/opacity', 0.1, 0),
+    ],
+  },
+  // The screamer's shriek at its source; the hearing radius stays drawn by the game.
+  scream_burst: {
+    width: 96,
+    height: 96,
+    duration: 0.6,
+    layers: () => [
+      ...ring('r1', {
+        size: [80, 80],
+        color: '#ff4b3a',
+        width: 4,
+        scale: [15, 110],
+        start: 0,
+        end: 0.4,
+      }),
+      ...ring('r2', {
+        size: [80, 80],
+        color: '#ff7a5a',
+        width: 3,
+        scale: [15, 100],
+        start: 0.12,
+        end: 0.5,
+      }),
+      ...ring('r3', {
+        size: [80, 80],
+        color: '#ff4b3a',
+        width: 2,
+        scale: [15, 90],
+        start: 0.24,
+        end: 0.566,
+      }),
+    ],
+  },
+  // An infected going down: a wide ichor spray and the body hitting the ground.
+  infected_death: {
+    width: 96,
+    height: 96,
+    duration: 0.6,
+    layers: () => [
+      ...blob('pool', {
+        size: [30, 30],
+        color: '#2c2412',
+        blur: 3,
+        from: [48, 48],
+        scale: [30, 100],
+        opacity: [85, 75],
+        end: 0.566,
+        peak: 0.1,
+      }),
+      ...blob('dust', {
+        size: [26, 26],
+        color: '#6f695e',
+        blur: 5,
+        from: [48, 50],
+        scale: [50, 150],
+        opacity: [45, 35],
+        end: 0.5,
+      }),
+      ...burst('spray', 96, {
+        velocity: 11,
+        resistance: 4,
+        longevity: 0.42,
+        type: 2,
+        birthSize: 3,
+        deathSize: 1.6,
+        sizeVariation: 70,
+        rate: 22,
+        emit: 0.06,
+        birth: '#5e5226',
+        death: '#241c0c',
+        seed: 13,
       }),
     ],
   },

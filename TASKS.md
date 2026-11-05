@@ -2,7 +2,7 @@
 
 ## NOW
 
-- Phase 6: stages 6.1 and 6.2 done locally; playtest the strategic map before stage 6.3 (ADR 0015).
+- Phase 6: playtest the strategic campaign (stages 6.1 and 6.2, live since 2026-10-30) before stage 6.3 (ADR 0015).
 
 ## NEXT
 
@@ -21,6 +21,9 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Phase 6, stages 6.1 and 6.2: strategic layer with sector map, shelter, stock, daily turn, horde migration,
+  evacuation goal and deadline; browser tests run in CI before publishing (ADR 0015).
 
 - Desktop shell: Electron app in `apps/desktop` with `--smoke` and `--bench`, strict snap, Snap CI workflow (ADR 0014).
 

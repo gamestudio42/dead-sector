@@ -102,10 +102,22 @@ jobs:
           name: web-dist
           path: site
       - uses: JamesIves/github-pages-deploy-action@v4
+        id: publish
+        # GitHub sometimes rejects the push with "fatal error in commit_refs" (seen 2026-11-04);
+        # the same push succeeds moments later, so try once more before failing the run.
+        continue-on-error: true
         with:
           folder: site
           branch: gh-pages
           # Keep the pull request previews that live next to the site.
+          clean-exclude: pr-preview/
+      - if: steps.publish.outcome == 'failure'
+        run: sleep 20
+      - uses: JamesIves/github-pages-deploy-action@v4
+        if: steps.publish.outcome == 'failure'
+        with:
+          folder: site
+          branch: gh-pages
           clean-exclude: pr-preview/
 
   preview:

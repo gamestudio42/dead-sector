@@ -120,6 +120,51 @@
       "lastCoverage": 0,
       "sha256": "bdeadb0a3b2dc0b5d7ffb49f5475e92dacf65b11e686ab09534a709c01160d16",
       "bytes": 23317
+    },
+    "wreck_fire": {
+      "frames": 30,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 30,
+      "fps": 30,
+      "loop": true,
+      "peakFrame": 29,
+      "peakCoverage": 0.327,
+      "maxAlpha": 255,
+      "lastCoverage": 0.327,
+      "loopSeam": 0,
+      "sha256": "c2aee9b1af3142fb10936dc48533fcd98c033dfe8f853c4e669c5b4efbf2c1db",
+      "bytes": 114227
+    },
+    "wreck_smoke": {
+      "frames": 45,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "columns": 42,
+      "fps": 15,
+      "loop": true,
+      "peakFrame": 28,
+      "peakCoverage": 0.381,
+      "maxAlpha": 237,
+      "lastCoverage": 0.359,
+      "loopSeam": 0,
+      "sha256": "92f1db443a3a4ba111d579abc57cfa1758bce40cdd740706b186a1490ad8841a",
+      "bytes": 373613
+    },
+    "beacon_pulse": {
+      "frames": 36,
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 36,
+      "fps": 30,
+      "loop": true,
+      "peakFrame": 22,
+      "peakCoverage": 0.335,
+      "maxAlpha": 255,
+      "lastCoverage": 0.141,
+      "loopSeam": 0,
+      "sha256": "bc1699432185772f662367f1951cc43af87ff21b7813276da4b5958b2efb6826",
+      "bytes": 42558
     }
   }
 }

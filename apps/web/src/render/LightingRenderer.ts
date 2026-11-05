@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameState, Vec2, World } from '@dead-sector/sim';
 import type { LightingMode, Quality } from '../ui/SaveStore';
 import { CELL, DEPTH } from './constants';
+import { hasFx, playLoop } from './fxSheets';
 
 /** Lighting buffer resolution relative to world pixels (lights are soft, so 1/4 is plenty). */
 const RES = 4;
@@ -29,6 +30,8 @@ export class LightingRenderer {
   private glows: Phaser.GameObjects.Image[] = [];
   private flashes: Flash[] = [];
   private smoke: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
+  private loops: Phaser.GameObjects.Sprite[] = [];
+  private beacon: Phaser.GameObjects.Sprite | null = null;
   private frame = 0;
 
   constructor(
@@ -69,6 +72,23 @@ export class LightingRenderer {
           .setDepth(DEPTH.glow)
           .setScale(1.3),
       );
+      // baked flames and smoke loops; the old particle plume stays as the fallback
+      if (hasFx(scene, 'wreck_fire') && hasFx(scene, 'wreck_smoke')) {
+        const fire = scene.add
+          .sprite(b.x * CELL, b.y * CELL - 4, 'fx-sheet-wreck_fire')
+          .setBlendMode(Phaser.BlendModes.ADD)
+          .setDepth(DEPTH.glow)
+          .setScale(0.55);
+        const smoke = scene.add
+          .sprite(b.x * CELL, b.y * CELL, 'fx-sheet-wreck_smoke')
+          .setOrigin(26 / 96, 76 / 96)
+          .setDepth(DEPTH.particles)
+          .setScale(0.9);
+        playLoop(fire, 'wreck_fire');
+        playLoop(smoke, 'wreck_smoke');
+        this.loops.push(fire, smoke);
+        continue;
+      }
       this.smoke.push(
         scene.add
           .particles(b.x * CELL, b.y * CELL, 'fx-puff', {
@@ -111,6 +131,10 @@ export class LightingRenderer {
       gl.setAlpha(0.55 * flicker(i)).setScale(1.2 + 0.15 * flicker(i + 1)),
     );
     this.flashes = this.flashes.filter((f) => now - f.born < f.ttl);
+    this.pulseBeacon(
+      this.world.mission.objectives.extraction.beacon,
+      state.mission.extractionActive,
+    );
     const rt = this.rt;
     if (!rt) return;
     // medium quality redraws the light map every other frame (flashes still show)
@@ -143,8 +167,27 @@ export class LightingRenderer {
     }
   }
 
+  /** The radio's pulse while it calls the evacuation (also on low quality: it marks the objective). */
+  private pulseBeacon(b: Vec2, active: boolean): void {
+    if (!active) {
+      this.beacon?.setVisible(false);
+      return;
+    }
+    if (!this.beacon && hasFx(this.scene, 'beacon_pulse')) {
+      this.beacon = this.scene.add
+        .sprite(b.x * CELL, b.y * CELL, 'fx-sheet-beacon_pulse')
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(DEPTH.glow)
+        .setScale(0.9);
+      playLoop(this.beacon, 'beacon_pulse');
+    }
+    this.beacon?.setVisible(true);
+  }
+
   destroy(): void {
     this.rt?.destroy();
+    for (const l of this.loops) l.destroy();
+    this.beacon?.destroy();
     for (const g of this.glows) g.destroy();
     for (const s of this.smoke) s.destroy();
     this.light.destroy();

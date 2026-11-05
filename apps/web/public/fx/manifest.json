@@ -137,19 +137,19 @@
       "bytes": 114227
     },
     "wreck_smoke": {
-      "frames": 45,
+      "frames": 30,
       "frameWidth": 96,
       "frameHeight": 96,
-      "columns": 42,
-      "fps": 15,
+      "columns": 30,
+      "fps": 10,
       "loop": true,
-      "peakFrame": 28,
+      "peakFrame": 19,
       "peakCoverage": 0.381,
       "maxAlpha": 237,
-      "lastCoverage": 0.359,
+      "lastCoverage": 0.363,
       "loopSeam": 0,
-      "sha256": "92f1db443a3a4ba111d579abc57cfa1758bce40cdd740706b186a1490ad8841a",
-      "bytes": 373613
+      "sha256": "38792c2dacae25d83159731dabecda0a45f727cdd6d1ef6be1725a2d7ed40108",
+      "bytes": 246242
     },
     "beacon_pulse": {
       "frames": 36,

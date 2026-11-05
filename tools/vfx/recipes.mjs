@@ -503,12 +503,12 @@ export const RECIPES = {
         }),
       ]),
   },
-  // Smoke drifting off a wreck towards the upper right, three seconds per loop at 15 fps.
+  // Smoke drifting off a wreck towards the upper right: slow, so 10 fps over three seconds is enough.
   wreck_smoke: {
     width: 96,
     height: 96,
     duration: 3,
-    fps: 15,
+    fps: 10,
     loop: true,
     // a thin plume: its densest pixel stays translucent
     minAlpha: 64,

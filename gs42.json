@@ -10,5 +10,5 @@
   "cover": "apps/web/public/icon.svg",
   "genre": "tactics",
   "tech": ["TypeScript", "Phaser", "WebAudio"],
-  "order": 9
+  "order": 4
 }

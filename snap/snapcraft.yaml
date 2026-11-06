@@ -15,12 +15,13 @@ icon: snap/gui/icon.png
 summary: Pausable real-time squad tactics in a zombie outbreak
 description: |
   Every shot is heard. Every order has a price.
-  Command two squads through a fallen neighbourhood: survivors act on their
-  own under threat, panic and refuse risky orders, and the infected react only
-  to what they see and hear. Sound travels through streets, walls and doors, so
-  every gunshot can bring the district down on you. In the campaign, choose
-  each day's operation and evacuate a shelter before the sector falls, with
-  permanent losses. The interface is in Brazilian Portuguese.
+  Command two squads through a fallen neighbourhood. Survivors act on
+  their own under threat, panic and refuse risky orders, and the infected
+  react only to what they see and hear. Sound travels through streets,
+  walls and doors, so every gunshot can bring the district down on you.
+  In the campaign, choose each day's operation and evacuate a shelter
+  before the sector falls; losses are permanent. Playable in English,
+  Portuguese, Spanish, French and German.
 license: AGPL-3.0-or-later
 website: https://gamestudio42.github.io/dead-sector/
 source-code: https://github.com/gamestudio42/dead-sector

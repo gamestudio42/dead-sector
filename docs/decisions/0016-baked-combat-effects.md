@@ -21,6 +21,9 @@ EffectCraft, a headless effects tool, for VFX in other games.
   loop unless that frame matches the first; all three measure 0/255. Wrecks keep the particle plume as the fallback,
   and the beacon pulses on every graphics quality because it marks the objective. A wreck's fire, smoke, glow and light only show once its
   cell has been explored, like the map under it: the glow and the light already leaked through the fog before this.
+- **Interface animations** (horde warning, the night passing, convoys, a fallen sector) use the same strips in the
+  HTML interface, stepped by CSS (`ui/fxIcon.ts`), drawn at twice their on-screen size. They play once per night and
+  show a still frame with reduced motion. A fallen sector's mark is a `hold` recipe: it ends on a frame meant to stay.
 - **Drawn at the size the game uses** (16 px cells): 32–96 px frames at 15–30 fps. Sheets wrap onto more rows so
   none is wider than 4096 px, a limit many GPUs have.
 - **Information stays drawn by the game**: the screamer's hearing radius is still a ring sized from the rules; the

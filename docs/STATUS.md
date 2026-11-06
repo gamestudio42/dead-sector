@@ -84,6 +84,7 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 - **Baked combat effects**: muzzle flash, impact sparks, blood, ichor, dust, door and barricade splinters, glass,
   the screamer's shriek and infected deaths, plus seamless loops of wreck fire, wreck smoke and the radio beacon,
+  and interface animations for the horde warning, the night passing, convoys and fallen sectors,
   rendered with EffectCraft from recipes
   in `tools/vfx`, checked for alpha and recorded in a manifest; particles remain as the fallback (ADR 0016).
 

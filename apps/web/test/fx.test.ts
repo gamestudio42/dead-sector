@@ -30,6 +30,10 @@ describe('baked combat effects', () => {
         'day_turn',
         'convoy',
         'sector_lost',
+        'objective_done',
+        'rescue_done',
+        'bite',
+        'panic_pulse',
       ].sort(),
     );
   });

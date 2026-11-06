@@ -227,6 +227,67 @@
       "lastCoverage": 0.204,
       "sha256": "f0d30f5f03e3bbadbdfd3aac1114588eaf4c77fb5c2df10695db3a3657c0070e",
       "bytes": 111181
+    },
+    "objective_done": {
+      "frames": 18,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 18,
+      "fps": 30,
+      "loop": false,
+      "hold": true,
+      "peakFrame": 13,
+      "peakCoverage": 0.74,
+      "maxAlpha": 255,
+      "lastCoverage": 0.726,
+      "sha256": "5aa930aba0e9140a5b314db16b654bfc704cea4d282cf92168193b5001a626d6",
+      "bytes": 30074
+    },
+    "rescue_done": {
+      "frames": 21,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 21,
+      "fps": 30,
+      "loop": false,
+      "hold": true,
+      "peakFrame": 13,
+      "peakCoverage": 0.735,
+      "maxAlpha": 255,
+      "lastCoverage": 0.735,
+      "sha256": "bb441ae76087e81a16fe42911d780343ed3306a577193b6d37d4d7a2487ec351",
+      "bytes": 48213
+    },
+    "bite": {
+      "frames": 18,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 18,
+      "fps": 30,
+      "loop": false,
+      "hold": true,
+      "peakFrame": 10,
+      "peakCoverage": 0.193,
+      "maxAlpha": 255,
+      "lastCoverage": 0.155,
+      "sha256": "36bb3ba866e852ad5380ff95bc1fea8299bfa38380aec64096c3fe0e30997d6c",
+      "bytes": 14115
+    },
+    "panic_pulse": {
+      "frames": 24,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 24,
+      "fps": 30,
+      "loop": true,
+      "hold": false,
+      "peakFrame": 3,
+      "peakCoverage": 0.427,
+      "maxAlpha": 255,
+      "lastCoverage": 0.215,
+      "loopSeam": 0,
+      "sha256": "8246566c661789f27e8a1fc7fb0a2d95c7b170b9e83d9e595a58fe2cdff1bf20",
+      "bytes": 47955
     }
   }
 }

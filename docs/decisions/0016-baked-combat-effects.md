@@ -26,6 +26,11 @@ EffectCraft, a headless effects tool, for VFX in other games.
   show a still frame with reduced motion. A fallen sector's mark is a `hold` recipe: it ends on a frame meant to stay. The HUD adds an objective
   check, a rescue, a bite and a panic burst on the unit card; the cards are rebuilt many times a second, so a loop
   there gets its phase from the clock when the markup is written (`resolveSync`) instead of restarting.
+- **Readable on asphalt, not just plausible**: dark red blood and brown ichor were almost the asphalt's luminance
+  (mean luminance difference 3–7 of 255 on the street colour), so they vanished, and for colour-blind players red is
+  only luminance. Blood is now a brighter red and ichor a sickly olive that is never mistaken for blood; the infected
+  death went from 7 to 20 at its peak and blood from 3 to 24. Wreck smoke is drawn above the darkness layer and below
+  the fog, as if lit by its own fire, so it no longer disappears at dusk and at night.
 - **Drawn at the size the game uses** (16 px cells): 32–96 px frames at 15–30 fps. Sheets wrap onto more rows so
   none is wider than 4096 px, a limit many GPUs have.
 - **Information stays drawn by the game**: the screamer's hearing radius is still a ring sized from the rules; the

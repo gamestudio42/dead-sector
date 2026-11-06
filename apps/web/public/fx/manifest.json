@@ -17,25 +17,31 @@
       "frames": 13,
       "frameWidth": 64,
       "frameHeight": 64,
+      "columns": 13,
       "fps": 30,
+      "loop": false,
+      "hold": false,
       "peakFrame": 8,
       "peakCoverage": 0.166,
       "maxAlpha": 255,
       "lastCoverage": 0,
-      "sha256": "40fd3c27b8f674ff64a251a7e061eefe98560a0d446b46ba5c74ed800a68b228",
-      "bytes": 17344
+      "sha256": "446cef4b057692c533839e53d5bc69800c31595661502eaadb4bc1411f3effe2",
+      "bytes": 17713
     },
     "ichor_hit": {
       "frames": 13,
       "frameWidth": 64,
       "frameHeight": 64,
+      "columns": 13,
       "fps": 30,
+      "loop": false,
+      "hold": false,
       "peakFrame": 7,
       "peakCoverage": 0.156,
       "maxAlpha": 255,
       "lastCoverage": 0.002,
-      "sha256": "8428c32c866ffcd52ee0145e2e4803c757ce05cebaced55ec7b0de228157dcfc",
-      "bytes": 16111
+      "sha256": "12708ba08a44d17f9adc8b170e22b66d27d08bb5f807a8a4f024818b49cd3379",
+      "bytes": 15785
     },
     "impact_sparks": {
       "frames": 6,
@@ -101,13 +107,16 @@
       "frames": 18,
       "frameWidth": 96,
       "frameHeight": 96,
+      "columns": 18,
       "fps": 30,
+      "loop": false,
+      "hold": false,
       "peakFrame": 9,
       "peakCoverage": 0.3,
       "maxAlpha": 255,
       "lastCoverage": 0,
-      "sha256": "efb41f4c2630aa4b0ecc3c84c02577dcd786d4509e9f340db1da37facb746ca2",
-      "bytes": 91718
+      "sha256": "304d5e28c7cdf94fc41ea6bad4dff56a857945a827feb033251e9d2c3db585aa",
+      "bytes": 92443
     },
     "door_splinters": {
       "frames": 15,

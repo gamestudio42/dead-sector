@@ -42,6 +42,8 @@ export const DEPTH = {
   actors: 10,
   particles: 12,
   lighting: 14,
+  /** Wreck smoke: lit by its own fire, so above the darkness but still under the fog. */
+  litSmoke: 14.5,
   fog: 15,
   glow: 16,
   topOverlay: 18,

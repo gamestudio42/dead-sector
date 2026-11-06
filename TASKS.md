@@ -22,6 +22,9 @@
 
 ## DONE
 
+- Combat readability: brighter blood, olive ichor and infected deaths measured against the street colour; wreck
+  smoke drawn above the darkness so it shows at night (ADR 0016).
+
 - Combat effects baked with EffectCraft (flash, sparks, blood, ichor, dust, splinters, glass, shriek, infected
   death) and ambient loops (wreck fire and smoke, radio beacon) and interface animations (horde, night, convoy, fallen sector, objective, rescue, bite, panic), with alpha and loop-seam checks, manifest and
   particle fallback (ADR 0016).

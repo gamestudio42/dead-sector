@@ -26,6 +26,10 @@ describe('baked combat effects', () => {
         'wreck_fire',
         'wreck_smoke',
         'beacon_pulse',
+        'horde_alert',
+        'day_turn',
+        'convoy',
+        'sector_lost',
       ].sort(),
     );
   });
@@ -42,8 +46,9 @@ describe('baked combat effects', () => {
       expect(png.readUInt32BE(16)).toBeLessThanOrEqual(4096);
       expect(png[25]).toBe(6);
       // a one-shot effect must end transparent; a loop must meet its own first frame
-      if ('loop' in e && e.loop) expect(e.loopSeam).toBeLessThanOrEqual(24);
-      else expect(e.lastCoverage).toBeLessThanOrEqual(0.01);
+      // a mark that holds on screen ends visible on purpose
+      if ('loopSeam' in e) expect(e.loopSeam).toBeLessThanOrEqual(24);
+      else if (!('hold' in e && e.hold)) expect(e.lastCoverage).toBeLessThanOrEqual(0.01);
       expect(e.maxAlpha).toBeGreaterThanOrEqual(name === 'wreck_smoke' ? 64 : 128);
     });
 });

@@ -578,4 +578,182 @@ export const RECIPES = {
       },
     ],
   },
+  // ---- interface animations, drawn at twice their on-screen size for sharp high-DPI screens
+
+  // Horde warning beside the toast: rings closing in on a pulsing core, a one-second loop.
+  horde_alert: {
+    width: 64,
+    height: 64,
+    duration: 1,
+    loop: true,
+    layers: () => [
+      ...[0, 1, 2].flatMap((n) => [
+        {
+          command: 'layer.newShape',
+          params: {
+            kind: 'ellipse',
+            name: `ring${n}`,
+            size: [56, 56],
+            fill: null,
+            stroke: '#ff4b3a',
+            strokeWidth: 3,
+          },
+        },
+        {
+          command: 'prop.setExpression',
+          params: {
+            layer: `ring${n}`,
+            path: 'transform/scale',
+            expression: `var u = (time + ${n / 3}) % 1; var k = 100 - 70 * u; [k, k, 100]`,
+          },
+        },
+        {
+          command: 'prop.setExpression',
+          params: {
+            layer: `ring${n}`,
+            path: 'transform/opacity',
+            expression: `var u = (time + ${n / 3}) % 1; 100 * Math.sin(Math.PI * u)`,
+          },
+        },
+      ]),
+      {
+        command: 'layer.newShape',
+        params: { kind: 'ellipse', name: 'core', size: [14, 14], fill: '#ff4b3a' },
+      },
+      fx('core', 'Glow'),
+      {
+        command: 'prop.setExpression',
+        params: {
+          layer: 'core',
+          path: 'transform/opacity',
+          expression: '65 + 35 * Math.cos(2 * Math.PI * time * 2)',
+        },
+      },
+    ],
+  },
+  // The night passing on the strategic map: the sun sets along an arc and the moon follows.
+  day_turn: {
+    width: 160,
+    height: 96,
+    duration: 1.2,
+    fps: 20,
+    layers: () => {
+      const body = (name, color, size, start) => [
+        {
+          command: 'layer.newShape',
+          params: { kind: 'ellipse', name, size: [size, size], fill: color },
+        },
+        fx(name, 'Glow'),
+        {
+          command: 'prop.setExpression',
+          params: {
+            layer: name,
+            path: 'transform/position',
+            expression: `var u = Math.min(1, Math.max(0, (time - ${start}) / 0.75)); var a = Math.PI * (1 - u); [80 + 58 * Math.cos(a), 80 - 58 * Math.sin(a), 0]`,
+          },
+        },
+        {
+          command: 'prop.setExpression',
+          params: {
+            layer: name,
+            path: 'transform/opacity',
+            expression: `var u = (time - ${start}) / 0.75; u <= 0 || u >= 1 ? 0 : 100 * Math.sin(Math.PI * u)`,
+          },
+        },
+      ];
+      return [
+        {
+          command: 'layer.newShape',
+          params: {
+            kind: 'rect',
+            name: 'horizon',
+            size: [140, 2],
+            fill: '#9a9890',
+            position: [80, 82],
+          },
+        },
+        key('horizon', 'transform/opacity', 0, 0),
+        key('horizon', 'transform/opacity', 0.15, 70),
+        key('horizon', 'transform/opacity', 0.95, 70),
+        key('horizon', 'transform/opacity', 1.15, 0),
+        ...body('sun', '#ffb24a', 16, 0),
+        ...body('moon', '#cfe0ff', 12, 0.4),
+      ];
+    },
+  },
+  // A convoy leaving the sector: three trucks with headlights running right, a 1.5 s loop.
+  convoy: {
+    width: 128,
+    height: 48,
+    duration: 1.5,
+    fps: 20,
+    loop: true,
+    layers: () => [
+      {
+        command: 'layer.newShape',
+        params: { kind: 'rect', name: 'road', size: [128, 2], fill: '#5a5c60', position: [64, 34] },
+      },
+      ...[0, 1, 2].flatMap((n) => [
+        {
+          command: 'layer.newShape',
+          params: { kind: 'rect', name: `truck${n}`, size: [18, 10], fill: '#8fb05a' },
+        },
+        {
+          command: 'prop.setExpression',
+          params: {
+            layer: `truck${n}`,
+            path: 'transform/position',
+            expression: `var u = (time / 1.5 + ${n / 3}) % 1; [-16 + 160 * u, 27, 0]`,
+          },
+        },
+        {
+          command: 'layer.newShape',
+          params: { kind: 'ellipse', name: `light${n}`, size: [6, 6], fill: '#fff2b0' },
+        },
+        fx(`light${n}`, 'Glow'),
+        {
+          command: 'prop.setExpression',
+          params: {
+            layer: `light${n}`,
+            path: 'transform/position',
+            expression: `var u = (time / 1.5 + ${n / 3}) % 1; [-5 + 160 * u, 27, 0]`,
+          },
+        },
+      ]),
+    ],
+  },
+  // A sector falling on the strategic map: a red ring closes in and leaves a mark that stays.
+  sector_lost: {
+    width: 96,
+    height: 96,
+    duration: 0.8,
+    hold: true,
+    layers: () => [
+      {
+        command: 'layer.newShape',
+        params: {
+          kind: 'ellipse',
+          name: 'ring',
+          size: [80, 80],
+          fill: null,
+          stroke: '#e0563e',
+          strokeWidth: 4,
+        },
+      },
+      fx('ring', 'Glow'),
+      key('ring', 'transform/scale', 0, [140, 140, 100]),
+      key('ring', 'transform/scale', 0.5, [55, 55, 100]),
+      key('ring', 'transform/scale', 0.766, [50, 50, 100]),
+      key('ring', 'transform/opacity', 0, 0),
+      key('ring', 'transform/opacity', 0.15, 100),
+      {
+        command: 'layer.newShape',
+        params: { kind: 'ellipse', name: 'mark', size: [34, 34], fill: '#7a1810' },
+      },
+      key('mark', 'transform/scale', 0, [0, 0, 100]),
+      key('mark', 'transform/scale', 0.45, [0, 0, 100]),
+      key('mark', 'transform/scale', 0.6, [115, 115, 100]),
+      key('mark', 'transform/scale', 0.766, [100, 100, 100]),
+    ],
+  },
 };

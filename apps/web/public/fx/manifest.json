@@ -165,6 +165,68 @@
       "loopSeam": 0,
       "sha256": "bc1699432185772f662367f1951cc43af87ff21b7813276da4b5958b2efb6826",
       "bytes": 42558
+    },
+    "horde_alert": {
+      "frames": 30,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 30,
+      "fps": 30,
+      "loop": true,
+      "hold": false,
+      "peakFrame": 1,
+      "peakCoverage": 0.465,
+      "maxAlpha": 255,
+      "lastCoverage": 0.356,
+      "loopSeam": 0,
+      "sha256": "136413b32d22d0e56700913d4dbd08ec4f9b31b3bcb4030cbdbe5d22d2b3d43b",
+      "bytes": 56207
+    },
+    "day_turn": {
+      "frames": 24,
+      "frameWidth": 160,
+      "frameHeight": 96,
+      "columns": 24,
+      "fps": 20,
+      "loop": false,
+      "hold": false,
+      "peakFrame": 12,
+      "peakCoverage": 0.086,
+      "maxAlpha": 254,
+      "lastCoverage": 0,
+      "sha256": "3312fee5cb41bfd734578b157c723e7e794990630033164ebb55770569feccf2",
+      "bytes": 26004
+    },
+    "convoy": {
+      "frames": 30,
+      "frameWidth": 128,
+      "frameHeight": 48,
+      "columns": 30,
+      "fps": 20,
+      "loop": true,
+      "hold": false,
+      "peakFrame": 4,
+      "peakCoverage": 0.197,
+      "maxAlpha": 255,
+      "lastCoverage": 0.153,
+      "loopSeam": 0,
+      "sha256": "d23ed205e584739608fa534a945c0a338e44a256c8975f22a3709eb973d267cd",
+      "bytes": 6688
+    },
+    "sector_lost": {
+      "frames": 24,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "columns": 24,
+      "fps": 30,
+      "loop": false,
+      "hold": true,
+      "peakFrame": 5,
+      "peakCoverage": 0.515,
+      "maxAlpha": 255,
+      "lastCoverage": 0.204,
+      "sha256": "f0d30f5f03e3bbadbdfd3aac1114588eaf4c77fb5c2df10695db3a3657c0070e",
+      "bytes": 111181
     }
   }
 }

@@ -199,7 +199,7 @@ export const RECIPES = {
     layers: () => [
       ...blob('pool', {
         size: [22, 22],
-        color: '#5a0a08',
+        color: '#a8281a',
         blur: 2,
         from: [32, 32],
         scale: [30, 90],
@@ -217,8 +217,8 @@ export const RECIPES = {
         sizeVariation: 60,
         rate: 14,
         emit: 0.05,
-        birth: '#a3201a',
-        death: '#4a0806',
+        birth: '#e0482c',
+        death: '#9a2014',
         seed: 3,
       }),
     ],
@@ -230,7 +230,7 @@ export const RECIPES = {
     layers: () => [
       ...blob('pool', {
         size: [22, 22],
-        color: '#2c2412',
+        color: '#4a4a20',
         blur: 2,
         from: [32, 32],
         scale: [30, 85],
@@ -248,8 +248,8 @@ export const RECIPES = {
         sizeVariation: 60,
         rate: 14,
         emit: 0.05,
-        birth: '#76642e',
-        death: '#241c0c',
+        birth: '#7a8432',
+        death: '#40421a',
         seed: 7,
       }),
     ],
@@ -422,7 +422,7 @@ export const RECIPES = {
     layers: () => [
       ...blob('pool', {
         size: [30, 30],
-        color: '#2c2412',
+        color: '#4a4a20',
         blur: 3,
         from: [48, 48],
         scale: [30, 100],
@@ -449,8 +449,8 @@ export const RECIPES = {
         sizeVariation: 70,
         rate: 22,
         emit: 0.06,
-        birth: '#5e5226',
-        death: '#241c0c',
+        birth: '#7a8432',
+        death: '#40421a',
         seed: 13,
       }),
     ],

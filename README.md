@@ -136,6 +136,10 @@ pnpm dev        # http://localhost:5173  (?debug=1 shows sight, sound and AI sta
 
 First Playwright run: `pnpm --filter @dead-sector/game exec playwright install chromium`.
 
+Screenshots, the cover and the trailer are captured from the real game: `pnpm --filter @dead-sector/game exec playwright
+test -c promo/playwright.config.ts`, then `node tools/promo/cover.mjs <plate>` and `node tools/promo/trailer.mjs`
+(EffectCraft and ffmpeg needed).
+
 The simulation is a pure TypeScript package with fixed 100 ms ticks and a seeded RNG; it never
 touches Phaser, the DOM or the clock. The Phaser view and the HTML interface only send commands and
 read state. See the [project status](docs/STATUS.md), [architecture](docs/architecture/overview.md),

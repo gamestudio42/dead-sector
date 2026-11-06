@@ -6,6 +6,8 @@
 
 ## NEXT
 
+- Publish the trailer (`node tools/promo/trailer.mjs`, ~30 s, 1080p, silent) on the studio's video channel and in the
+  Snap Store listing; consider a soundtrack, since the game's sound is synthesized live and is not captured.
 - Phase 6.3: choose who deploys and how much ammo they take, roster by ID, recruits from the population.
 - Phase 6.4: scavenging objective, operations for Avenida Norte and Mercadão Leste, variants by sector state.
 - Phase 6.5: shelter upgrades (parts have no use yet), campaign difficulties, economy balance report.
@@ -21,6 +23,9 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Promo: screenshots captured by hand-stepped frames, a gameplay cover for the studio site and the store, and a
+  30-second trailer cut from real gameplay with EffectCraft title cards and captions.
 
 - Combat readability: brighter blood, olive ichor and infected deaths measured against the street colour; wreck
   smoke drawn above the darkness so it shows at night (ADR 0016).

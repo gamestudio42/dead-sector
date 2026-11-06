@@ -13,6 +13,7 @@ import {
 import { catalog, fmtTime, onLocale, roleLabel, T, text, weaponLabel } from './i18n';
 import { KeyBindings, keyLabel, keyName, type Action } from '../input/KeyBindings';
 import type { Tip } from '../presentation/tutorial';
+import { fxIcon } from './fxIcon';
 import { Settings } from './SaveStore';
 
 export interface HudActions {
@@ -281,9 +282,11 @@ export class Hud {
     window.setTimeout(() => line.remove(), 3200);
   }
 
-  toast(msg: string): void {
+  /** A short message under the top bar; `icon` is trusted markup from fxIcon, `msg` is text. */
+  toast(msg: string, icon = ''): void {
     const el = this.els['toast'] as HTMLElement;
-    el.textContent = msg;
+    el.innerHTML = icon;
+    el.append(msg);
     el.style.opacity = '1';
     window.clearTimeout(this.toastTimer);
     this.toastTimer = window.setTimeout(() => (el.style.opacity = '0'), 2600);
@@ -532,7 +535,7 @@ export class Hud {
             seconds: String(p['inSeconds']),
           });
           this.push(state, msg, 'bad');
-          this.toast(msg);
+          this.toast(msg, fxIcon('horde_alert'));
           break;
         }
         case 'HORDE_SPAWNED':

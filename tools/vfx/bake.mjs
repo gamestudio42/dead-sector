@@ -121,7 +121,8 @@ function bake(name) {
   const densest = Math.max(...stats.map((s) => s.max));
   if (stats[peak].coverage < 0.01 || densest < (r.minAlpha ?? 128))
     problems.push('the effect is nearly invisible');
-  if (!r.loop && last.coverage > 0.01)
+  // an interface mark may end on a frame meant to stay on screen (`hold`)
+  if (!r.loop && !r.hold && last.coverage > 0.01)
     problems.push('last frame still visible: the effect would pop out');
   if (!r.loop && stats.slice(0, 3).every((s) => s.coverage === 0))
     problems.push('first frames empty: the effect starts late');
@@ -170,6 +171,7 @@ function bake(name) {
     columns,
     fps,
     loop: !!r.loop,
+    hold: !!r.hold,
     peakFrame: peak,
     peakCoverage: +stats[peak].coverage.toFixed(3),
     maxAlpha: densest,

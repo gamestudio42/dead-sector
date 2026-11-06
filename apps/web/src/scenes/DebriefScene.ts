@@ -6,6 +6,7 @@ import { CAMPAIGN_ID } from './MenuScene';
 import { gradeFor } from '../presentation/grade';
 import { emptyRecord, type MissionRecord } from '../presentation/timeline';
 import { clearUi, uiRoot } from '../ui/dom';
+import { noticeIcon } from '../ui/fxIcon';
 import {
   fmtTime,
   formatNotice,
@@ -173,7 +174,7 @@ export class DebriefScene extends Phaser.Scene {
     const alive = next.roster.filter((r) => r.alive).length;
     box.hidden = false;
     box.innerHTML = `<h4>${head}</h4>
-      <ul>${report.lines.map((l) => `<li>${formatNotice(l)}</li>`).join('') || `<li>${text('debrief.noNews')}</li>`}</ul>
+      <ul>${report.lines.map((l) => `<li>${noticeIcon(l.kind)}${formatNotice(l)}</li>`).join('') || `<li>${text('debrief.noNews')}</li>`}</ul>
       <p class="small">${text('debrief.stock', { alive, roster: next.roster.length, medicine: next.stock.medicine, ammo: next.stock.ammo, evacuated: next.evacuated })}</p>`;
     const actions = screen.querySelector('[data-el=actions]') as HTMLElement;
     const again = actions.querySelector('[data-act=again]') as HTMLButtonElement;

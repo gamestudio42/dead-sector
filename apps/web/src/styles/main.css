@@ -1567,3 +1567,81 @@ button.sector small {
 .strategic-actions {
   margin-bottom: 12px;
 }
+
+/* ---------- baked effects in the interface (ui/fxIcon.ts) ---------- */
+.fx-icon {
+  display: inline-block;
+  flex: none;
+  width: var(--fx-w);
+  height: var(--fx-h);
+  vertical-align: middle;
+  background-image: var(--fx-url);
+  background-repeat: no-repeat;
+  background-size: var(--fx-sheet) var(--fx-h);
+  background-position: var(--fx-start) 0;
+  animation: fx-run var(--fx-dur) var(--fx-steps) var(--fx-iter) forwards;
+}
+.fx-icon.still {
+  animation: none;
+}
+@keyframes fx-run {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: var(--fx-end);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-icon {
+    animation: none;
+  }
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast .fx-icon {
+  margin: -6px 0;
+}
+.notice-icon {
+  margin-right: 6px;
+}
+button.sector .fx-icon {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.day-turn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(8, 9, 11, 0.55);
+  pointer-events: none;
+  animation: day-turn-out 1.8s ease-in forwards;
+}
+.day-turn b {
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+@keyframes day-turn-out {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .day-turn {
+    animation-duration: 0.8s;
+  }
+}

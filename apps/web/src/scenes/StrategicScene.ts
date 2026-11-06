@@ -13,6 +13,7 @@ import { AudioEngine } from '../audio/AudioEngine';
 import { Backdrop } from '../render/Backdrop';
 import { CampaignStore } from '../ui/CampaignStore';
 import { clearUi, uiRoot } from '../ui/dom';
+import { fxIcon, noticeIcon } from '../ui/fxIcon';
 import {
   catalog,
   formatBlock,
@@ -30,6 +31,8 @@ export class StrategicScene extends Phaser.Scene {
   private backdrop: Backdrop | null = null;
   private campaign!: CampaignState;
   private selected: string | null = null;
+  /** Set by the night that just ended, so its animations play once and later renders stay still. */
+  private freshNight = false;
   private screen!: HTMLDivElement;
 
   constructor() {
@@ -83,7 +86,8 @@ export class StrategicScene extends Phaser.Scene {
         if (this.selected) this.operate(this.selected);
         return;
       case 'endDay':
-        void this.commit(endDay(content, this.campaign).campaign);
+        this.freshNight = true;
+        void this.commit(endDay(content, this.campaign).campaign).then(() => this.showDayTurn());
         return;
       case 'menu':
         this.scene.start('Menu');
@@ -107,6 +111,21 @@ export class StrategicScene extends Phaser.Scene {
     void CampaignStore.save(c).then(() =>
       this.scene.start('Briefing', { missionId, campaign: true }),
     );
+  }
+
+  /** The night passing over the map, then the new day's number. */
+  private showDayTurn(): void {
+    const map = this.screen.querySelector('[data-testid=sector-map]');
+    if (!map) return;
+    const def = loadContent().campaigns[CAMPAIGN_ID]!;
+    const day = Math.min(this.campaign.day, def.victory.deadlineDays);
+    const turn = document.createElement('div');
+    turn.className = 'day-turn';
+    turn.dataset['testid'] = 'day-turn';
+    turn.innerHTML = `${fxIcon('day_turn')}<b>${text('strategic.day', { day, total: def.victory.deadlineDays })}</b>`;
+    map.appendChild(turn);
+    window.setTimeout(() => turn.remove(), 1900);
+    this.freshNight = false;
   }
 
   private render(): void {
@@ -135,7 +154,7 @@ export class StrategicScene extends Phaser.Scene {
         const shelter = s.id === def.shelterSectorId;
         return `<button class="sector ${status} ${shelter ? 'shelter' : ''} ${this.selected === s.id ? 'selected' : ''}"
           style="left:${s.pos.x}%;top:${s.pos.y}%" data-sector="${s.id}" data-testid="sector-${s.id}" data-status="${status}">
-          <i></i><b>${status === 'unknown' ? '???' : s.displayName}</b>
+          <i></i>${status === 'lost' ? fxIcon('sector_lost', { still: !(this.freshNight && c.lastReport.some((l) => l.kind === 'sector-lost' && l.sector === s.displayName)) }) : ''}<b>${status === 'unknown' ? '???' : s.displayName}</b>
           <small>${status === 'unknown' ? text('strategic.status.unknown') : shelter ? text('strategic.shelterTag') : `${text(`strategic.status.${status}`)} · ${Math.round(c.sectors[s.id]!.infestation)}%`}</small>
         </button>`;
       })
@@ -200,7 +219,7 @@ export class StrategicScene extends Phaser.Scene {
           <table class="roster"><tr><th>${text('strategic.team')}</th><th>${text('strategic.role')}</th><th>${text('strategic.health')}</th><th>${text('strategic.rounds')}</th><th>${text('strategic.state')}</th></tr>${roster}</table>
           <div class="interlude" data-testid="campaign-report">
             <h4>${text('strategic.report')}</h4>
-            <ul>${c.lastReport.map((l) => `<li>${formatNotice(l)}</li>`).join('') || `<li>${text('strategic.nothing')}</li>`}</ul>
+            <ul>${c.lastReport.map((l) => `<li>${noticeIcon(l.kind, !this.freshNight && l.kind !== 'convoy')}${formatNotice(l)}</li>`).join('') || `<li>${text('strategic.nothing')}</li>`}</ul>
           </div>
         </div>
       </div>`;

@@ -84,7 +84,8 @@ export class LightingRenderer {
         const smoke = scene.add
           .sprite(b.x * CELL, b.y * CELL, 'fx-sheet-wreck_smoke')
           .setOrigin(26 / 96, 76 / 96)
-          .setDepth(DEPTH.particles)
+          // under the darkness layer the plume vanishes at dusk and at night
+          .setDepth(this.rt ? DEPTH.litSmoke : DEPTH.particles)
           .setScale(0.9);
         playLoop(fire, 'wreck_fire');
         playLoop(smoke, 'wreck_smoke');

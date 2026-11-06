@@ -18,16 +18,18 @@ type FxEntry = {
  */
 export function fxIcon(
   name: keyof typeof manifest.effects,
-  o: { still?: boolean; label?: string } = {},
+  o: { still?: boolean; label?: string; size?: number } = {},
 ): string {
   const e = manifest.effects[name] as FxEntry;
   if ((e.columns ?? e.frames) < e.frames) return ''; // multi-row sheets are for the game canvas only
-  const w = e.frameWidth / 2;
-  const h = e.frameHeight / 2;
+  // drawn at twice the size it is shown at, unless the caller wants it bigger
+  const w = (e.frameWidth / 2) * (o.size ?? 1);
+  const h = (e.frameHeight / 2) * (o.size ?? 1);
   const still = o.still || !Settings.shake;
   const frame = still ? (e.hold ? e.frames - 1 : Math.floor(e.frames / 2)) : 0;
   const vars = [
-    `--fx-url:url(./fx/${name}.png)`,
+    // absolute: a url() inside a custom property resolves against the stylesheet, not the page
+    `--fx-url:url(${new URL(`./fx/${name}.png`, document.baseURI).href})`,
     `--fx-w:${w}px`,
     `--fx-h:${h}px`,
     `--fx-sheet:${w * e.frames}px`,

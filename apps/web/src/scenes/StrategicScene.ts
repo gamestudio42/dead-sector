@@ -122,7 +122,7 @@ export class StrategicScene extends Phaser.Scene {
     const turn = document.createElement('div');
     turn.className = 'day-turn';
     turn.dataset['testid'] = 'day-turn';
-    turn.innerHTML = `${fxIcon('day_turn')}<b>${text('strategic.day', { day, total: def.victory.deadlineDays })}</b>`;
+    turn.innerHTML = `${fxIcon('day_turn', { size: 2 })}<b>${text('strategic.day', { day, total: def.victory.deadlineDays })}</b>`;
     map.appendChild(turn);
     window.setTimeout(() => turn.remove(), 1900);
     this.freshNight = false;

@@ -756,4 +756,168 @@ export const RECIPES = {
       key('mark', 'transform/scale', 0.766, [100, 100, 100]),
     ],
   },
+  // ---- HUD animations (shown at 32 px)
+
+  // An objective done: a green ring settles and a check mark pops in, then stays.
+  objective_done: {
+    width: 64,
+    height: 64,
+    duration: 0.6,
+    hold: true,
+    layers: () => [
+      {
+        command: 'layer.newShape',
+        params: {
+          kind: 'ellipse',
+          name: 'ring',
+          size: [52, 52],
+          fill: null,
+          stroke: '#7fbf6a',
+          strokeWidth: 4,
+        },
+      },
+      fx('ring', 'Glow'),
+      key('ring', 'transform/scale', 0, [150, 150, 100]),
+      key('ring', 'transform/scale', 0.25, [100, 100, 100]),
+      key('ring', 'transform/opacity', 0, 0),
+      key('ring', 'transform/opacity', 0.2, 100),
+      ...[
+        ['short', [12, 5], [26, 36], 45, 0.2],
+        ['long', [26, 5], [37, 31], -50, 0.3],
+      ].flatMap(([name, size, pos, angle, at]) => [
+        {
+          command: 'layer.newShape',
+          params: { kind: 'rect', name, size, fill: '#d8ffb0', position: pos },
+        },
+        set(name, 'transform/rotation', angle),
+        key(name, 'transform/scale', 0, [0, 0, 100]),
+        key(name, 'transform/scale', at, [0, 0, 100]),
+        key(name, 'transform/scale', at + 0.12, [120, 120, 100]),
+        key(name, 'transform/scale', at + 0.2, [100, 100, 100]),
+      ]),
+    ],
+  },
+  // The person brought to safety: two figures meet inside a green ring that stays.
+  rescue_done: {
+    width: 64,
+    height: 64,
+    duration: 0.7,
+    hold: true,
+    layers: () => [
+      {
+        command: 'layer.newShape',
+        params: {
+          kind: 'ellipse',
+          name: 'ring',
+          size: [52, 52],
+          fill: null,
+          stroke: '#7fbf6a',
+          strokeWidth: 4,
+        },
+      },
+      fx('ring', 'Glow'),
+      key('ring', 'transform/scale', 0, [60, 60, 100]),
+      key('ring', 'transform/scale', 0.45, [100, 100, 100]),
+      key('ring', 'transform/opacity', 0, 0),
+      key('ring', 'transform/opacity', 0.3, 100),
+      ...[
+        ['guard', '#8fb3d9', [14, 32], [27, 32]],
+        ['person', '#f0e6d6', [50, 32], [37, 32]],
+      ].flatMap(([name, color, from, to]) => [
+        {
+          command: 'layer.newShape',
+          params: { kind: 'ellipse', name, size: [11, 11], fill: color },
+        },
+        key(name, 'transform/position', 0, [...from, 0]),
+        key(name, 'transform/position', 0.4, [...to, 0]),
+        key(name, 'transform/opacity', 0, 0),
+        key(name, 'transform/opacity', 0.1, 100),
+      ]),
+    ],
+  },
+  // A bite: two rows of teeth snap shut and leave a red mark that stays.
+  bite: {
+    width: 64,
+    height: 64,
+    duration: 0.6,
+    hold: true,
+    layers: () => [
+      {
+        command: 'layer.newShape',
+        params: { kind: 'ellipse', name: 'wound', size: [30, 20], fill: '#8a1410' },
+      },
+      fx('wound', 'Gaussian Blur'),
+      set('wound', 'effects/#1/blurriness', 2),
+      key('wound', 'transform/position', 0, [32, 32, 0]),
+      key('wound', 'transform/scale', 0, [0, 0, 100]),
+      key('wound', 'transform/scale', 0.2, [0, 0, 100]),
+      key('wound', 'transform/scale', 0.35, [110, 110, 100]),
+      key('wound', 'transform/scale', 0.5, [100, 100, 100]),
+      ...[-2, -1, 0, 1, 2].flatMap((n) =>
+        [
+          ['up', 14, 27],
+          ['down', 50, 37],
+        ].flatMap(([row, from, to]) => {
+          const name = `${row}${n + 2}`;
+          const x = 32 + n * 7;
+          return [
+            {
+              command: 'layer.newShape',
+              params: { kind: 'ellipse', name, size: [5, 7], fill: '#f0e6d6' },
+            },
+            key(name, 'transform/position', 0, [x, from, 0]),
+            key(name, 'transform/position', 0.2, [x, to, 0]),
+            key(name, 'transform/opacity', 0, 100),
+            key(name, 'transform/opacity', 0.25, 100),
+            key(name, 'transform/opacity', 0.45, 0),
+          ];
+        }),
+      ),
+    ],
+  },
+  // A survivor in panic, on their unit card: a jagged red burst that never settles (0.8 s loop).
+  panic_pulse: {
+    width: 64,
+    height: 64,
+    duration: 0.8,
+    loop: true,
+    layers: () => [
+      {
+        command: 'layer.newShape',
+        params: { kind: 'star', name: 'burst', size: [44, 44], fill: '#ff4b3a' },
+      },
+      set('burst', 'contents/group/contents/star/points', 9),
+      set('burst', 'contents/group/contents/star/innerRadius', 11),
+      set('burst', 'contents/group/contents/star/outerRadius', 21),
+      fx('burst', 'Glow'),
+      {
+        command: 'prop.setExpression',
+        params: {
+          layer: 'burst',
+          path: 'transform/scale',
+          expression: 'var k = 80 + 20 * Math.sin(2 * Math.PI * time / 0.4); [k, k, 100]',
+        },
+      },
+      {
+        command: 'prop.setExpression',
+        params: {
+          layer: 'burst',
+          path: 'transform/rotation',
+          expression: '12 * Math.sin(2 * Math.PI * time / 0.8)',
+        },
+      },
+      {
+        command: 'layer.newShape',
+        params: { kind: 'ellipse', name: 'eye', size: [10, 10], fill: '#fff2e8' },
+      },
+      {
+        command: 'prop.setExpression',
+        params: {
+          layer: 'eye',
+          path: 'transform/opacity',
+          expression: '70 + 30 * Math.cos(2 * Math.PI * time / 0.4)',
+        },
+      },
+    ],
+  },
 };

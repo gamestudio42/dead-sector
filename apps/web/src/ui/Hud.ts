@@ -13,7 +13,7 @@ import {
 import { catalog, fmtTime, onLocale, roleLabel, T, text, weaponLabel } from './i18n';
 import { KeyBindings, keyLabel, keyName, type Action } from '../input/KeyBindings';
 import type { Tip } from '../presentation/tutorial';
-import { fxIcon } from './fxIcon';
+import { fxIcon, resolveSync } from './fxIcon';
 import { Settings } from './SaveStore';
 
 export interface HudActions {
@@ -102,7 +102,7 @@ export class Hud {
   private setHtml(el: HTMLElement | undefined, html: string): void {
     if (!el || this.htmlCache.get(el) === html) return;
     this.htmlCache.set(el, html);
-    el.innerHTML = html;
+    el.innerHTML = resolveSync(html);
   }
 
   constructor(
@@ -422,6 +422,12 @@ export class Hud {
                 }),
             'bad',
           );
+          // a bite starts the clock on infection: worth interrupting the player for
+          if (p['bitten'])
+            this.toast(
+              text('log.bitten', { name: this.name(state, p['actorId']) }),
+              fxIcon('bite'),
+            );
           break;
         case 'ACTOR_KILLED':
           if (p['kind'] === 'survivor')
@@ -503,7 +509,10 @@ export class Hud {
             }),
             'good',
           );
-          this.toast(text('log.objectiveToast'));
+          this.toast(
+            text('log.objectiveToast'),
+            fxIcon(p['objectiveId'] === 'rescueCivilian' ? 'rescue_done' : 'objective_done'),
+          );
           break;
         case 'EXTRACTION_STARTED':
           this.push(state, text('log.radioOn'), 'warn');
@@ -649,7 +658,7 @@ export class Hud {
     const weapon = weaponLabel(s.weapon.weaponId, w.displayName);
     const tip = `${s.name} — ${role}\n${text('hud.weapon')}: ${weapon} (${ammo})\n${text('hud.health')} ${hp}/${s.maxHealth} · ${text('hud.stress')} ${Math.round(s.stress)} (${T.bands[s.band]}) · ${text('hud.stamina')} ${Math.round(s.stamina)}\n${act}`;
     return `<div class="unit panel ${s.alive ? '' : 'dead'} ${s.panicked ? 'panicking' : ''}" data-testid="unit-${s.id}" title="${esc(tip)}">
-      <div class="head"><span class="n">${s.isLeader ? '★ ' : ''}${esc(s.name)}</span><span class="ammo ${lowAmmo ? 'low' : ''}">${ammo}</span></div>
+      <div class="head"><span class="n">${s.alive && s.panicked ? fxIcon('panic_pulse', { label: T.bands['panic'] ?? '', size: 0.5, sync: true }) : ''}${s.isLeader ? '★ ' : ''}${esc(s.name)}</span><span class="ammo ${lowAmmo ? 'low' : ''}">${ammo}</span></div>
       <div class="r">${esc(role)} · ${esc(weapon)} ${inf}</div>
       <div class="bars">
         <span class="lbl" title="${text('hud.life')}">♥</span><div class="bar hp ${hp < s.maxHealth * 0.35 ? 'crit' : ''}"><i style="width:${pct(s.health, s.maxHealth)}%"></i></div><span class="num">${hp}</span>

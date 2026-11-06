@@ -24,7 +24,7 @@ export default tseslint.config(
   },
   {
     // page.evaluate crosses into the browser context, where window hooks are untyped
-    files: ['apps/web/e2e/**/*.ts'],
+    files: ['apps/web/e2e/**/*.ts', 'apps/web/promo/**/*.ts'],
     rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
   {

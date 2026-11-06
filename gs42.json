@@ -7,7 +7,7 @@
     "fr": "Chaque tir s'entend. Chaque ordre a un prix.",
     "de": "Jeder Schuss wird gehört. Jeder Befehl hat seinen Preis."
   },
-  "cover": "apps/web/public/icon.svg",
+  "cover": "docs/screenshots/cover.jpg",
   "genre": "tactics",
   "tech": ["TypeScript", "Phaser", "WebAudio"],
   "order": 4

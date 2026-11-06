@@ -18,7 +18,7 @@ type FxEntry = {
  */
 export function fxIcon(
   name: keyof typeof manifest.effects,
-  o: { still?: boolean; label?: string; size?: number } = {},
+  o: { still?: boolean; label?: string; size?: number; sync?: boolean } = {},
 ): string {
   const e = manifest.effects[name] as FxEntry;
   if ((e.columns ?? e.frames) < e.frames) return ''; // multi-row sheets are for the game canvas only
@@ -39,6 +39,9 @@ export function fxIcon(
     `--fx-steps:${e.loop ? `steps(${e.frames})` : `steps(${e.frames - 1}, jump-none)`}`,
     `--fx-dur:${e.frames / e.fps}s`,
     `--fx-iter:${e.loop ? 'infinite' : '1'}`,
+    // a loop in markup that is rebuilt often keeps its phase from the clock instead of restarting;
+    // the token is resolved when the markup is written (resolveSync), so cached markup stays equal
+    ...(o.sync && e.loop ? [`animation-delay:{{fx-sync:${e.frames / e.fps}}}`] : []),
   ].join(';');
   const aria = o.label ? `role="img" aria-label="${o.label}"` : 'aria-hidden="true"';
   return `<span class="fx-icon ${still ? 'still' : ''}" data-fx="${name}" style="${vars}" ${aria}></span>`;
@@ -50,4 +53,13 @@ export function noticeIcon(kind: string, still = false): string {
   return name
     ? fxIcon(name, { still }).replace('class="fx-icon', 'class="notice-icon fx-icon')
     : '';
+}
+
+/** Replaces sync tokens with the delay that puts each loop at the clock's phase right now. */
+export function resolveSync(html: string): string {
+  const now = Date.now() / 1000;
+  return html.replace(
+    /\{\{fx-sync:([\d.]+)\}\}/g,
+    (_, period: string) => `${-(now % Number(period)).toFixed(3)}s`,
+  );
 }

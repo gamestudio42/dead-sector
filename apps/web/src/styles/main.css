@@ -1645,3 +1645,6 @@ button.sector .fx-icon {
     animation-duration: 0.8s;
   }
 }
+.unit .head .fx-icon {
+  margin: -3px 4px 0 0;
+}

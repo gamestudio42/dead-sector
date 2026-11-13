@@ -88,6 +88,11 @@ stay dead, and the goal is to evacuate the shelter before day 12. Still open: ch
 deploys, recruits, shelter upgrades, operations beyond the three missions, and campaign
 difficulties. See the [project status](docs/STATUS.md).
 
+Want to help test? Open the game with
+[`?playtest=1`](https://gamestudio42.github.io/dead-sector/?playtest=1), play, then export the log in
+Opções → Playtest and send it with your answers to the [questionnaire](docs/testing/playtest.md#questionnaire-player-facing-portuguese).
+The log never leaves your browser unless you export it.
+
 ## Play
 
 Open **[gamestudio42.github.io/dead-sector](https://gamestudio42.github.io/dead-sector/)**. Choose

@@ -2,7 +2,11 @@
 
 ## NOW
 
-- Phase 6: playtest the strategic campaign (stages 6.1 and 6.2, live since 2026-10-30) before stage 6.3 (ADR 0015).
+- Playtest round 1 with 5–8 people (at least half new to the game), following
+  [docs/testing/playtest.md](docs/testing/playtest.md): send `?playtest=1`, collect the exported logs and the
+  questionnaire, merge with `node tools/playtest/report.mjs`, and write `docs/testing/playtest-round-1.md` with a
+  keep / change / cut decision per hypothesis (H1–H7). This also covers the strategic campaign (stages 6.1 and 6.2)
+  before stage 6.3 (ADR 0015).
 
 ## NEXT
 
@@ -23,6 +27,10 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Playtest kit: opt-in local playtest log (Opções → Playtest or `?playtest=1`; missions, deaths, abandons,
+  interface use, FPS, campaign days) exported as JSON by the tester, a report script that merges the files, and a
+  protocol with hypotheses and a questionnaire (ADR 0017).
 
 - Promo: screenshots captured by hand-stepped frames, a gameplay cover for the studio site and the store, and a
   30-second trailer cut from real gameplay with EffectCraft title cards and captions.

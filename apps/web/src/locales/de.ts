@@ -323,6 +323,21 @@ export const de: Catalog = {
     resetTipsHint: 'Zeigt schon gesehene Tipps wieder',
     reset: 'Nochmal',
     accessNote: 'Farbe steht immer neben einem Symbol oder Text. Pause und Tempo bestrafen nie.',
+    playtest: 'Playtest',
+    playtestIntro:
+      'Für Leute, die das Spiel für das Studio testen. Das Protokoll bleibt in diesem Browser und verlässt ihn nur beim Export.',
+    playtestOn: 'Playtest aufzeichnen',
+    playtestHint:
+      'Missionen, Tode, Befehle, Pausen und wie jede Mission endete. Nichts wird gesendet.',
+    playtestTester: 'Dein Name oder Spitzname',
+    playtestTesterHint: 'Optional, steht nur im Namen und Inhalt der exportierten Datei',
+    playtestLog: 'Aufgezeichnetes Protokoll',
+    playtestCount: '{n} Einträge',
+    playtestExport: 'Datei exportieren',
+    playtestClear: 'Löschen',
+    playtestConfirm: 'Bestätigen',
+    playtestNote:
+      'Schick die exportierte .json-Datei zusammen mit deinen Antworten auf den Fragebogen an das Team.',
     camera: 'Kameratempo',
     cameraHint: 'Umschalttaste halten, um 2,5× schneller zu schwenken',
     keyboard: 'Tastatur',

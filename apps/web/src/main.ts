@@ -9,9 +9,14 @@ import { TacticalScene } from './scenes/TacticalScene';
 import { AudioEngine } from './audio/AudioEngine';
 import { desktop } from './ui/desktop';
 import { applyContrast } from './ui/SaveStore';
+import { Playtest } from './telemetry/Playtest';
 import './ui/i18n';
 
 applyContrast();
+
+// Playtest builds are shared as links with ?playtest=1; the log stays in this browser.
+Playtest.applyQuery();
+Playtest.startSession();
 
 // Browsers only allow audio after a user gesture; unlock on the first one.
 const unlockAudio = (): void => AudioEngine.get().unlock();

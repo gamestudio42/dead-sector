@@ -1,4 +1,5 @@
 import { AudioEngine } from '../audio/AudioEngine';
+import { Playtest } from '../telemetry/Playtest';
 import {
   actionLabel,
   KeyBindings,
@@ -78,6 +79,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     ['video', 'options.video'],
     ['access', 'options.access'],
     ['controls', 'options.controls'],
+    ['playtest', 'options.playtest'],
   ] as const;
   const languages = LOCALES.map(
     (id) =>
@@ -128,6 +130,16 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       <div class="bind-cols small"><span></span><span>${text('options.primary')}</span><span>${text('options.alternate')}</span></div>
       <div class="bindings" data-el="bindings">${bindingRows()}</div>
       <p class="small" data-el="bindNote">${text('options.bindNote')}</p>
+    </section>
+    <section data-pane="playtest" ${active === 'playtest' ? '' : 'hidden'}>
+      <p class="small">${text('options.playtestIntro')}</p>
+      ${check('playtest', text('options.playtestOn'), Playtest.enabled, text('options.playtestHint'))}
+      <label class="opt"><span>${text('options.playtestTester')}<small>${text('options.playtestTesterHint')}</small></span>
+        <input type="text" maxlength="60" data-el="tester" data-testid="playtest-tester" autocomplete="off" /></label>
+      <label class="opt"><span>${text('options.playtestLog')}<small data-el="ptCount" data-testid="playtest-count">${text('options.playtestCount', { n: Playtest.count })}</small></span>
+        <span class="presets"><button data-act="ptExport" data-testid="btn-playtest-export" class="small-btn">${text('options.playtestExport')}</button>
+        <button data-act="ptClear" data-testid="btn-playtest-clear" class="small-btn">${text('options.playtestClear')}</button></span></label>
+      <p class="small">${text('options.playtestNote')}</p>
     </section>
   </div>`;
     q<HTMLSelectElement>('[data-opt=locale]').value = getLocale();
@@ -199,6 +211,26 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       btn.textContent = text('options.press');
       return;
     }
+    if (t.closest('[data-act=ptExport]')) {
+      Playtest.download(q<HTMLInputElement>('[data-el=tester]').value);
+      audio.uiClick();
+      return;
+    }
+    const clearBtn = t.closest<HTMLButtonElement>('[data-act=ptClear]');
+    if (clearBtn) {
+      // two clicks: the log cannot be recovered once cleared
+      if (clearBtn.dataset['armed'] !== '1') {
+        clearBtn.dataset['armed'] = '1';
+        clearBtn.textContent = text('options.playtestConfirm');
+        return;
+      }
+      Playtest.clear();
+      clearBtn.dataset['armed'] = '';
+      clearBtn.textContent = text('options.playtestClear');
+      q('[data-el=ptCount]').textContent = text('options.playtestCount', { n: Playtest.count });
+      audio.uiClick();
+      return;
+    }
     if (t.closest('[data-act=resetTips]')) {
       Settings.resetTips();
       Settings.tips = true;
@@ -258,6 +290,10 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       if (key === 'shake') Settings.shake = v;
       if (key === 'tips') Settings.tips = v;
       if (key === 'showFps') Settings.showFps = v;
+      if (key === 'playtest') {
+        Playtest.enabled = v;
+        q('[data-el=ptCount]').textContent = text('options.playtestCount', { n: Playtest.count });
+      }
       audio.applySettings();
       audio.uiClick();
       return;

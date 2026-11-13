@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { loadContent } from '@dead-sector/content';
 import { newCampaign } from '@dead-sector/sim';
 import { AudioEngine } from '../audio/AudioEngine';
+import { Playtest } from '../telemetry/Playtest';
 import { Backdrop } from '../render/Backdrop';
 import { CampaignStore } from '../ui/CampaignStore';
 import { desktop } from '../ui/desktop';
@@ -115,6 +116,7 @@ export class MenuScene extends Phaser.Scene {
       const t = (e.target as HTMLElement).closest<HTMLElement>('[data-act],[data-mission]');
       if (!t) return;
       audio.uiClick();
+      Playtest.log('menu', { choice: t.dataset['mission'] ?? t.dataset['act'] ?? '' });
       if (t.dataset['mission'])
         return this.scene.start('Briefing', { missionId: t.dataset['mission'], campaign: false });
       switch (t.dataset['act']) {
@@ -148,7 +150,10 @@ export class MenuScene extends Phaser.Scene {
       ([data, isCampaign]) => {
         if (!data) return;
         cont.disabled = false;
-        cont.onclick = () => this.scene.start('Tactical', { save: data, campaign: isCampaign });
+        cont.onclick = () => {
+          Playtest.log('menu', { choice: 'continue' });
+          this.scene.start('Tactical', { save: data, campaign: isCampaign });
+        };
       },
     );
   }

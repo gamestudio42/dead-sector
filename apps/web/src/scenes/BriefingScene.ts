@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { loadContent } from '@dead-sector/content';
 import { AudioEngine } from '../audio/AudioEngine';
+import { Playtest } from '../telemetry/Playtest';
 import { Backdrop } from '../render/Backdrop';
 import { clearUi, uiRoot } from '../ui/dom';
 import { CampaignStore } from '../ui/CampaignStore';
@@ -41,6 +42,8 @@ export class BriefingScene extends Phaser.Scene {
   create(data: { missionId?: string; campaign?: boolean }): void {
     const missionId = data.missionId ?? MISSION_ID;
     const inCampaign = !!data.campaign;
+    const openedAt = Date.now();
+    const readFor = () => Math.round((Date.now() - openedAt) / 1000);
     this.backdrop = new Backdrop(this, missionId);
     const content = loadContent();
     const mission = content.missions[missionId]!;
@@ -168,6 +171,7 @@ export class BriefingScene extends Phaser.Scene {
     q('[data-act=canon]').onclick = () => setSeed(mission.canonicalSeed, true);
     q('[data-act=back]').onclick = () => {
       audio.uiClick();
+      Playtest.log('briefing', { missionId, choice: 'back', seconds: readFor() });
       this.scene.start(inCampaign ? 'Strategic' : 'Menu');
     };
     if (inCampaign) {
@@ -215,6 +219,7 @@ export class BriefingScene extends Phaser.Scene {
     }
     q('[data-act=deploy]').onclick = () => {
       audio.uiClick();
+      Playtest.log('briefing', { missionId, choice: 'deploy', seconds: readFor(), seed });
       this.scene.start('Tactical', {
         missionId,
         seed,

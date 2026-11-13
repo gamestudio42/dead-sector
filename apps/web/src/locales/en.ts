@@ -322,6 +322,21 @@ export const en = {
     reset: 'Review',
     accessNote:
       'Color is always paired with an icon or text. Pause and speed never penalize the player.',
+    playtest: 'Playtest',
+    playtestIntro:
+      'For people testing the game for the studio. The log stays in this browser and is only shared when you export it.',
+    playtestOn: 'Record playtest log',
+    playtestHint:
+      'Missions, deaths, orders, pauses and how each mission ended. Nothing is sent anywhere.',
+    playtestTester: 'Your name or nickname',
+    playtestTesterHint: 'Optional, only goes into the exported file name and content',
+    playtestLog: 'Recorded log',
+    playtestCount: '{n} entries',
+    playtestExport: 'Export file',
+    playtestClear: 'Clear',
+    playtestConfirm: 'Confirm clear',
+    playtestNote:
+      'Send the exported .json file to the team together with your answers to the questionnaire.',
     camera: 'Camera speed',
     cameraHint: 'Hold Shift to move 2.5× faster',
     keyboard: 'Keyboard',

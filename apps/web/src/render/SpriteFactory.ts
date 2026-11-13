@@ -1,9 +1,14 @@
 import Phaser from 'phaser';
+import looks from './characterLooks.json';
+import sheets from '../../public/sprites/manifest.json';
+import { CELL } from './constants';
 
 /**
- * Procedurally painted top-down character sprites (original, generated at boot; no external
- * art). Every sheet faces +x so the renderer rotates it by the actor's facing. Frames are
- * drawn at 2× resolution (32 px) and displayed at half scale over one 16 px cell.
+ * Top-down character sheets. The game ships sheets rendered offline in Blender
+ * (tools/sprites/bake_characters.py, public/sprites); this file loads them and, for any sheet that
+ * fails to load, paints a simpler one in code with the same frame layout. Every sheet faces +x so
+ * the renderer rotates it by the actor's facing. Code-drawn frames are 32 px over one 16 px cell;
+ * baked frames are 128 px over two cells, so limbs, guns and corpses fit.
  */
 export const SPRITE_PX = 32;
 export const WALK_FRAMES = 8;
@@ -396,105 +401,10 @@ function makeBlood(scene: Phaser.Scene, key: string, seed: number): void {
   tex.refresh();
 }
 
-export const SURVIVOR_LOOKS: Record<string, SurvivorLook> = {
-  'alfa-leader': {
-    jacket: '#2f4766',
-    pants: '#22252b',
-    skin: '#c99a7a',
-    hair: '#2b211b',
-    band: '#5aa9ff',
-    headgear: 'cap',
-    weapon: 'pistol',
-  },
-  'alfa-marksman': {
-    jacket: '#4b5a3a',
-    pants: '#2e3127',
-    skin: '#8d5b40',
-    hair: '#141110',
-    band: '#5aa9ff',
-    headgear: 'none',
-    weapon: 'carbine',
-  },
-  'alfa-medic': {
-    jacket: '#c9c4b8',
-    pants: '#3a4049',
-    skin: '#e0b896',
-    hair: '#5a3b24',
-    band: '#5aa9ff',
-    headgear: 'none',
-    weapon: 'pistol',
-    medic: true,
-  },
-  'alfa-civilian': {
-    jacket: '#6a4f3b',
-    pants: '#2c3036',
-    skin: '#b5835f',
-    hair: '#7a6a5a',
-    band: '#5aa9ff',
-    headgear: 'none',
-    weapon: 'melee',
-  },
-  'bravo-leader': {
-    jacket: '#5a4632',
-    pants: '#2b2723',
-    skin: '#a8714f',
-    hair: '#1d1714',
-    band: '#ffad4d',
-    headgear: 'helmet',
-    weapon: 'carbine',
-  },
-  'bravo-scout': {
-    jacket: '#3b4a44',
-    pants: '#26292b',
-    skin: '#d4a684',
-    hair: '#b07a3e',
-    band: '#ffad4d',
-    headgear: 'none',
-    weapon: 'pistol',
-  },
-  'bravo-mechanic': {
-    jacket: '#6b5a2a',
-    pants: '#2f3a4a',
-    skin: '#7a4c33',
-    hair: '#111',
-    band: '#ffad4d',
-    headgear: 'cap',
-    weapon: 'shotgun',
-  },
-  'bravo-volunteer': {
-    jacket: '#7a3b34',
-    pants: '#2b2d31',
-    skin: '#e3c0a0',
-    hair: '#2a2420',
-    band: '#ffad4d',
-    headgear: 'none',
-    weapon: 'pistol',
-  },
-  civilian: {
-    jacket: '#b9a98a',
-    pants: '#43464d',
-    skin: '#d8b090',
-    hair: '#3a2a20',
-    band: null,
-    headgear: 'none',
-    weapon: 'none',
-  },
-};
-
-const ZOMBIE_LOOKS: ZombieLook[] = [
-  { shirt: '#4d5547', pants: '#2c2f30', skin: '#8b9a78', hair: '#2b2a24', lean: 0, arms: 0 },
-  { shirt: '#5b4a3f', pants: '#2a2c33', skin: '#9aa585', hair: '#4a3b2b', lean: 0.5, arms: 1 },
-  { shirt: '#3e4a57', pants: '#3a3328', skin: '#7f8f6e', hair: '#141414', lean: -0.3, arms: -1 },
-  { shirt: '#6a6458', pants: '#26282a', skin: '#a0a88c', hair: '#5d5b55', lean: 0.8, arms: 0.5 },
-];
-const RUNNER_LOOK: ZombieLook = {
-  shirt: '#6e2f28',
-  pants: '#25272b',
-  skin: '#a39a82',
-  hair: '#1a1210',
-  lean: 1.4,
-  arms: 2,
-};
+/** Colours and gear per survivor template, shared with the Blender bake. */
+export const SURVIVOR_LOOKS = looks.survivors as Record<string, SurvivorLook>;
+const ZOMBIE_LOOKS: ZombieLook[] = looks.walkers;
+const RUNNER_LOOK: ZombieLook = looks.runner;
 
 export const WALKER_VARIANTS = ZOMBIE_LOOKS.length;
 
@@ -504,25 +414,8 @@ export function survivorTextureKey(templateId: string, civilian: boolean): strin
     : `sv-${SURVIVOR_LOOKS[templateId] ? templateId : 'alfa-civilian'}`;
 }
 
-const HEAVY_LOOK: ZombieLook = {
-  shirt: '#3b3f36',
-  pants: '#1f2123',
-  skin: '#7d8a6c',
-  hair: '#1a1916',
-  lean: 0.3,
-  arms: 1.5,
-  bulk: 1.3,
-};
-const SCREAMER_LOOK: ZombieLook = {
-  shirt: '#8a8478',
-  pants: '#2a2c30',
-  skin: '#b3ae98',
-  hair: '#3a2c22',
-  lean: 1,
-  arms: -0.5,
-  bulk: 0.82,
-  mouth: true,
-};
+const HEAVY_LOOK: ZombieLook = looks.heavy;
+const SCREAMER_LOOK: ZombieLook = looks.screamer;
 
 /** Display scale per infected type relative to a survivor (heavy ones tower over people). */
 export const ZOMBIE_SCALE: Record<string, number> = { heavy: 1.35, screamer: 0.95 };
@@ -536,11 +429,28 @@ export function zombieTextureKey(typeId: string, id: string): string {
   return `zb-walker-${Math.abs(h) % ZOMBIE_LOOKS.length}`;
 }
 
-/** Generates every sheet once per game (textures survive scene restarts). */
+const baked = new Set<string>();
+
+/** Queues the baked character sheets; one that fails to load is painted in code instead. */
+export function loadCharacterSheets(scene: Phaser.Scene): void {
+  for (const key of Object.keys(sheets.sheets))
+    scene.load.spritesheet(key, `./sprites/${key}.png`, {
+      frameWidth: sheets.frameSize,
+      frameHeight: sheets.frameSize,
+    });
+}
+
+/** Display scale that makes a character sheet's frames the right size on the map. */
+export function spriteScale(key: string): number {
+  return baked.has(key) ? CELL / sheets.pxPerCell : CELL / SPRITE_PX;
+}
+
+/** Generates every missing sheet once per game (textures survive scene restarts). */
 export function buildSpriteTextures(
   scene: Phaser.Scene,
   weaponByTemplate: Record<string, string>,
 ): void {
+  for (const key of Object.keys(sheets.sheets)) if (scene.textures.exists(key)) baked.add(key);
   for (const [id, base] of Object.entries(SURVIVOR_LOOKS)) {
     const w = weaponByTemplate[id];
     const look: SurvivorLook =

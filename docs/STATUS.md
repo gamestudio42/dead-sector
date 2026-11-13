@@ -89,6 +89,11 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   rendered with EffectCraft from recipes
   in `tools/vfx`, checked for alpha and recorded in a manifest; particles remain as the fallback (ADR 0016).
 
+- **Character sheets baked in Blender** (ADR 0018). `tools/sprites/bake_characters.py` builds each survivor and
+  infected type from primitives on a joint rig and renders it from straight above. Each sheet has 10 frames at
+  128 px: the walk cycle, the attack and the corpse. Arms reach the weapon by two-bone IK. Every sheet gets a dark
+  outline, and the bake checks coverage and edge clipping. Colours and gear live in
+  `apps/web/src/render/characterLooks.json`, which the bake and the code-drawn fallback both read.
 - **Playtest kit**: opt-in local playtest log (Opções → Playtest or `?playtest=1`) that records sessions,
   menu and briefing choices, mission starts, objectives, deaths, bites, panics, blocked orders, alarm and hordes,
   30-second samples (FPS, squad, ammo, stress), how each mission ended or was left (menu, restart, load, closed tab),
@@ -98,7 +103,7 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **149/149** ✓ (plus the opt-in balance report).
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **167/167** ✓ (plus the opt-in balance report).
 - `pnpm e2e`: **14/14** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
@@ -118,9 +123,9 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Known issues and limitations
 
-- Art and audio are **original but procedural** (drawn/synthesized in code). Characters are small top-down
-  silhouettes with a simple walk cycle; a hand-made or licensed (CC0) sprite set would raise fidelity further. No music
-  score beyond the adaptive drone.
+- Art and audio are **original**. Terrain is painted in code and sound is synthesized. Characters are 3D models
+  rendered top-down in Blender (ADR 0018). They are built from primitives, with no textures or faces, so a sculpted
+  or hand-painted set would still raise fidelity. There is no music beyond the adaptive drone.
 - Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
 - Route map and timeline are not saved: a mission continued from a quicksave shows only what happened after loading.
 - Campaign balance is verified with scripted routes on canonical seeds; with heavy early losses the later missions get

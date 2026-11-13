@@ -449,9 +449,7 @@ export class TacticalScene extends Phaser.Scene {
     const ids = this.orderable();
     if (!ids.length) return;
     for (const id of ids) this.issue({ type: 'setMoveMode', squadId: id, payload: { mode } });
-    this.hud.toast(
-      `Modo: ${mode === 'sneak' ? 'furtivo' : mode === 'sprint' ? 'correr' : 'normal'} — clique direito para mover`,
-    );
+    this.hud.toast(text('toasts.moveMode', { mode: text(`game.mode.${mode}`) }));
   }
 
   private cyclePolicy(): void {
@@ -576,7 +574,7 @@ export class TacticalScene extends Phaser.Scene {
         return this.toggleDebug();
       case 'mute':
         this.audio.unlock();
-        return this.hud.toast(this.audio.toggleMute() ? 'Som desligado' : 'Som ligado');
+        return this.hud.toast(text(this.audio.toggleMute() ? 'toasts.soundOff' : 'toasts.soundOn'));
       case 'squad1':
       case 'squad2':
       case 'squad3':

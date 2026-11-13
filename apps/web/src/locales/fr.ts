@@ -521,6 +521,9 @@ export const fr: Catalog = {
     menu: 'Quitter vers le menu',
   },
   toasts: {
+    moveMode: 'Mode : {mode} — clic droit pour se déplacer',
+    soundOff: 'Son coupé',
+    soundOn: 'Son activé',
     badSave: 'Sauvegarde invalide : {message}',
     missingSquad: "Cette escouade n'est pas dans cette mission",
     selectSquad: 'Sélectionnez une escouade (1, 2, clic ou glisser)',

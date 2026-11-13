@@ -521,6 +521,9 @@ export const de: Catalog = {
     menu: 'Ins Menü',
   },
   toasts: {
+    moveMode: 'Modus: {mode} — Rechtsklick zum Bewegen',
+    soundOff: 'Ton aus',
+    soundOn: 'Ton an',
     badSave: 'Ungültiger Speicherstand: {message}',
     missingSquad: 'Diesen Trupp gibt es in dieser Mission nicht',
     selectSquad: 'Wählt einen Trupp (1, 2, Klick oder Ziehen)',

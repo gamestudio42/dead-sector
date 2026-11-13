@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ContentValidationError, loadContent } from '@dead-sector/content';
 import { createFxAnims, loadFxSheets } from '../render/fxSheets';
-import { buildSpriteTextures } from '../render/SpriteFactory';
+import { buildSpriteTextures, loadCharacterSheets } from '../render/SpriteFactory';
 import { uiRoot } from '../ui/dom';
 import { text } from '../ui/i18n';
 
@@ -13,9 +13,11 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     loadFxSheets(this);
-    // a missing sheet must not stop the game: the effects fall back to code-drawn particles
+    loadCharacterSheets(this);
+    // a missing sheet must not stop the game: effects fall back to code-drawn particles and
+    // characters to code-drawn sheets
     this.load.on('loaderror', (file: Phaser.Loader.File) =>
-      console.warn(`fx sheet missing: ${file.key}`),
+      console.warn(`sheet missing: ${file.key}`),
     );
   }
 

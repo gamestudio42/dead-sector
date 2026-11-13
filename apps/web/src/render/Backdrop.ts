@@ -3,7 +3,7 @@ import { loadContent } from '@dead-sector/content';
 import { createWorld, tileAt, type World } from '@dead-sector/sim';
 import { CELL, DEPTH } from './constants';
 import { MapRenderer } from './MapRenderer';
-import { SPRITE_PX, WALK_FRAMES, zombieTextureKey } from './SpriteFactory';
+import { spriteScale, WALK_FRAMES, zombieTextureKey } from './SpriteFactory';
 
 interface Drifter {
   sprite: Phaser.GameObjects.Image;
@@ -67,7 +67,7 @@ export class Backdrop {
       const sprite = scene.add
         .image(x * CELL, y * CELL, key, 0)
         .setDepth(DEPTH.actors)
-        .setScale(CELL / SPRITE_PX);
+        .setScale(spriteScale(key));
       this.drifters.push({
         sprite,
         shadow,

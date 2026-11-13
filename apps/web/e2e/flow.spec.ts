@@ -345,7 +345,7 @@ test('the quit button exists only inside the desktop shell', async ({ page }) =>
   expect(await page.evaluate(() => (window as any).__quit)).toBe(true);
 });
 
-for (const id of ['sinal-fraco', 'plantao-noturno'])
+for (const id of ['sinal-fraco', 'plantao-noturno', 'cerco-dom-bosco'])
   test(`mission ${id} loads its own map, texts and objectives`, async ({ page }) => {
     const errors = trackErrors(page);
     await page.goto('/?lang=pt-BR');
@@ -360,6 +360,27 @@ for (const id of ['sinal-fraco', 'plantao-noturno'])
     await page.evaluate(() => (window as any).__DEAD_SECTOR__.fastForward(100));
     expect(errors).toEqual([]);
   });
+
+test('defence: the siege is announced, the hold banner counts, and the plan holds the school', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-new-mission').click();
+  await page.getByTestId('pick-cerco-dom-bosco').click();
+  await expect(page.locator('.obj-list li')).toHaveCount(6);
+  await page.getByTestId('btn-deploy').click();
+  await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.startPlan('mission'));
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.fastForward(1300));
+  await expect(page.locator('[data-el=banner]')).toContainText('Cerco em');
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.fastForward(500));
+  await expect(page.locator('[data-el=banner]')).toContainText('Defesa');
+  await playPlanToEnd(page, 'mission');
+  await expect(page.getByTestId('debrief')).toBeVisible({ timeout: 15_000 });
+  expect(await hook(page, (h) => h.state().mission.status)).toBe('success');
+  expect(errors).toEqual([]);
+});
 
 test('campaign: strategic map, operations, losses and days persist', async ({ page }) => {
   const errors = trackErrors(page);

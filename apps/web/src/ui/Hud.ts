@@ -547,6 +547,42 @@ export class Hud {
           this.toast(msg, fxIcon('horde_alert'));
           break;
         }
+        case 'SIEGE_INCOMING': {
+          const msg = text('log.siegeIncoming', {
+            seconds: String(p['inSeconds']),
+            waves: String(p['waves']),
+          });
+          this.push(state, msg, 'bad');
+          this.toast(msg, fxIcon('horde_alert'));
+          break;
+        }
+        case 'SIEGE_WAVE': {
+          const dirs = (p['spawnerIds'] as string[]).map((id) => T.spawner[id] ?? '');
+          const joined =
+            dirs.length > 1
+              ? `${dirs.slice(0, -1).join(', ')} ${text('log.and')} ${dirs.at(-1)}`
+              : (dirs[0] ?? '');
+          const msg = text('log.siegeWave', {
+            wave: String(p['wave']),
+            of: String(p['of']),
+            size: String(p['size']),
+            dirs: joined,
+          });
+          this.push(state, msg, 'bad');
+          this.toast(msg, fxIcon('horde_alert'));
+          break;
+        }
+        case 'DEFENCE_HOLD_CHANGED': {
+          const msg = text(p['holding'] ? 'log.defenceResumed' : 'log.defencePaused', {
+            seconds: String(p['secondsLeft']),
+          });
+          this.push(state, msg, p['holding'] ? 'good' : 'bad');
+          if (!p['holding']) this.toast(msg);
+          break;
+        }
+        case 'DEFENCE_COMPLETED':
+          this.push(state, text('log.defenceDone'), 'good');
+          break;
         case 'HORDE_SPAWNED':
           this.push(
             state,
@@ -783,6 +819,23 @@ export class Hud {
           `${text('hud.holdBanner', { held: Math.floor(m.extractionHoldTicks / 10), need: Math.round(m.extractionHoldRequiredTicks / 10) })}${civIn ? '' : ` · ${text('hud.civilianOut')}`}`,
         );
       }
+    } else if (
+      world.mission.objectives.defence &&
+      m.status === 'running' &&
+      !m.defenceDone &&
+      m.siegeAnnounced
+    ) {
+      banner.style.display = 'block';
+      if (state.tick < m.siegeStartTick)
+        this.setHtml(
+          banner,
+          text('hud.siegeSoon', { seconds: Math.ceil((m.siegeStartTick - state.tick) / 10) }),
+        );
+      else
+        this.setHtml(
+          banner,
+          `${text('hud.defenceBanner', { held: Math.floor(m.defenceHoldTicks / 10), need: Math.round(m.defenceRequiredTicks / 10) })}${m.defenceHolding ? '' : ` · ${text('hud.defencePaused')}`}`,
+        );
     } else banner.style.display = 'none';
 
     const dbg = els['debug'] as HTMLElement;

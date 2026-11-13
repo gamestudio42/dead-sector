@@ -1,0 +1,261 @@
+{
+  "id": "cerco-dom-bosco",
+  "displayName": "Cerco na Dom Bosco",
+  "briefing": "Uma horda desce a avenida rumo à Escola Dom Bosco, o abrigo do grupo. O comboio de evacuação chega em poucos minutos, mas a escola precisa aguentar até lá. Pegue as tábuas do almoxarifado, traga a professora que ficou na sala dos fundos e segure o prédio. Quando o cerco passar, sinalize o comboio no portão sul.",
+  "mapId": "escola-dom-bosco",
+  "canonicalSeed": 1977,
+  "difficultyId": "normal",
+  "timeLimitSeconds": 900,
+  "isNight": false,
+  "squads": [
+    {
+      "id": "alfa",
+      "displayName": "Alfa",
+      "memberIds": ["alfa-leader", "alfa-marksman", "alfa-medic", "alfa-civilian"],
+      "spawn": {
+        "x": 35.5,
+        "y": 59.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    },
+    {
+      "id": "bravo",
+      "displayName": "Bravo",
+      "memberIds": ["bravo-leader", "bravo-scout", "bravo-mechanic", "bravo-volunteer"],
+      "spawn": {
+        "x": 44.5,
+        "y": 59.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    }
+  ],
+  "civilian": {
+    "id": "civilian-irene",
+    "name": "Irene Duarte",
+    "role": "Professora",
+    "position": {
+      "x": 49.5,
+      "y": 29.5
+    },
+    "maxHealth": 100
+  },
+  "zombieZones": [
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 35,
+        "y0": 27,
+        "x1": 40,
+        "y1": 33
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 1,
+        "y0": 16,
+        "x1": 78,
+        "y1": 19
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 60,
+        "y0": 20,
+        "x1": 63,
+        "y1": 78
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 4,
+        "y0": 46,
+        "x1": 11,
+        "y1": 53
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 1,
+        "y0": 64,
+        "x1": 15,
+        "y1": 78
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 1,
+      "rect": {
+        "x0": 64,
+        "y0": 38,
+        "x1": 78,
+        "y1": 41
+      }
+    },
+    {
+      "typeId": "screamer",
+      "count": 1,
+      "rect": {
+        "x0": 45,
+        "y0": 67,
+        "x1": 56,
+        "y1": 76
+      }
+    }
+  ],
+  "spawners": [
+    {
+      "id": "spawn-north",
+      "cell": {
+        "x": 39,
+        "y": 0
+      }
+    },
+    {
+      "id": "spawn-east",
+      "cell": {
+        "x": 79,
+        "y": 39
+      }
+    },
+    {
+      "id": "spawn-south",
+      "cell": {
+        "x": 39,
+        "y": 79
+      }
+    },
+    {
+      "id": "spawn-west",
+      "cell": {
+        "x": 0,
+        "y": 39
+      }
+    }
+  ],
+  "reinforcements": {
+    "budget": 10,
+    "maxConcurrent": 70,
+    "pressureThreshold": 90,
+    "pressureDecayPerSecond": 0.08,
+    "cooldownSeconds": 15,
+    "runnerChance": 0.2,
+    "minSurvivorDistance": 14
+  },
+  "objectives": {
+    "perimeter": {
+      "x0": 28,
+      "y0": 27,
+      "x1": 51,
+      "y1": 44
+    },
+    "cabinet": {
+      "cell": {
+        "x": 29,
+        "y": 28
+      },
+      "interactSeconds": 5,
+      "grantsKits": 2,
+      "grantsRounds": 24
+    },
+    "civilianRescueSeconds": 3,
+    "extraction": {
+      "beacon": {
+        "x": 39.5,
+        "y": 58.5
+      },
+      "zone": {
+        "x0": 33,
+        "y0": 58,
+        "x1": 46,
+        "y1": 63
+      },
+      "activateSeconds": 2,
+      "holdSeconds": 15,
+      "activationNoise": 80,
+      "pulseNoise": 45,
+      "pulseSeconds": 5
+    },
+    "defence": {
+      "zone": {
+        "x0": 28,
+        "y0": 27,
+        "x1": 51,
+        "y1": 44
+      },
+      "startsAtSeconds": 150,
+      "warningSeconds": 30,
+      "holdSeconds": 180,
+      "waves": [
+        {
+          "atSeconds": 0,
+          "spawnerIds": ["spawn-north"],
+          "walkers": 5
+        },
+        {
+          "atSeconds": 35,
+          "spawnerIds": ["spawn-west", "spawn-east"],
+          "walkers": 6,
+          "runners": 1
+        },
+        {
+          "atSeconds": 75,
+          "spawnerIds": ["spawn-south", "spawn-north"],
+          "walkers": 6,
+          "runners": 1,
+          "heavies": 1
+        },
+        {
+          "atSeconds": 115,
+          "spawnerIds": ["spawn-north", "spawn-east", "spawn-west"],
+          "walkers": 7,
+          "runners": 2,
+          "heavies": 1
+        },
+        {
+          "atSeconds": 150,
+          "spawnerIds": ["spawn-east", "spawn-west"],
+          "walkers": 5,
+          "runners": 1,
+          "heavies": 1
+        }
+      ]
+    }
+  },
+  "texts": {
+    "area": "escola",
+    "item": "os suprimentos",
+    "itemTag": "SUPRIMENTOS",
+    "itemDone": "Suprimentos",
+    "person": "a professora",
+    "personTag": "PROFESSORA",
+    "objectives": {
+      "enterPerimeter": "Entrar no prédio da escola",
+      "collectMedicine": "Pegar tábuas e munição no almoxarifado (5 s)",
+      "rescueCivilian": "Buscar a professora na sala dos fundos (3 s)",
+      "holdPosition": "Defender o prédio até o comboio chegar (3 min com alguém lá dentro)",
+      "activateExtraction": "Sinalizar o comboio no portão sul",
+      "holdExtraction": "Resistir 15 s no portão com a professora"
+    },
+    "intel": [
+      "O cerco começa em 2 minutos e meio. Até lá, prepare a escola: ninguém sabe por onde a horda vai entrar.",
+      "O prédio tem cinco portas (a leste está trancada) e dez janelas. Cada esquadrão chega com 2 kits; o almoxarifado tem tábuas para mais 2 por esquadrão e munição.",
+      "Barricadas atrasam os infectados, não os param. Martelar é barulhento.",
+      "O cronômetro da defesa só corre com alguém do esquadrão dentro do prédio.",
+      "As ondas chegam pelas quatro avenidas, cada vez maiores, com corredores e brutamontes.",
+      "Há um gritador no estacionamento do mercado, ao sul. O comboio para no portão sul."
+    ]
+  }
+}

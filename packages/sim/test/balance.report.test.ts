@@ -26,6 +26,7 @@ describe.skipIf(!enabled)('balance report', () => {
       ['a-ultima-farmacia', 'combate', MISSION_PLANS['a-ultima-farmacia']!],
       ['sinal-fraco', 'roteiro', MISSION_PLANS['sinal-fraco']!],
       ['plantao-noturno', 'roteiro', MISSION_PLANS['plantao-noturno']!],
+      ['cerco-dom-bosco', 'saguão', MISSION_PLANS['cerco-dom-bosco']!],
     ];
     const rows: string[] = [];
     for (const [id, route, plan] of runs) {

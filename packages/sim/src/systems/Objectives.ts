@@ -15,6 +15,7 @@ import { dist } from '../spatial/vec';
 import { emitNoise } from './Noise';
 import { BEACON_ID, CABINET_ID, orderTarget, pathMemberTo } from './Orders';
 import { pathDone } from './SurvivorAI';
+import { updateDefenceHold } from './Siege';
 
 export const inRect = (p: Vec2, r: Rect): boolean =>
   p.x >= r.x0 && p.x < r.x1 + 1 && p.y >= r.y0 && p.y < r.y1 + 1;
@@ -131,6 +132,13 @@ function applyInteraction(
   }
   if (kind === 'cabinet') {
     state.mission.medicineCollected = true;
+    const kits = world.mission.objectives.cabinet.grantsKits;
+    if (kits > 0) for (const sq of state.squads) sq.barricadeKits += kits;
+    const rounds = world.mission.objectives.cabinet.grantsRounds;
+    if (rounds > 0)
+      for (const sv of state.survivors)
+        if (sv.squadId !== null && sv.alive && sv.weapon && sv.weapon.magazineCapacity > 0)
+          sv.weapon.reserveRounds += rounds;
     completeObjective(state, 'collectMedicine');
     return true;
   }
@@ -146,6 +154,7 @@ function applyInteraction(
   }
   if (kind === 'beacon') {
     if (!state.mission.medicineCollected) return false;
+    if (world.mission.objectives.defence && !state.mission.defenceDone) return false;
     const ex = world.mission.objectives.extraction;
     state.mission.extractionActive = true;
     state.mission.extractionStartedTick = state.tick;
@@ -299,6 +308,8 @@ export function evaluateObjectives(world: World, state: GameState): void {
 
   if (squadSurvivors.length === 0) return endMission(state, world, 'failed', 'allDead');
   if (civ && !civ.alive) return endMission(state, world, 'failed', 'civilianDied');
+
+  if (updateDefenceHold(world, state)) completeObjective(state, 'holdPosition');
 
   if (m.extractionActive) {
     const ex = mission.objectives.extraction;

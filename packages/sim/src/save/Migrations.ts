@@ -34,6 +34,18 @@ const MIGRATIONS: Record<number, Migration> = {
     m['lastHordeTick'] ??= -100000;
     return state;
   },
+  // v4: defence missions (siege waves and a hold timer); older saves have no defence
+  3: (state) => {
+    const m = state['mission'] as Record<string, unknown>;
+    m['siegeStartTick'] ??= -1;
+    m['siegeAnnounced'] ??= false;
+    m['wavesSpawned'] ??= 0;
+    m['defenceHoldTicks'] ??= 0;
+    m['defenceRequiredTicks'] ??= 0;
+    m['defenceHolding'] ??= false;
+    m['defenceDone'] ??= false;
+    return state;
+  },
 };
 
 export class SaveVersionError extends Error {}

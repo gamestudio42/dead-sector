@@ -356,6 +356,8 @@ export function planOrder(
       return block(state, squad, order, 'noKits');
     if (target.kind === 'beacon' && !state.mission.medicineCollected)
       return block(state, squad, order, 'requiresMedicine');
+    if (target.kind === 'beacon' && world.mission.objectives.defence && !state.mission.defenceDone)
+      return block(state, squad, order, 'requiresDefence');
     const candidates = [...members].sort(
       (a, b) =>
         dist(a.position, target.position) - dist(b.position, target.position) ||

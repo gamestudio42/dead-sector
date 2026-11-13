@@ -26,8 +26,10 @@ import pharmacyMissionJson from '../missions/a-ultima-farmacia.json';
 import ferrugemMapJson from '../maps/bairro-da-ferrugem.json';
 import sinalFracoMissionJson from '../missions/sinal-fraco.json';
 import plantaoMissionJson from '../missions/plantao-noturno.json';
+import cercoMissionJson from '../missions/cerco-dom-bosco.json';
 import ferroviaMapJson from '../maps/patio-da-ferrovia.json';
 import centroVelhoMapJson from '../maps/centro-velho.json';
+import escolaMapJson from '../maps/escola-dom-bosco.json';
 import ferrugemCampaignJson from '../campaigns/ferrugem.json';
 
 export * from '../schemas/index';
@@ -91,8 +93,8 @@ export const builtInRawContent: RawContent = {
   survivors: survivorsJson,
   difficulties: difficultyJson,
   rules: rulesJson,
-  missions: [pharmacyMissionJson, sinalFracoMissionJson, plantaoMissionJson],
-  maps: [ferrugemMapJson, ferroviaMapJson, centroVelhoMapJson],
+  missions: [pharmacyMissionJson, sinalFracoMissionJson, plantaoMissionJson, cercoMissionJson],
+  maps: [ferrugemMapJson, ferroviaMapJson, centroVelhoMapJson, escolaMapJson],
   campaigns: [ferrugemCampaignJson],
 };
 
@@ -164,6 +166,18 @@ export function validateContent(raw: RawContent): ContentBundle {
       }
       if (m.hordes && m.hordes.heavyPerHorde > 0 && !bundle.zombieTypes['heavy'])
         issues.push(`mission ${m.id} hordes need the heavy infected type`);
+      const def = m.objectives.defence;
+      if (def) {
+        for (const w of def.waves)
+          for (const id of w.spawnerIds)
+            if (!m.spawners.some((sp) => sp.id === id))
+              issues.push(`mission ${m.id} defence wave uses unknown spawner ${id}`);
+        if (!m.texts.objectives.holdPosition)
+          issues.push(`mission ${m.id} has a defence but no holdPosition text`);
+        const z = def.zone;
+        if (z.x1 >= map.width || z.y1 >= map.height || z.x0 > z.x1 || z.y0 > z.y1)
+          issues.push(`mission ${m.id} defence zone is outside the map`);
+      }
     }
   }
   for (const c of Object.values(bundle.campaigns)) {

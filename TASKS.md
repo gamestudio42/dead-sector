@@ -18,7 +18,8 @@
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
-- Art upgrade: replace procedural character sheets with a hand-made or CC0 set (frame layout: 8 walk, attack, corpse).
+- Art upgrade, next step: give the Blender characters sculpted heads and hands, cloth folds and a few faces; add
+  more walker variants (only 4 today), reusing `tools/sprites/bake_characters.py`.
 - More objective types (defence) for future missions.
 
 ## BLOCKED
@@ -27,6 +28,10 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Character sheets rendered in Blender: 9 survivors and 7 infected looks, top-down 3D with an IK rig, outlined,
+  checked for coverage and clipping, with the code-drawn sheets kept as fallback (ADR 0018). Two hardcoded
+  Portuguese toasts (move mode, mute) now come from the locale files.
 
 - Playtest kit: opt-in local playtest log (Opções → Playtest or `?playtest=1`; missions, deaths, abandons,
   interface use, FPS, campaign days) exported as JSON by the tester, a report script that merges the files, and a

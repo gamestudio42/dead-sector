@@ -15,7 +15,7 @@ import { CELL, COLORS, DEPTH, SQUAD_COLORS } from './constants';
 import {
   ATTACK_FRAME,
   CORPSE_FRAME,
-  SPRITE_PX,
+  spriteScale,
   survivorTextureKey,
   WALK_FRAMES,
   zombieTextureKey,
@@ -24,7 +24,6 @@ import {
 
 export type PositionLookup = (id: string, current: Vec2) => Vec2;
 
-const SCALE = CELL / SPRITE_PX;
 /** Walk-cycle frames advanced per cell travelled. */
 const FRAMES_PER_CELL = 6;
 
@@ -41,6 +40,8 @@ interface ActorView {
   survivor: boolean;
   /** Size relative to a survivor (heavy infected are bigger). */
   scale: number;
+  /** Sheet scale: baked and code-drawn sheets have different frame sizes. */
+  base: number;
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
@@ -114,7 +115,10 @@ export class EntityRenderer {
         .image(0, 0, 'fx-shadow')
         .setDepth(DEPTH.shadows)
         .setScale(0.62 * scale);
-      const sprite = this.scene.add.image(0, 0, texture, 0).setDepth(DEPTH.actors).setScale(SCALE);
+      const sprite = this.scene.add
+        .image(0, 0, texture, 0)
+        .setDepth(DEPTH.actors)
+        .setScale(spriteScale(texture));
       v = {
         sprite,
         shadow,
@@ -127,6 +131,7 @@ export class EntityRenderer {
         phase: (this.views.size * 1.7) % (Math.PI * 2),
         survivor,
         scale,
+        base: spriteScale(texture),
       };
       this.views.set(id, v);
     }
@@ -153,10 +158,10 @@ export class EntityRenderer {
         v.sprite.setFrame(CORPSE_FRAME).setDepth(DEPTH.corpses).clearTint();
         v.shadow.setVisible(false);
         if (deathSeen) {
-          v.sprite.setScale(SCALE * v.scale * 0.85);
+          v.sprite.setScale(v.base * v.scale * 0.85);
           this.scene.tweens.add({
             targets: v.sprite,
-            scale: SCALE * v.scale,
+            scale: v.base * v.scale,
             rotation: v.angle + 0.35,
             duration: 380,
             ease: 'Quad.easeOut',
@@ -198,7 +203,7 @@ export class EntityRenderer {
       .setFrame(frame)
       .setPosition(x, y)
       .setRotation(v.angle)
-      .setScale(SCALE * v.scale * breathe)
+      .setScale(v.base * v.scale * breathe)
       .setAlpha(v.alpha)
       .setVisible(v.alpha > 0.02);
     if ((this.hurtUntil.get(id) ?? 0) > now) v.sprite.setTintFill(0xff5040);

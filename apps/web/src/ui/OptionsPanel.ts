@@ -95,6 +95,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
     <section data-pane="audio" ${active === 'audio' ? '' : 'hidden'}>
       ${range('volume', text('options.volume'), Settings.volume)}
       ${range('sfxVolume', text('options.sfx'), Settings.sfxVolume)}
+      ${range('musicVolume', text('options.music'), Settings.musicVolume)}
       ${range('ambienceVolume', text('options.ambience'), Settings.ambienceVolume)}
       ${check('muted', text('options.mute'), Settings.muted, text('options.muteHint', { key: keyName('mute') }))}
     </section>
@@ -277,6 +278,7 @@ export function openOptions(onClose: () => void): HTMLDivElement {
       if (key === 'volume') Settings.volume = v;
       if (key === 'sfxVolume') Settings.sfxVolume = v;
       if (key === 'ambienceVolume') Settings.ambienceVolume = v;
+      if (key === 'musicVolume') Settings.musicVolume = v;
       if (key === 'cameraSpeed') Settings.cameraSpeed = v;
       audio.applySettings();
       return;

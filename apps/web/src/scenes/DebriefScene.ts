@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { AudioEngine } from '../audio/AudioEngine';
 import { loadContent } from '@dead-sector/content';
 import { applyOperationResult, buildDebrief, createWorld, type GameState } from '@dead-sector/sim';
 import { CampaignStore } from '../ui/CampaignStore';
@@ -36,6 +37,8 @@ export class DebriefScene extends Phaser.Scene {
   }
 
   create(data: { state: GameState; record?: MissionRecord; campaign?: boolean }): void {
+    // let the victory or defeat sting finish before the theme comes back
+    this.time.delayedCall(2500, () => AudioEngine.get().setMusic('menu'));
     clearUi();
     const state = data.state;
     const mission = loadContent().missions[state.missionId];

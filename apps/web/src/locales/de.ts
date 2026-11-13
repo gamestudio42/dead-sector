@@ -296,6 +296,7 @@ export const de: Catalog = {
     controls: 'Steuerung',
     volume: 'Gesamtlautstärke',
     sfx: 'Effekte',
+    music: 'Musik',
     ambience: 'Umgebung und Spannung',
     mute: 'Stumm',
     muteHint: 'Taste {key} während der Mission',

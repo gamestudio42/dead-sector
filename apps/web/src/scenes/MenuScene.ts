@@ -56,6 +56,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    AudioEngine.get().setMusic('menu');
     applyContrast();
     this.backdrop = new Backdrop(this, MISSION_ID);
     const content = loadContent();

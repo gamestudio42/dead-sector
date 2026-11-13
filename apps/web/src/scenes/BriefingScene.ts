@@ -40,6 +40,7 @@ export class BriefingScene extends Phaser.Scene {
   }
 
   create(data: { missionId?: string; campaign?: boolean }): void {
+    AudioEngine.get().setMusic('menu');
     const missionId = data.missionId ?? MISSION_ID;
     const inCampaign = !!data.campaign;
     const openedAt = Date.now();

@@ -11,7 +11,8 @@
 ## NEXT
 
 - Publish the trailer (`node tools/promo/trailer.mjs`, ~30 s, 1080p, silent) on the studio's video channel and in the
-  Snap Store listing; consider a soundtrack, since the game's sound is synthesized live and is not captured.
+  Snap Store listing, with the 30 s score cue from `node tools/music/render.mjs` (`dead-sector-trailer-30s.wav`) as
+  its soundtrack.
 - Phase 6.3: choose who deploys and how much ammo they take, roster by ID, recruits from the population.
 - Phase 6.4: scavenging objective, operations for Avenida Norte and Mercadão Leste, variants by sector state.
 - Phase 6.5: shelter upgrades (parts have no use yet), campaign difficulties, economy balance report.
@@ -28,6 +29,9 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Adaptive score synthesized at runtime: menu, campaign and tactical pieces in A minor, tactical layers driven by
+  threat, alarm and extraction, Música volume slider, and an offline WAV renderer for trailers (ADR 0019).
 
 - Character sheets rendered in Blender: 9 survivors and 7 infected looks, top-down 3D with an IK rig, outlined,
   checked for coverage and clipping, with the code-drawn sheets kept as fallback (ADR 0018). Two hardcoded

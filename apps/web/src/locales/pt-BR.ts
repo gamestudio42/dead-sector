@@ -295,6 +295,7 @@ export const ptBR: Catalog = {
     controls: 'Controles',
     volume: 'Volume geral',
     sfx: 'Efeitos',
+    music: 'Música',
     ambience: 'Ambiente e tensão',
     mute: 'Sem som',
     muteHint: 'Tecla {key} durante a missão',

@@ -187,6 +187,7 @@ export class TacticalScene extends Phaser.Scene {
     this.barkR = new BarkRenderer(this);
     this.audio.unlock();
     this.audio.startAmbience();
+    this.audio.setMusic('tactical');
     if (new URLSearchParams(location.search).get('debug') === '1') this.toggleDebug();
     this.camCtl = new CameraController(this, world.width, world.height);
     const alfa = this.sim.state.survivors.find((s) => s.squadId === 'alfa');
@@ -677,8 +678,13 @@ export class TacticalScene extends Phaser.Scene {
     );
     if (time >= this.nextTensionAt) {
       this.nextTensionAt = time + 400;
-      this.audio.setTension(this.sim.ended ? 0 : threatLevel(this.sim.state));
-      this.audio.setRadio(this.sim.state.mission.extractionActive && !this.sim.ended);
+      const threat = this.sim.ended ? 0 : threatLevel(this.sim.state);
+      const extraction = this.sim.state.mission.extractionActive && !this.sim.ended;
+      this.audio.setTension(threat);
+      this.audio.setRadio(extraction);
+      // the score stops when the mission ends so the victory or defeat sting is heard alone
+      if (this.sim.ended) this.audio.setMusic('off');
+      else this.audio.setMusicIntensity(threat, this.sim.state.mission.alarmLevel, extraction);
     }
     this.dbgR?.draw(this.sim.state);
     const st = this.sim.state;

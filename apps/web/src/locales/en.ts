@@ -517,6 +517,9 @@ export const en = {
     menu: 'Exit to menu',
   },
   toasts: {
+    moveMode: 'Mode: {mode} — right-click to move',
+    soundOff: 'Sound off',
+    soundOn: 'Sound on',
     badSave: 'Invalid save: {message}',
     missingSquad: 'That squad is not in this mission',
     selectSquad: 'Select a squad (1, 2, click or drag)',

@@ -520,6 +520,9 @@ export const es: Catalog = {
     menu: 'Salir al menú',
   },
   toasts: {
+    moveMode: 'Modo: {mode} — clic derecho para moverse',
+    soundOff: 'Sonido desactivado',
+    soundOn: 'Sonido activado',
     badSave: 'Guardado inválido: {message}',
     missingSquad: 'Ese escuadrón no está en esta misión',
     selectSquad: 'Selecciona un escuadrón (1, 2, clic o arrastre)',

@@ -517,6 +517,9 @@ export const ptBR: Catalog = {
     menu: 'Sair para o menu',
   },
   toasts: {
+    moveMode: 'Modo: {mode} — clique direito para mover',
+    soundOff: 'Som desligado',
+    soundOn: 'Som ligado',
     badSave: 'Salvamento inválido: {message}',
     missingSquad: 'Esquadrão inexistente nesta missão',
     selectSquad: 'Selecione um esquadrão (1, 2, clique ou arraste)',

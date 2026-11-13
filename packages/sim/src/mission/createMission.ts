@@ -1,5 +1,5 @@
 import type { CarryOver } from '../campaign/Campaign';
-import type { ContentBundle, SurvivorTemplate } from '@dead-sector/content';
+import type { ContentBundle, MissionDef, SurvivorTemplate } from '@dead-sector/content';
 import type {
   Door,
   GameState,
@@ -15,7 +15,7 @@ import { SeededRng, seedToRngState } from '../engine/SeededRng';
 import { blocksMovement } from '../spatial/Grid';
 import { cellCenter, dist } from '../spatial/vec';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const SURVIVOR_RADIUS = 0.25;
 export const ZOMBIE_RADIUS = 0.28;
 
@@ -26,6 +26,14 @@ export const OBJECTIVE_ORDER: ObjectiveId[] = [
   'activateExtraction',
   'holdExtraction',
 ];
+
+/** The mission's objectives in order: a defence mission holds its position before the radio. */
+export function objectiveOrder(mission: Pick<MissionDef, 'objectives'>): ObjectiveId[] {
+  if (!mission.objectives.defence) return OBJECTIVE_ORDER;
+  const out = [...OBJECTIVE_ORDER];
+  out.splice(out.indexOf('activateExtraction'), 0, 'holdPosition');
+  return out;
+}
 
 function makeSurvivor(
   t: Pick<
@@ -246,7 +254,11 @@ export function createMissionState(
     contacts: [],
     pendingNoises: [],
     recentNoises: [],
-    objectives: OBJECTIVE_ORDER.map((id) => ({ id, status: 'pending', completedAtTick: null })),
+    objectives: objectiveOrder(mission).map((id) => ({
+      id,
+      status: 'pending',
+      completedAtTick: null,
+    })),
     mission: {
       status: 'running',
       endReason: null,
@@ -278,6 +290,17 @@ export function createMissionState(
       hordesSpawned: 0,
       nextHordeTick: mission.hordes ? Math.round(mission.hordes.firstAtSeconds * 10) : -1,
       pendingHorde: null,
+      siegeStartTick: mission.objectives.defence
+        ? Math.round(mission.objectives.defence.startsAtSeconds * 10)
+        : -1,
+      siegeAnnounced: false,
+      wavesSpawned: 0,
+      defenceHoldTicks: 0,
+      defenceRequiredTicks: mission.objectives.defence
+        ? Math.round(mission.objectives.defence.holdSeconds * 10)
+        : 0,
+      defenceHolding: false,
+      defenceDone: false,
       lastHordeTick: -100000,
     },
     stats: {

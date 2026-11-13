@@ -239,6 +239,20 @@ export class EntityRenderer {
       (per.x1 - per.x0 + 1) * CELL,
       (per.y1 - per.y0 + 1) * CELL,
     );
+    const def = mission.objectives.defence;
+    if (def && !state.mission.defenceDone) {
+      // the defended building: amber, pulsing while the siege is on and nobody is inside
+      const siege = state.tick >= state.mission.siegeStartTick;
+      const empty = siege && !state.mission.defenceHolding;
+      const z = def.zone;
+      const pulse = empty ? 0.45 + 0.35 * Math.sin(timeMs / 180) : siege ? 0.6 : 0.35;
+      o.lineStyle(1.5, 0xe0a040, pulse).strokeRect(
+        z.x0 * CELL,
+        z.y0 * CELL,
+        (z.x1 - z.x0 + 1) * CELL,
+        (z.y1 - z.y0 + 1) * CELL,
+      );
+    }
     const ex = mission.objectives.extraction.zone;
     const exAlpha = state.mission.extractionActive ? 0.16 + 0.08 * Math.sin(timeMs / 250) : 0.07;
     o.fillStyle(COLORS.extraction, exAlpha).fillRect(

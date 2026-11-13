@@ -22,6 +22,7 @@ import {
   carryOver,
   missionSeed,
   reinforcementMultiplier,
+  objectiveOrder,
   type CampaignState,
 } from '@dead-sector/sim';
 
@@ -82,14 +83,16 @@ export class BriefingScene extends Phaser.Scene {
             <canvas data-el="map" width="${world.width * PX}" height="${world.height * PX}"></canvas>
             <div class="map-legend small">
               <span><i style="background:#5aa9ff"></i>Alfa</span><span><i style="background:#ffad4d"></i>Bravo</span>
-              <span><i class="dash"></i>${text('briefing.perimeter', { area: MT.area })}</span><span><i style="background:#7fbf6a"></i>${text('briefing.extraction')}</span>
+              <span><i class="dash"></i>${text('briefing.perimeter', { area: MT.area })}</span><span><i style="background:#7fbf6a"></i>${text('briefing.extraction')}</span>${mission.objectives.defence ? `<span><i style="background:#e0a040"></i>${text('briefing.defended')}</span>` : ''}
               <span><i style="background:#e0563e"></i>${text('briefing.entrances')}</span>
             </div>
           </div>
           <div class="info-col">
             <p class="briefing">${missionBriefing(missionId, mission.briefing)}</p>
             <h4>${text('briefing.objectives')}</h4>
-            <ol class="obj-list">${['enterPerimeter', 'collectMedicine', 'rescueCivilian', 'activateExtraction', 'holdExtraction'].map((id) => `<li>${T.objectives[id]}</li>`).join('')}</ol>
+            <ol class="obj-list">${objectiveOrder(mission)
+              .map((id) => `<li>${T.objectives[id]}</li>`)
+              .join('')}</ol>
             <h4>${text('briefing.intel')}</h4>
             <ul class="intel">${MT.intel.map((i) => `<li>${i}</li>`).join('')}</ul>
             <p class="small">${text('briefing.timeLimit', { minutes: Math.round(mission.timeLimitSeconds / 60), person: MT.person })}</p>

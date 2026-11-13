@@ -10,7 +10,8 @@ export type PlanCondition =
   | { kind: 'start' }
   | { kind: 'orderSettled'; squadId: string }
   | { kind: 'objective'; id: ObjectiveId }
-  | { kind: 'extractionReady' };
+  | { kind: 'extractionReady' }
+  | { kind: 'defenceDone' };
 
 export interface PlanStep {
   label: string;
@@ -315,11 +316,105 @@ export const NIGHT_PLAN: PlanStep[] = [
   { label: 'hold', when: settled('bravo'), commands: [order('bravo', 'hold')] },
 ];
 
+const barricade = (squadId: string, id: string): GameCommandInput => ({
+  type: 'issueOrder',
+  squadId,
+  payload: { type: 'barricade', targetEntityId: id },
+});
+
+/**
+ * Defence: into the school, planks and the teacher, barricade the west door, the back door, two
+ * north windows, the south-west room and the front doors, then both squads hold the hall (no
+ * windows, one inner door) through the siege, open the front door and signal the convoy.
+ */
+export const DEFENCE_PLAN: PlanStep[] = [
+  {
+    label: 'into the school',
+    when: [{ kind: 'start' }],
+    commands: [...fire('weaponsFree'), ...both('move', { x: 38.5, y: 40.5 }, { x: 41.5, y: 42.5 })],
+  },
+  {
+    label: 'corridor',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 31.5, y: 35.5 }, { x: 47.5, y: 35.5 }),
+  },
+  {
+    label: 'planks and teacher',
+    when: settled('alfa', 'bravo'),
+    commands: [
+      order('alfa', 'interact', undefined, 'cabinet'),
+      order('bravo', 'interact', undefined, 'civilian-irene'),
+    ],
+  },
+  {
+    label: 'barricade west door and the safe room window',
+    when: [
+      { kind: 'objective', id: 'collectMedicine' },
+      { kind: 'objective', id: 'rescueCivilian' },
+    ],
+    commands: [barricade('alfa', 'door-27-35'), barricade('bravo', 'window-27-41')],
+  },
+  {
+    label: 'barricade back door and the safe room front window',
+    when: settled('alfa', 'bravo'),
+    commands: [barricade('alfa', 'door-40-26'), barricade('bravo', 'window-30-45')],
+  },
+  {
+    label: 'barricade north windows and a front door',
+    when: settled('alfa', 'bravo'),
+    commands: [barricade('alfa', 'window-30-26'), barricade('bravo', 'door-39-45')],
+  },
+  {
+    label: 'barricade more',
+    when: settled('alfa', 'bravo'),
+    commands: [barricade('alfa', 'window-37-26'), barricade('bravo', 'door-40-45')],
+  },
+  {
+    label: 'both squads hold the hall: it has no windows',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 38.5, y: 40.5 }, { x: 41.5, y: 42.5 }),
+  },
+  {
+    label: 'hold',
+    when: settled('alfa', 'bravo'),
+    commands: [order('alfa', 'hold'), order('bravo', 'hold')],
+  },
+  {
+    label: 'open the front door',
+    when: [{ kind: 'defenceDone' }],
+    commands: [
+      order('alfa', 'interact', undefined, 'door-39-45'),
+      order('bravo', 'move', { x: 39.5, y: 41.5 }),
+    ],
+  },
+  {
+    label: 'to the gate',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 38.5, y: 55.5 }, { x: 41.5, y: 55.5 }),
+  },
+  {
+    label: 'signal the convoy',
+    when: settled('alfa', 'bravo'),
+    commands: [order('alfa', 'interact', undefined, 'beacon')],
+  },
+  {
+    label: 'hold the gate',
+    when: [{ kind: 'objective', id: 'activateExtraction' }],
+    commands: both('move', { x: 38.5, y: 60.5 }, { x: 41.5, y: 60.5 }),
+  },
+  {
+    label: 'hold',
+    when: settled('alfa', 'bravo'),
+    commands: [order('alfa', 'hold'), order('bravo', 'hold')],
+  },
+];
+
 /** One scripted route per mission (the combat route for the first one), for acceptance and E2E. */
 export const MISSION_PLANS: Record<string, PlanStep[]> = {
   'a-ultima-farmacia': COMBAT_PLAN,
   'sinal-fraco': SIGNAL_PLAN,
   'plantao-noturno': NIGHT_PLAN,
+  'cerco-dom-bosco': DEFENCE_PLAN,
 };
 
 function holds(state: GameState, c: PlanCondition, stepStartTick: number): boolean {
@@ -343,6 +438,8 @@ function holds(state: GameState, c: PlanCondition, stepStartTick: number): boole
       return state.objectives.some((o) => o.id === c.id && o.status === 'completed');
     case 'extractionReady':
       return state.mission.extractionReady;
+    case 'defenceDone':
+      return state.mission.defenceDone;
   }
 }
 

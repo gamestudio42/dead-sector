@@ -98,6 +98,20 @@ export function entriesForEvents(events: readonly SimEvent[], state: GameState):
       case 'HORDE_SPAWNED':
         out.push({ kind: 'horde', ...at, size: p['size'] });
         break;
+      case 'SIEGE_WAVE':
+        out.push({ kind: 'wave', ...at, wave: p['wave'], size: p['size'] });
+        break;
+      case 'DEFENCE_HOLD_CHANGED':
+        out.push({
+          kind: 'defenceHold',
+          ...at,
+          holding: p['holding'],
+          secondsLeft: p['secondsLeft'],
+        });
+        break;
+      case 'DEFENCE_COMPLETED':
+        out.push({ kind: 'defence', ...at });
+        break;
       case 'EXTRACTION_STARTED':
         out.push({ kind: 'extraction', ...at });
         break;

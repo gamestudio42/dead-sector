@@ -9,6 +9,7 @@ export const fr: Catalog = {
       rescueCivilian: 'Secourir la civile dans la réserve (3 s)',
       activateExtraction: "Activer la radio d'extraction sur le parking sud",
       holdExtraction: "Tenir la zone d'extraction 20 s avec la civile",
+      holdPosition: "Défendre le bâtiment jusqu'à l'arrivée des secours",
     },
     bands: {
       calm: 'calme',
@@ -69,6 +70,7 @@ export const fr: Catalog = {
       invalidTarget: 'Cible invalide',
       noMembers: "L'escouade n'a plus de membres",
       requiresMedicine: "Récupérez {item} avant d'appeler l'extraction",
+      requiresDefence: "Tenez jusqu'à la fin du siège avant d'appeler le convoi",
       obstructed: 'Action empêchée : le passage est obstrué',
       missionEnded: 'Mission terminée',
       queueFull: 'File pleine : 8 points par escouade au maximum',
@@ -123,6 +125,13 @@ export const fr: Catalog = {
     },
   },
   log: {
+    siegeIncoming: '🔊 Le siège commence dans {seconds} s : {waves} vagues arrivent',
+    siegeWave: 'Vague {wave}/{of} : {size} infectés par le {dirs}',
+    defencePaused:
+      'Personne à l’intérieur : le chrono de la défense est arrêté (encore {seconds} s)',
+    defenceResumed: 'De retour à l’intérieur : le chrono de la défense repart (encore {seconds} s)',
+    defenceDone: 'Le siège est passé : faites signe au convoi',
+    and: 'et',
     orderIssued: '{squad} : ordre {order}',
     orderBlocked: '{squad} : {reason}',
     orderBlockedFallback: 'ordre bloqué',
@@ -179,6 +188,9 @@ export const fr: Catalog = {
     kitsLeft: 'kits restants',
   },
   hud: {
+    defenceBanner: 'Défense : tenez le bâtiment — {held}/{need} s',
+    defencePaused: 'personne à l’intérieur : le chrono est arrêté',
+    siegeSoon: 'Siège dans {seconds} s — préparez-vous',
     noiseTitle:
       "Bruit récent : plus il est fort, plus les infectés l'entendent et plus les renforts arrivent",
     alarmTitle:
@@ -384,6 +396,7 @@ export const fr: Catalog = {
     singleKicker: "Mission isolée — briefing d'opération",
     night: 'nuit',
     perimeter: 'Périmètre : {area}',
+    defended: 'Zone à défendre',
     extraction: 'Extraction',
     entrances: 'Entrées des infectés',
     objectives: 'Objectifs',
@@ -783,6 +796,35 @@ export const fr: Catalog = {
         'Le cabinet de la médecin est dans le coin nord-ouest du poste, derrière une porte intérieure.',
         'Les rues forment une grille : les hordes patrouillent les avenues principales.',
         "Les antibiotiques soignent l'infection : si la mission réussit, plus personne ne se transforme.",
+      ],
+    },
+    'cerco-dom-bosco': {
+      displayName: 'Siège à Dom Bosco',
+      briefing:
+        "Une horde descend l'avenue vers l'école Dom Bosco, l'abri du groupe. Le convoi d'évacuation arrive dans quelques minutes, mais l'école doit tenir jusque-là. Prenez les planches dans la réserve, ramenez l'institutrice restée dans la salle du fond et défendez le bâtiment. Quand le siège sera passé, faites signe au convoi au portail sud.",
+      area: 'école',
+      item: 'les fournitures',
+      itemTag: 'FOURNITURES',
+      itemDone: 'Fournitures',
+      person: "l'institutrice",
+      personTag: 'INSTITUTRICE',
+      civilianRole: 'Institutrice',
+      objectives: {
+        enterPerimeter: "Entrer dans le bâtiment de l'école",
+        collectMedicine: 'Prendre planches et munitions dans la réserve (5 s)',
+        rescueCivilian: "Aller chercher l'institutrice dans la salle du fond (3 s)",
+        holdPosition:
+          "Défendre le bâtiment jusqu'à l'arrivée du convoi (3 min avec quelqu'un dedans)",
+        activateExtraction: 'Faire signe au convoi au portail sud',
+        holdExtraction: "Tenir 15 s au portail avec l'institutrice",
+      },
+      intel: [
+        "Le siège commence dans deux minutes et demie. D'ici là, préparez l'école : personne ne sait par où la horde entrera.",
+        "Le bâtiment a cinq portes (celle de l'est est verrouillée) et dix fenêtres. Chaque escouade arrive avec 2 kits ; la réserve a des planches pour 2 de plus par escouade, et des munitions.",
+        'Les barricades ralentissent les infectés, elles ne les arrêtent pas. Marteler fait du bruit.',
+        "Le chrono de la défense ne tourne que si quelqu'un des escouades est dans le bâtiment.",
+        'Les vagues arrivent par les quatre avenues, de plus en plus grandes, avec des coureurs et des brutes.',
+        "Il y a un hurleur sur le parking du marché, au sud. Le convoi s'arrête au portail sud.",
       ],
     },
   },

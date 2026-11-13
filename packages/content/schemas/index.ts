@@ -196,7 +196,14 @@ export const missionSchema = z.object({
   }),
   objectives: z.object({
     perimeter: rectSchema,
-    cabinet: z.object({ cell: cellSchema, interactSeconds: z.number().positive() }),
+    cabinet: z.object({
+      cell: cellSchema,
+      interactSeconds: z.number().positive(),
+      /** Plank kits each squad gains from the cabinet (a defence mission's supply room). */
+      grantsKits: z.number().int().nonnegative().default(0),
+      /** Reserve rounds each armed member of every squad gains from the cabinet. */
+      grantsRounds: z.number().int().nonnegative().default(0),
+    }),
     civilianRescueSeconds: z.number().positive(),
     extraction: z.object({
       beacon: vec2Schema,
@@ -207,6 +214,31 @@ export const missionSchema = z.object({
       pulseNoise: z.number().min(0).max(100),
       pulseSeconds: z.number().positive(),
     }),
+    /**
+     * Defence: from `startsAtSeconds` the infected attack in waves, and the squads must keep at
+     * least one member inside `zone` for `holdSeconds` (the timer pauses while the zone is empty).
+     * The extraction radio only works once the defence is complete.
+     */
+    defence: z
+      .object({
+        zone: rectSchema,
+        startsAtSeconds: z.number().positive(),
+        warningSeconds: z.number().nonnegative(),
+        holdSeconds: z.number().positive(),
+        waves: z
+          .array(
+            z.object({
+              /** Seconds after the siege starts. */
+              atSeconds: z.number().nonnegative(),
+              spawnerIds: z.array(z.string().min(1)).min(1),
+              walkers: z.number().int().nonnegative(),
+              runners: z.number().int().nonnegative().default(0),
+              heavies: z.number().int().nonnegative().default(0),
+            }),
+          )
+          .min(1),
+      })
+      .optional(),
   }),
   /** Player-facing PT-BR texts for this mission (objective names, item and person, intel). */
   texts: z.object({
@@ -222,6 +254,7 @@ export const missionSchema = z.object({
       rescueCivilian: z.string().min(1),
       activateExtraction: z.string().min(1),
       holdExtraction: z.string().min(1),
+      holdPosition: z.string().min(1).optional(),
     }),
     intel: z.array(z.string().min(1)),
   }),

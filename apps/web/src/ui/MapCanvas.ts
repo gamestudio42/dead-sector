@@ -63,7 +63,7 @@ export function fogLayer(
   return c;
 }
 
-/** Mission areas known from the briefing: perimeter, cabinet, extraction zone and radio. */
+/** Mission areas known from the briefing: perimeter, defended area, cabinet, extraction and radio. */
 export function drawMissionMarks(
   g: CanvasRenderingContext2D,
   world: World,
@@ -78,6 +78,13 @@ export function drawMissionMarks(
   const p = o.perimeter;
   g.strokeRect(p.x0 * px, p.y0 * px, (p.x1 - p.x0 + 1) * px, (p.y1 - p.y0 + 1) * px);
   g.setLineDash([]);
+  if (o.defence) {
+    const d = o.defence.zone;
+    g.strokeStyle = 'rgba(224,160,64,0.95)';
+    g.lineWidth = Math.max(1, px * 0.7);
+    g.strokeRect(d.x0 * px, d.y0 * px, (d.x1 - d.x0 + 1) * px, (d.y1 - d.y0 + 1) * px);
+    g.lineWidth = Math.max(1, px * 0.5);
+  }
   const e = o.extraction.zone;
   g.fillStyle = 'rgba(127,191,106,0.22)';
   g.strokeStyle = 'rgba(127,191,106,0.95)';

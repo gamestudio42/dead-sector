@@ -26,7 +26,14 @@ export type OrderStatus =
   'queued' | 'planning' | 'executing' | 'completed' | 'blocked' | 'interrupted' | 'cancelled';
 
 export type BlockReason =
-  'noPath' | 'stuck' | 'locked' | 'invalidTarget' | 'noMembers' | 'requiresMedicine' | 'noKits';
+  | 'noPath'
+  | 'stuck'
+  | 'locked'
+  | 'invalidTarget'
+  | 'noMembers'
+  | 'requiresMedicine'
+  | 'requiresDefence'
+  | 'noKits';
 
 export interface SquadOrder {
   id: string;
@@ -232,7 +239,12 @@ export interface Contact {
 }
 
 export type ObjectiveId =
-  'enterPerimeter' | 'collectMedicine' | 'rescueCivilian' | 'activateExtraction' | 'holdExtraction';
+  | 'enterPerimeter'
+  | 'collectMedicine'
+  | 'rescueCivilian'
+  | 'holdPosition'
+  | 'activateExtraction'
+  | 'holdExtraction';
 
 export interface ObjectiveState {
   id: ObjectiveId;
@@ -278,6 +290,16 @@ export interface MissionState {
   /** Tick the last horde was announced (alarm-triggered hordes keep a minimum gap). */
   lastHordeTick: Tick;
   pendingHorde: { spawnerId: string; atTick: Tick } | null;
+  /** Defence missions: the tick the siege starts (-1 when the mission has none). */
+  siegeStartTick: Tick;
+  siegeAnnounced: boolean;
+  /** Waves already in (a wave whose entries are all blocked waits and retries). */
+  wavesSpawned: number;
+  defenceHoldTicks: number;
+  defenceRequiredTicks: number;
+  /** Someone is inside the defended area, so the timer runs. */
+  defenceHolding: boolean;
+  defenceDone: boolean;
 }
 
 export interface MissionStats {
@@ -327,7 +349,11 @@ export type SimEventType =
   | 'BARRICADE_BUILT'
   | 'ALARM_CHANGED'
   | 'HORDE_INCOMING'
-  | 'HORDE_SPAWNED';
+  | 'HORDE_SPAWNED'
+  | 'SIEGE_INCOMING'
+  | 'SIEGE_WAVE'
+  | 'DEFENCE_HOLD_CHANGED'
+  | 'DEFENCE_COMPLETED';
 
 export interface SimEvent<T = Record<string, unknown>> {
   id: string;

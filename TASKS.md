@@ -21,7 +21,7 @@
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
 - Art upgrade, next step: give the Blender characters sculpted heads and hands, cloth folds and a few faces; add
   more walker variants (only 4 today), reusing `tools/sprites/bake_characters.py`.
-- More objective types (defence) for future missions.
+- Campaign siege: when the shelter's infestation climbs, raise Cerco na Dom Bosco as a forced operation (ADR 0020).
 
 ## BLOCKED
 
@@ -29,6 +29,10 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Defence objective (siege waves on a timetable, hold timer that pauses when the building is empty, radio locked
+  until the hold is done, resupply cabinet) and the mission Cerco na Dom Bosco on the new map Escola Dom Bosco;
+  save schema v4 (ADR 0020).
 
 - Adaptive score synthesized at runtime: menu, campaign and tactical pieces in A minor, tactical layers driven by
   threat, alarm and extraction, Música volume slider, and an offline WAV renderer for trailers (ADR 0019).

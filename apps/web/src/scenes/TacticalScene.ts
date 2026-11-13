@@ -684,7 +684,12 @@ export class TacticalScene extends Phaser.Scene {
       this.audio.setRadio(extraction);
       // the score stops when the mission ends so the victory or defeat sting is heard alone
       if (this.sim.ended) this.audio.setMusic('off');
-      else this.audio.setMusicIntensity(threat, this.sim.state.mission.alarmLevel, extraction);
+      else {
+        // a siege under way is as urgent as the extraction
+        const m = this.sim.state.mission;
+        const siege = m.siegeStartTick >= 0 && this.sim.tick >= m.siegeStartTick && !m.defenceDone;
+        this.audio.setMusicIntensity(threat, m.alarmLevel, extraction || siege);
+      }
     }
     this.dbgR?.draw(this.sim.state);
     const st = this.sim.state;

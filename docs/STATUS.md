@@ -89,6 +89,12 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   rendered with EffectCraft from recipes
   in `tools/vfx`, checked for alpha and recorded in a manifest; particles remain as the fallback (ADR 0016).
 
+- **Defence missions** (ADR 0020). The mission Cerco na Dom Bosco is set on a new map, the shelter school.
+  - The squads prepare the building before the siege: plank kits and ammunition from the storeroom, and
+    barricades on 15 doors and windows with kits for only about half of them.
+  - They then hold for 3 minutes against five timed waves. The timer pauses while nobody is inside, and the radio
+    stays locked until the hold is done.
+  - The HUD shows a countdown and a hold banner, and the defended area is drawn on the map. Save schema v4.
 - **Adaptive score** (ADR 0019). The music is synthesized live, with a piece for the menu, one for the campaign
   map and one for missions. In a mission the layers build with the threat and the alarm: pad, heartbeat bass,
   pulse, then drums. The score stops for the victory or defeat sting. It has its own volume slider.
@@ -107,8 +113,8 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **174/174** ✓ (plus the opt-in balance report).
-- `pnpm e2e`: **14/14** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **181/181** ✓ (plus the opt-in balance report).
+- `pnpm e2e`: **16/16** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
   serves on a dedicated port (4317, `strictPort`, never reusing another server).

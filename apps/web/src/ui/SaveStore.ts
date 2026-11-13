@@ -83,6 +83,7 @@ const flag = (key: string, fallback: boolean) => ({
 const volume = unit('volume', 0.8);
 const sfxVolume = unit('sfxVolume', 1);
 const ambienceVolume = unit('ambienceVolume', 0.7);
+const musicVolume = unit('musicVolume', 0.6);
 const muted = flag('muted', false);
 const blood = flag('blood', true);
 const shake = flag('shake', true);
@@ -117,6 +118,12 @@ export const Settings = {
   },
   set sfxVolume(v: number) {
     sfxVolume.set(v);
+  },
+  get musicVolume(): number {
+    return musicVolume.get();
+  },
+  set musicVolume(v: number) {
+    musicVolume.set(v);
   },
   get ambienceVolume(): number {
     return ambienceVolume.get();

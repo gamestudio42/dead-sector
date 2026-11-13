@@ -295,6 +295,7 @@ export const es: Catalog = {
     controls: 'Controles',
     volume: 'Volumen general',
     sfx: 'Efectos',
+    music: 'Música',
     ambience: 'Ambiente y tensión',
     mute: 'Sin sonido',
     muteHint: 'Tecla {key} durante la misión',

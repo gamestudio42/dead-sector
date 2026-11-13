@@ -294,6 +294,7 @@ export const en = {
     controls: 'Controls',
     volume: 'Master volume',
     sfx: 'Effects',
+    music: 'Music',
     ambience: 'Ambience and tension',
     mute: 'Muted',
     muteHint: 'Key {key} during the mission',

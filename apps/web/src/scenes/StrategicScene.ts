@@ -41,6 +41,7 @@ export class StrategicScene extends Phaser.Scene {
   }
 
   create(): void {
+    AudioEngine.get().setMusic('strategic');
     this.backdrop = new Backdrop(this, MISSION_ID);
     this.selected = null;
     clearUi();

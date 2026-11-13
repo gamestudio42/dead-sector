@@ -89,6 +89,10 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   rendered with EffectCraft from recipes
   in `tools/vfx`, checked for alpha and recorded in a manifest; particles remain as the fallback (ADR 0016).
 
+- **Adaptive score** (ADR 0019). The music is synthesized live, with a piece for the menu, one for the campaign
+  map and one for missions. In a mission the layers build with the threat and the alarm: pad, heartbeat bass,
+  pulse, then drums. The score stops for the victory or defeat sting. It has its own volume slider.
+  `tools/music/render.mjs` renders it to WAV, including a 30 s cue for the trailer.
 - **Character sheets baked in Blender** (ADR 0018). `tools/sprites/bake_characters.py` builds each survivor and
   infected type from primitives on a joint rig and renders it from straight above. Each sheet has 10 frames at
   128 px: the walk cycle, the attack and the corpse. Arms reach the weapon by two-bone IK. Every sheet gets a dark
@@ -103,7 +107,7 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **167/167** ✓ (plus the opt-in balance report).
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **174/174** ✓ (plus the opt-in balance report).
 - `pnpm e2e`: **14/14** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
@@ -125,7 +129,7 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 - Art and audio are **original**. Terrain is painted in code and sound is synthesized. Characters are 3D models
   rendered top-down in Blender (ADR 0018). They are built from primitives, with no textures or faces, so a sculpted
-  or hand-painted set would still raise fidelity. There is no music beyond the adaptive drone.
+  or hand-painted set would still raise fidelity. The music is synthesized (ADR 0019), with simple timbres and a mix balanced by measurement only.
 - Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
 - Route map and timeline are not saved: a mission continued from a quicksave shows only what happened after loading.
 - Campaign balance is verified with scripted routes on canonical seeds; with heavy early losses the later missions get

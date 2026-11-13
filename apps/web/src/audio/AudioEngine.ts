@@ -1,5 +1,7 @@
 import { Settings } from '../ui/SaveStore';
 import type { Cue, CueKind } from './cues';
+import type { Mood } from './music';
+import { MusicPlayer } from './MusicPlayer';
 
 /** Minimum seconds between two cues of the same kind (keeps bursts readable and cheap). */
 const MIN_INTERVAL: Partial<Record<CueKind, number>> = {
@@ -71,6 +73,10 @@ export class AudioEngine {
   private master!: GainNode;
   private sfx!: GainNode;
   private ambienceBus!: GainNode;
+  private musicBus!: GainNode;
+  private music: MusicPlayer | null = null;
+  private musicVerbSend!: GainNode;
+  private mood: Mood = 'off';
   private reverbIn!: GainNode;
   private noise!: AudioBuffer;
   private listener = { x: 0, y: 0 };
@@ -131,7 +137,16 @@ export class AudioEngine {
     this.reverbIn = ctx.createGain();
     this.reverbIn.gain.value = 0.5;
     this.reverbIn.connect(reverb).connect(this.master);
+
+    this.musicBus = ctx.createGain();
+    this.musicBus.connect(this.master);
+    // the score's reverb send goes through the music volume too
+    const verbSend = ctx.createGain();
+    verbSend.connect(this.reverbIn);
+    this.musicVerbSend = verbSend;
+    this.music = new MusicPlayer(ctx, this.musicBus, verbSend, this.noise);
     this.applySettings();
+    this.music.setMood(this.mood);
   }
 
   applySettings(): void {
@@ -140,6 +155,19 @@ export class AudioEngine {
     this.master.gain.setTargetAtTime(Settings.muted ? 0 : Settings.volume, t, 0.05);
     this.sfx.gain.setTargetAtTime(Settings.sfxVolume, t, 0.05);
     this.ambienceBus.gain.setTargetAtTime(Settings.ambienceVolume, t, 0.05);
+    this.musicBus.gain.setTargetAtTime(Settings.musicVolume, t, 0.05);
+    this.musicVerbSend.gain.setTargetAtTime(Settings.musicVolume, t, 0.05);
+  }
+
+  /** Which piece of the score plays; it is kept until audio is unlocked by a first gesture. */
+  setMusic(mood: Mood): void {
+    this.mood = mood;
+    this.music?.setMood(mood);
+  }
+
+  /** Tactical score intensity: threat 0..1, district alarm 0..3, extraction under way. */
+  setMusicIntensity(threat: number, alarm: number, extraction: boolean): void {
+    this.music?.setIntensity(threat, alarm, extraction);
   }
 
   /** Short interface sound for menus (not positional, no simulation meaning). */

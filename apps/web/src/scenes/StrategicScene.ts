@@ -10,6 +10,7 @@ import {
   type CampaignState,
 } from '@dead-sector/sim';
 import { AudioEngine } from '../audio/AudioEngine';
+import { Playtest } from '../telemetry/Playtest';
 import { Backdrop } from '../render/Backdrop';
 import { CampaignStore } from '../ui/CampaignStore';
 import { clearUi, uiRoot } from '../ui/dom';
@@ -50,6 +51,7 @@ export class StrategicScene extends Phaser.Scene {
     void CampaignStore.load().then((c) => {
       if (c) return this.show(c);
       const fresh = newCampaign(loadContent(), CAMPAIGN_ID, Math.floor(Math.random() * 1_000_000));
+      Playtest.log('campaignStart', { seed: fresh.seed });
       void CampaignStore.save(fresh).then(() => this.show(fresh));
     });
   }
@@ -85,16 +87,22 @@ export class StrategicScene extends Phaser.Scene {
       case 'operate':
         if (this.selected) this.operate(this.selected);
         return;
-      case 'endDay':
+      case 'endDay': {
         this.freshNight = true;
-        void this.commit(endDay(content, this.campaign).campaign).then(() => this.showDayTurn());
+        const next = endDay(content, this.campaign).campaign;
+        Playtest.log('dayEnd', campaignFields(next, this.campaign.operatedToday));
+        if (next.status !== 'active')
+          Playtest.log('campaignEnd', { ...campaignFields(next), reason: next.endReason });
+        void this.commit(next).then(() => this.showDayTurn());
         return;
+      }
       case 'menu':
         this.scene.start('Menu');
         return;
       case 'restart': {
         this.selected = null;
         const seed = Math.floor(Math.random() * 1_000_000);
+        Playtest.log('campaignRestart', { ...campaignFields(this.campaign), seed });
         void this.commit(newCampaign(content, CAMPAIGN_ID, seed));
         return;
       }
@@ -108,6 +116,7 @@ export class StrategicScene extends Phaser.Scene {
     )?.missionId;
     if (!missionId || operationBlockReason(content, this.campaign, sectorId)) return;
     const c = { ...this.campaign, activeSectorId: sectorId };
+    Playtest.log('operation', { sector: sectorId, missionId, ...campaignFields(c) });
     void CampaignStore.save(c).then(() =>
       this.scene.start('Briefing', { missionId, campaign: true }),
     );
@@ -273,4 +282,17 @@ export class StrategicScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     this.backdrop?.update(delta);
   }
+}
+
+/** Where the campaign stands, for the playtest log. */
+function campaignFields(c: CampaignState, operated?: boolean): Record<string, unknown> {
+  return {
+    day: c.day,
+    status: c.status,
+    evacuated: c.evacuated,
+    population: c.population,
+    roster: c.roster.length,
+    stock: { ...c.stock },
+    ...(operated === undefined ? {} : { operated }),
+  };
 }

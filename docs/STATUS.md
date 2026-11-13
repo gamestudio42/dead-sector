@@ -89,10 +89,17 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   rendered with EffectCraft from recipes
   in `tools/vfx`, checked for alpha and recorded in a manifest; particles remain as the fallback (ADR 0016).
 
+- **Playtest kit**: opt-in local playtest log (Opções → Playtest or `?playtest=1`) that records sessions,
+  menu and briefing choices, mission starts, objectives, deaths, bites, panics, blocked orders, alarm and hordes,
+  30-second samples (FPS, squad, ammo, stress), how each mission ended or was left (menu, restart, load, closed tab),
+  interface counters and campaign days; nothing is sent, the tester exports a JSON file and
+  `tools/playtest/report.mjs` merges them into a Markdown report. Protocol, hypotheses and questionnaire in
+  [`testing/playtest.md`](testing/playtest.md) (ADR 0017). No human round has been run yet.
+
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **119/119** ✓ (plus the opt-in balance report).
-- `pnpm e2e`: **13/13** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **149/149** ✓ (plus the opt-in balance report).
+- `pnpm e2e`: **14/14** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
   serves on a dedicated port (4317, `strictPort`, never reusing another server).

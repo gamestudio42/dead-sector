@@ -54,6 +54,7 @@ import { Hud, POLICY_CYCLE } from '../ui/Hud';
 import { Minimap } from '../ui/Minimap';
 import { openOptions } from '../ui/OptionsPanel';
 import { SaveStore, Settings } from '../ui/SaveStore';
+import { MissionPlaytest } from '../telemetry/Playtest';
 import { MISSION_ID, QUICKSAVE } from './MenuScene';
 
 const ORDER_ACTIONS: Partial<Record<Action, OrderType>> = {
@@ -100,6 +101,10 @@ export class TacticalScene extends Phaser.Scene {
   private tickMsAvg = 0;
   private plan: { steps: PlanStep[]; runner: ReturnType<typeof createPlanRunner> } | null = null;
   private eventCounts: Record<string, number> = {};
+  /** Local playtest log for this mission (inactive unless the tester turned it on). */
+  private pt: MissionPlaytest | null = null;
+  /** How the scene is being left, for the playtest log when the mission has not ended. */
+  private leaving: 'menu' | 'restart' | 'load' = 'menu';
   private onKey = (e: KeyboardEvent) => this.handleKey(e);
 
   constructor() {
@@ -156,6 +161,13 @@ export class TacticalScene extends Phaser.Scene {
     this.clock = new FixedStepClock();
     this.clock.paused = !!data.paused;
     this.eventCounts = {};
+    this.leaving = 'menu';
+    this.pt = new MissionPlaytest(() => this.sim.state, {
+      missionId: this.missionId,
+      seed: this.sim.state.seed,
+      campaign: this.inCampaign,
+      fromSave: !!data.save,
+    });
     this.record = emptyRecord();
     this.prev.clear();
     this.endAt = 0;
@@ -200,7 +212,11 @@ export class TacticalScene extends Phaser.Scene {
       (x, y) => this.rightClick({ x, y }),
     );
     this.hud.mountMinimap(this.minimap.el);
-    if (Settings.tips) for (const id of startTips(Settings.tipsSeen)) this.hud.queueTip(tip(id));
+    if (Settings.tips)
+      for (const id of startTips(Settings.tipsSeen)) {
+        this.hud.queueTip(tip(id));
+        this.pt?.tip(id);
+      }
 
     this.selection = [this.sim.state.squads[0]?.id ?? 'alfa'];
     this.boxG = this.add.graphics().setDepth(19);
@@ -247,6 +263,8 @@ export class TacticalScene extends Phaser.Scene {
   }
 
   private teardown(): void {
+    this.pt?.abandon(this.leaving);
+    this.pt = null;
     window.removeEventListener('keydown', this.onKey);
     this.menu.close();
     this.audio.stopAmbience();
@@ -265,6 +283,9 @@ export class TacticalScene extends Phaser.Scene {
 
   private issue(cmd: GameCommandInput): void {
     if (this.sim.ended) return;
+    if (cmd.type === 'issueOrder') this.pt?.order(cmd.payload.type);
+    else if (cmd.type === 'setMoveMode') this.pt?.mode(cmd.payload.mode);
+    else if (cmd.type === 'setFirePolicy') this.pt?.count('firePolicy');
     this.sim.enqueue(cmd);
   }
 
@@ -323,6 +344,7 @@ export class TacticalScene extends Phaser.Scene {
   private openContextMenu(p: Vec2, sx: number, sy: number): void {
     const ids = this.orderable();
     if (!ids.length) return this.hud.toast(text('toasts.selectFirst'));
+    this.pt?.count('contextMenu');
     const st = this.sim.state;
     const busy = ids.some((id) => {
       const o = st.squads.find((s) => s.id === id)?.order;
@@ -450,6 +472,7 @@ export class TacticalScene extends Phaser.Scene {
   }
 
   private toggleSpeed(): void {
+    this.pt?.count('speedToggles');
     this.clock.speed = this.clock.speed === 1 ? 2 : 1;
     this.issue({ type: 'setSimulationSpeed', payload: { speed: this.clock.speed } });
   }
@@ -462,6 +485,7 @@ export class TacticalScene extends Phaser.Scene {
   }
 
   private async saveGame(): Promise<void> {
+    this.pt?.count('quicksaves');
     await SaveStore.save(QUICKSAVE, serializeState(this.sim.state));
     await CampaignStore.setQuicksaveMode(this.inCampaign);
     this.hud.toast(text('toasts.saved', { tick: this.sim.tick }));
@@ -470,11 +494,14 @@ export class TacticalScene extends Phaser.Scene {
   private async loadGame(): Promise<void> {
     const data = await SaveStore.load(QUICKSAVE);
     if (!data) return this.hud.toast(text('toasts.noSave'));
+    this.pt?.count('quickloads');
+    this.leaving = 'load';
     this.scene.restart({ save: data, campaign: this.inCampaign });
   }
 
   private showOptions(): void {
     if (this.optionsEl) return;
+    this.pt?.count('options');
     const wasPaused = this.clock.paused;
     this.clock.paused = true;
     this.pauseMenu?.style.setProperty('display', 'none');
@@ -508,7 +535,8 @@ export class TacticalScene extends Phaser.Scene {
       if (a === 'save') void this.saveGame();
       if (a === 'load') void this.loadGame();
       if (a === 'options') this.showOptions();
-      if (a === 'restart')
+      if (a === 'restart') {
+        this.leaving = 'restart';
         this.scene.restart({
           missionId: this.missionId,
           seed: this.sim.state.seed,
@@ -516,6 +544,7 @@ export class TacticalScene extends Phaser.Scene {
           carry: this.carry,
           reinforcements: this.reinforcements,
         });
+      }
       if (a === 'menu') this.scene.start('Menu');
     });
     uiRoot().appendChild(m);
@@ -600,8 +629,11 @@ export class TacticalScene extends Phaser.Scene {
     }
     this.minimap.ingest(events, this.sim.state, now);
     if (Settings.tips)
-      for (const id of tipsForEvents(events, this.sim.state, Settings.tipsSeen))
+      for (const id of tipsForEvents(events, this.sim.state, Settings.tipsSeen)) {
         this.hud.queueTip(tip(id));
+        this.pt?.tip(id);
+      }
+    this.pt?.ingest(events, this.sim.state, this.game.loop.actualFps);
     this.barkR.push(barksForEvents(events, this.sim.state), now);
     this.hud.ingest(events, this.sim.state, this.sim.world);
     if (this.dbgR && this.sim.tick % 100 === 0)
@@ -610,6 +642,7 @@ export class TacticalScene extends Phaser.Scene {
 
   override update(time: number, delta: number): void {
     this.camCtl.update(delta);
+    this.pt?.setPaused(this.clock.paused);
     if (!this.sim.ended) {
       const n = this.clock.advance(delta);
       for (let i = 0; i < n && !this.sim.ended; i++) this.stepOnce();

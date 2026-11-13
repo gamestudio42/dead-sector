@@ -324,6 +324,20 @@ export const fr: Catalog = {
     reset: 'Revoir',
     accessNote:
       "La couleur est toujours accompagnée d'une icône ou d'un texte. La pause et la vitesse ne pénalisent jamais le joueur.",
+    playtest: 'Playtest',
+    playtestIntro:
+      'Pour les personnes qui testent le jeu pour le studio. Le journal reste dans ce navigateur et ne part que si vous l’exportez.',
+    playtestOn: 'Enregistrer le playtest',
+    playtestHint: 'Missions, morts, ordres, pauses et la fin de chaque mission. Rien n’est envoyé.',
+    playtestTester: 'Votre nom ou pseudo',
+    playtestTesterHint:
+      'Facultatif, apparaît seulement dans le nom et le contenu du fichier exporté',
+    playtestLog: 'Journal enregistré',
+    playtestCount: '{n} entrées',
+    playtestExport: 'Exporter le fichier',
+    playtestClear: 'Effacer',
+    playtestConfirm: 'Confirmer',
+    playtestNote: 'Envoyez le fichier .json exporté à l’équipe avec vos réponses au questionnaire.',
     camera: 'Vitesse de la caméra',
     cameraHint: 'Maintenez Maj pour aller 2,5× plus vite',
     keyboard: 'Clavier',

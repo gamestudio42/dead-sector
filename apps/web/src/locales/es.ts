@@ -323,6 +323,21 @@ export const es: Catalog = {
     reset: 'Revisar',
     accessNote:
       'El color siempre va acompañado de un icono o un texto. La pausa y la velocidad nunca penalizan al jugador.',
+    playtest: 'Playtest',
+    playtestIntro:
+      'Para quienes prueban el juego para el estudio. El registro se queda en este navegador y solo sale al exportarlo.',
+    playtestOn: 'Registrar playtest',
+    playtestHint:
+      'Misiones, muertes, órdenes, pausas y cómo terminó cada misión. No se envía nada.',
+    playtestTester: 'Tu nombre o apodo',
+    playtestTesterHint: 'Opcional, solo va en el nombre y el contenido del archivo exportado',
+    playtestLog: 'Registro guardado',
+    playtestCount: '{n} entradas',
+    playtestExport: 'Exportar archivo',
+    playtestClear: 'Borrar',
+    playtestConfirm: 'Confirmar',
+    playtestNote:
+      'Envía el archivo .json exportado al equipo junto con tus respuestas al cuestionario.',
     camera: 'Velocidad de la cámara',
     cameraHint: 'Mantén Shift para moverte 2,5× más rápido',
     keyboard: 'Teclado',

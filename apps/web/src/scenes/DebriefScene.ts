@@ -4,6 +4,7 @@ import { applyOperationResult, buildDebrief, createWorld, type GameState } from 
 import { CampaignStore } from '../ui/CampaignStore';
 import { CAMPAIGN_ID } from './MenuScene';
 import { gradeFor } from '../presentation/grade';
+import { Playtest } from '../telemetry/Playtest';
 import { emptyRecord, type MissionRecord } from '../presentation/timeline';
 import { clearUi, uiRoot } from '../ui/dom';
 import { noticeIcon } from '../ui/fxIcon';
@@ -42,6 +43,13 @@ export class DebriefScene extends Phaser.Scene {
     const rec = data.record ?? emptyRecord();
     const d = buildDebrief(state);
     const grade = gradeFor(d);
+    Playtest.log('debrief', {
+      missionId: state.missionId,
+      campaign: !!data.campaign,
+      outcome: d.outcome,
+      grade: grade.letter,
+    });
+    const choose = (choice: string) => Playtest.log('debriefChoice', { choice });
     const world = createWorld(loadContent(), state.missionId, state.doors);
     const tile = (label: string, value: string, sub = '') =>
       `<div class="stat-tile"><span class="lbl">${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
@@ -138,11 +146,15 @@ export class DebriefScene extends Phaser.Scene {
       g.stroke();
     }
 
-    (screen.querySelector('[data-act=again]') as HTMLButtonElement).onclick = () =>
+    (screen.querySelector('[data-act=again]') as HTMLButtonElement).onclick = () => {
+      choose('again');
       this.scene.start('Tactical', { missionId: state.missionId, seed: state.seed });
+    };
     if (data.campaign) void this.advanceCampaign(screen, state);
-    (screen.querySelector('[data-act=menu]') as HTMLButtonElement).onclick = () =>
+    (screen.querySelector('[data-act=menu]') as HTMLButtonElement).onclick = () => {
+      choose('menu');
       this.scene.start('Menu');
+    };
   }
 
   /** Folds the mission into the saved campaign and shows what happened before the next one. */
@@ -183,7 +195,10 @@ export class DebriefScene extends Phaser.Scene {
     go.className = 'primary';
     go.dataset['testid'] = 'btn-to-shelter';
     go.textContent = text('debrief.toShelter');
-    go.onclick = () => this.scene.start('Strategic');
+    go.onclick = () => {
+      Playtest.log('debriefChoice', { choice: 'campaign' });
+      this.scene.start('Strategic');
+    };
     actions.prepend(go);
   }
 }

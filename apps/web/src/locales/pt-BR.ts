@@ -323,6 +323,20 @@ export const ptBR: Catalog = {
     reset: 'Rever',
     accessNote:
       'Cores sempre vêm acompanhadas de ícones ou texto. Pausa e velocidade nunca penalizam o jogador.',
+    playtest: 'Playtest',
+    playtestIntro:
+      'Para quem testa o jogo para o estúdio. O registro fica neste navegador e só sai daqui quando você exporta.',
+    playtestOn: 'Registrar playtest',
+    playtestHint: 'Missões, mortes, ordens, pausas e como cada missão terminou. Nada é enviado.',
+    playtestTester: 'Seu nome ou apelido',
+    playtestTesterHint: 'Opcional, entra só no nome e no conteúdo do arquivo exportado',
+    playtestLog: 'Registro gravado',
+    playtestCount: '{n} entradas',
+    playtestExport: 'Exportar arquivo',
+    playtestClear: 'Apagar',
+    playtestConfirm: 'Confirmar',
+    playtestNote:
+      'Envie o arquivo .json exportado para a equipe junto com as respostas do questionário.',
     camera: 'Velocidade da câmera',
     cameraHint: 'Segure Shift para mover 2,5× mais rápido',
     keyboard: 'Teclado',

@@ -409,12 +409,147 @@ export const DEFENCE_PLAN: PlanStep[] = [
   },
 ];
 
+const interact = (squadId: string, id: string): GameCommandInput =>
+  order(squadId, 'interact', undefined, id);
+
+/**
+ * Scavenging on the avenue: up the avenue to the bus and two trucks, into the garage for the
+ * toolbox and the driver, then back south to the parking lot.
+ */
+export const CONVOY_PLAN: PlanStep[] = [
+  {
+    label: 'up the avenue',
+    when: [{ kind: 'start' }],
+    commands: [...fire('returnFire'), ...both('move', { x: 39.5, y: 47.5 }, { x: 43.5, y: 47.5 })],
+  },
+  {
+    label: 'the bus and the third truck',
+    when: settled('alfa', 'bravo'),
+    commands: [interact('alfa', 'cache:truck-3'), interact('bravo', 'cache:bus')],
+  },
+  {
+    label: 'the second truck',
+    when: settled('alfa', 'bravo'),
+    commands: [interact('alfa', 'cache:truck-2'), order('bravo', 'move', { x: 44.5, y: 23.5 })],
+  },
+  {
+    label: 'garage front',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 53.5, y: 14.5 }, { x: 53.5, y: 17.5 }),
+  },
+  {
+    label: 'toolbox and driver',
+    when: settled('alfa', 'bravo'),
+    commands: [interact('alfa', 'cabinet'), interact('bravo', 'civilian-otavio')],
+  },
+  {
+    label: 'back to the avenue',
+    when: [
+      { kind: 'objective', id: 'collectMedicine' },
+      { kind: 'objective', id: 'rescueCivilian' },
+      { kind: 'objective', id: 'scavengeSupplies' },
+    ],
+    commands: both('move', { x: 44.5, y: 37.5 }, { x: 45.5, y: 39.5 }),
+  },
+  {
+    label: 'into the parking lot',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 18.5, y: 63.5 }, { x: 21.5, y: 65.5 }),
+  },
+  {
+    label: 'signal',
+    when: settled('alfa', 'bravo'),
+    commands: [interact('alfa', 'beacon'), interact('bravo', 'beacon')],
+  },
+  {
+    label: 'hold the lot',
+    when: [{ kind: 'objective', id: 'activateExtraction' }],
+    commands: [order('alfa', 'hold'), order('bravo', 'hold')],
+  },
+];
+
+/**
+ * Scavenging in the market: in by the west door, three stalls on the west side, the office for the
+ * milk, the cold room for the vendor, back out by the west door and down the street to the parking lot.
+ */
+export const MARKET_PLAN: PlanStep[] = [
+  {
+    label: 'loading yard',
+    when: [{ kind: 'start' }],
+    commands: [...fire('returnFire'), ...both('move', { x: 15.5, y: 37.5 }, { x: 15.5, y: 40.5 })],
+  },
+  {
+    label: 'into the hall',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 21.5, y: 37.5 }, { x: 21.5, y: 40.5 }),
+  },
+  {
+    label: 'pharmacy and produce stalls',
+    when: settled('alfa', 'bravo'),
+    commands: [interact('alfa', 'cache:stall-pharmacy'), interact('bravo', 'cache:stall-produce')],
+  },
+  {
+    label: 'grain stall',
+    when: settled('alfa', 'bravo'),
+    commands: [
+      interact('alfa', 'cache:stall-grains'),
+      order('bravo', 'move', { x: 30.5, y: 32.5 }),
+    ],
+  },
+  {
+    label: 'office door',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 24.5, y: 26.5 }, { x: 27.5, y: 26.5 }),
+  },
+  { label: 'the milk', when: settled('alfa', 'bravo'), commands: [interact('alfa', 'cabinet')] },
+  {
+    label: 'to the cold room',
+    when: [{ kind: 'objective', id: 'collectMedicine' }],
+    commands: both('move', { x: 55.5, y: 26.5 }, { x: 57.5, y: 26.5 }),
+  },
+  {
+    label: 'the vendor',
+    when: settled('alfa', 'bravo'),
+    commands: [interact('bravo', 'civilian-raimundo')],
+  },
+  {
+    label: 'back to the west door',
+    when: [
+      { kind: 'objective', id: 'rescueCivilian' },
+      { kind: 'objective', id: 'scavengeSupplies' },
+    ],
+    commands: both('move', { x: 20.5, y: 37.5 }, { x: 20.5, y: 39.5 }),
+  },
+  {
+    label: 'down the west street',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 8.5, y: 62.5 }, { x: 9.5, y: 60.5 }),
+  },
+  {
+    label: 'out to the parking lot',
+    when: settled('alfa', 'bravo'),
+    commands: both('move', { x: 19.5, y: 73.5 }, { x: 22.5, y: 74.5 }),
+  },
+  {
+    label: 'signal',
+    when: settled('alfa', 'bravo'),
+    commands: [interact('alfa', 'beacon'), interact('bravo', 'beacon')],
+  },
+  {
+    label: 'hold the lot',
+    when: [{ kind: 'objective', id: 'activateExtraction' }],
+    commands: [order('alfa', 'hold'), order('bravo', 'hold')],
+  },
+];
+
 /** One scripted route per mission (the combat route for the first one), for acceptance and E2E. */
 export const MISSION_PLANS: Record<string, PlanStep[]> = {
   'a-ultima-farmacia': COMBAT_PLAN,
   'sinal-fraco': SIGNAL_PLAN,
   'plantao-noturno': NIGHT_PLAN,
   'cerco-dom-bosco': DEFENCE_PLAN,
+  'comboio-parado': CONVOY_PLAN,
+  'feira-fantasma': MARKET_PLAN,
 };
 
 function holds(state: GameState, c: PlanCondition, stepStartTick: number): boolean {

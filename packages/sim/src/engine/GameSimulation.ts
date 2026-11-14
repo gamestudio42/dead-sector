@@ -2,7 +2,7 @@ import { loadContent, type ContentBundle } from '@dead-sector/content';
 import type { CarryOver } from '../campaign/Campaign';
 import type { GameCommand, GameCommandInput, GameState, SimEvent } from '../model/types';
 import { createWorld, type World } from '../model/World';
-import { createMissionState } from '../mission/createMission';
+import { createMissionState, type MissionVariant } from '../mission/createMission';
 import { advanceWaypoints, applyCommands } from '../systems/Commands';
 import { resolveCombat } from '../systems/Combat';
 import { resolveDamageAndInfection } from '../systems/Infection';
@@ -77,6 +77,7 @@ export class GameSimulation {
     content: ContentBundle = loadContent(),
     carry?: CarryOver,
     reinforcementMultiplier?: number,
+    variant?: MissionVariant,
   ): GameSimulation {
     const mission = content.missions[missionId];
     if (!mission) throw new Error(`Unknown mission ${missionId}`);
@@ -88,6 +89,7 @@ export class GameSimulation {
         seed ?? mission.canonicalSeed,
         carry,
         reinforcementMultiplier,
+        variant,
       ),
     );
   }

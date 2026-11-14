@@ -1,6 +1,7 @@
 import type { CampaignDef, ContentBundle } from '@dead-sector/content';
 import { SeededRng, seedToRngState } from '../engine/SeededRng';
 import type { GameState, InfectionStage, MissionStatus } from '../model/types';
+import { STANDARD_VARIANT, type MissionVariant } from '../mission/createMission';
 
 /** What one survivor brings from mission to mission. */
 export interface RosterEntry {
@@ -68,6 +69,14 @@ export type CampaignNotice =
       ammo: number;
       parts: number;
       people: number;
+    }
+  | {
+      kind: 'scavenged';
+      caches: number;
+      food: number;
+      medicine: number;
+      ammo: number;
+      parts: number;
     }
   | { kind: 'convoy'; count: number }
   | { kind: 'noise-heat'; sector: string }
@@ -365,6 +374,32 @@ export function reinforcementMultiplier(infestation: number): number {
   return 0.6 + infestation / 125;
 }
 
+/** How a sector's state changes the mission played there; see `MissionVariant`. */
+export type OperationVariantId = 'quiet' | 'standard' | 'overrun';
+
+export const OPERATION_VARIANTS: Record<OperationVariantId, MissionVariant> = {
+  quiet: { zombieMultiplier: 0.7, hordeDelayMultiplier: 1.3 },
+  standard: STANDARD_VARIANT,
+  overrun: { zombieMultiplier: 1.35, hordeDelayMultiplier: 0.75 },
+};
+
+/**
+ * A secured sector is quieter and an infested one is overrun. The siege is always standard: its
+ * waves are the threat.
+ */
+export function operationVariant(
+  content: ContentBundle,
+  c: CampaignState,
+  sectorId: string,
+): OperationVariantId {
+  const def = defOf(content, c.campaignId);
+  if (sectorId === def.shelterSectorId) return 'standard';
+  const status = sectorStatus(def, c, sectorId);
+  if (status === 'secured') return 'quiet';
+  if (status === 'infested') return 'overrun';
+  return 'standard';
+}
+
 export function missionSeed(content: ContentBundle, c: CampaignState, missionId: string): number {
   const tries = c.history.filter((h) => h.missionId === missionId).length;
   return (content.missions[missionId]?.canonicalSeed ?? 0) + tries;
@@ -624,6 +659,23 @@ export function applyOperationResult(
     const brought = pay(people);
     if (got.food || got.medicine || got.ammo || got.parts || brought)
       lines.push({ kind: 'brought', ...got, people: brought });
+  }
+  const scavenge = content.missions[final.missionId]?.objectives.scavenge;
+  if (success && scavenge && final.mission.cachesSearched.length) {
+    // whatever was searched comes home in the packs, full value every time
+    const got = { food: 0, medicine: 0, ammo: 0, parts: 0 };
+    for (const k of scavenge.caches) {
+      if (!final.mission.cachesSearched.includes(k.id)) continue;
+      got.food += k.loot.food;
+      got.medicine += k.loot.medicine;
+      got.ammo += k.loot.ammo;
+      got.parts += k.loot.parts;
+    }
+    next.stock.food += got.food;
+    next.stock.medicine += got.medicine;
+    next.stock.ammo += got.ammo;
+    next.stock.parts += got.parts;
+    lines.push({ kind: 'scavenged', caches: final.mission.cachesSearched.length, ...got });
   }
   if (success && sec.evacuates > 0) {
     const moved = Math.min(sec.evacuates, next.population);

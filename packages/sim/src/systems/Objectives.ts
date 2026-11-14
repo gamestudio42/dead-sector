@@ -12,8 +12,10 @@ import type { World } from '../model/World';
 import { emit } from '../engine/EventBus';
 import type { TickContext } from '../engine/TickContext';
 import { dist } from '../spatial/vec';
+
+const cellCenterOf = (c: { x: number; y: number }): Vec2 => ({ x: c.x + 0.5, y: c.y + 0.5 });
 import { emitNoise } from './Noise';
-import { BEACON_ID, CABINET_ID, orderTarget, pathMemberTo } from './Orders';
+import { BEACON_ID, CABINET_ID, orderTarget, pathMemberTo, scavengeDone } from './Orders';
 import { pathDone } from './SurvivorAI';
 import { updateDefenceHold } from './Siege';
 
@@ -53,6 +55,8 @@ function interactionTicks(
       return Math.round(world.mission.objectives.cabinet.interactSeconds * 10);
     case 'civilian':
       return Math.round(world.mission.objectives.civilianRescueSeconds * 10);
+    case 'cache':
+      return Math.round((world.mission.objectives.scavenge?.searchSeconds ?? 4) * 10);
     default:
       return Math.round(world.mission.objectives.extraction.activateSeconds * 10);
   }
@@ -152,9 +156,28 @@ function applyInteraction(
     completeObjective(state, 'rescueCivilian');
     return true;
   }
+  if (kind === 'cache') {
+    const sc = world.mission.objectives.scavenge;
+    const cache = sc?.caches.find((k) => `cache:${k.id}` === targetId);
+    if (!sc || !cache || state.mission.cachesSearched.includes(cache.id)) return false;
+    state.mission.cachesSearched.push(cache.id);
+    // crates dragged and shelves knocked over: heard around the block
+    emitNoise(state, cellCenterOf(cache.cell), sc.searchNoise, 'door', s.id);
+    emit(state, 'CACHE_SEARCHED', {
+      cacheId: cache.id,
+      byId: s.id,
+      count: state.mission.cachesSearched.length,
+      required: sc.required,
+      total: sc.caches.length,
+    });
+    if (state.mission.cachesSearched.length >= sc.required)
+      completeObjective(state, 'scavengeSupplies');
+    return true;
+  }
   if (kind === 'beacon') {
     if (!state.mission.medicineCollected) return false;
     if (world.mission.objectives.defence && !state.mission.defenceDone) return false;
+    if (!scavengeDone(world, state)) return false;
     const ex = world.mission.objectives.extraction;
     state.mission.extractionActive = true;
     state.mission.extractionStartedTick = state.tick;

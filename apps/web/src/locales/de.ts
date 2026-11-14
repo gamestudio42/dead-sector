@@ -10,6 +10,7 @@ export const de: Catalog = {
       activateExtraction: 'Das Extraktionsfunkgerät auf dem Südparkplatz aktivieren',
       holdExtraction: 'Die Extraktionszone 20 s mit der Zivilistin halten',
       holdPosition: 'Das Gebäude halten, bis Hilfe kommt',
+      scavengeSupplies: 'Vorräte durchsuchen',
     },
     bands: {
       calm: 'ruhig',
@@ -71,6 +72,7 @@ export const de: Catalog = {
       noMembers: 'Trupp ohne Mitglieder',
       requiresMedicine: 'Holt {item}, bevor ihr die Extraktion ruft',
       requiresDefence: 'Haltet durch, bis die Belagerung vorbei ist, bevor ihr den Konvoi ruft',
+      requiresScavenge: 'Durchsucht genug Vorräte, bevor ihr den Transport ruft',
       obstructed: 'Aktion verhindert: der Durchgang ist versperrt',
       missionEnded: 'Mission beendet',
       queueFull: 'Reihe voll: höchstens 8 Punkte pro Trupp',
@@ -130,6 +132,9 @@ export const de: Catalog = {
     defencePaused: 'Niemand drinnen: die Zeit der Verteidigung steht ({seconds} s übrig)',
     defenceResumed: 'Wieder drinnen: die Zeit der Verteidigung läuft ({seconds} s übrig)',
     defenceDone: 'Die Belagerung ist vorbei: gebt dem Konvoi ein Zeichen',
+    cacheSearched: 'Vorräte durchsucht: {count}/{required}',
+    scavengeDone:
+      'Genug Vorräte ({count} von {total}): Das Funkgerät geht jetzt. Der Rest ist Gewinn.',
     and: 'und',
     orderIssued: '{squad}: Befehl {order}',
     orderBlocked: '{squad}: {reason}',
@@ -190,6 +195,7 @@ export const de: Catalog = {
     defenceBanner: 'Verteidigung: haltet das Gebäude — {held}/{need} s',
     defencePaused: 'niemand drinnen: die Zeit steht',
     siegeSoon: 'Belagerung in {seconds} s — macht euch bereit',
+    cache: 'KISTE',
     noiseTitle:
       'Jüngster Lärm: je lauter, desto mehr Infizierte hören ihn und desto mehr Verstärkung kommt',
     alarmTitle:
@@ -396,6 +402,7 @@ export const de: Catalog = {
     night: 'Nacht',
     perimeter: 'Umkreis: {area}',
     defended: 'Zu verteidigender Bereich',
+    caches: 'Kisten ({n})',
     extraction: 'Extraktion',
     entrances: 'Zugänge der Infizierten',
     objectives: 'Ziele',
@@ -515,6 +522,13 @@ export const de: Catalog = {
     unknownBody: 'Sichert einen Nachbarsektor, um zu erfahren, was hier ist.',
     shelterTag: 'Unterschlupf',
     siegeTag: 'Belagert',
+    variant: {
+      quiet: 'Sektor fast sicher: weniger Infizierte, Horden kommen später',
+      standard: 'Infizierte wie üblich',
+      overrun: 'Sektor überrannt: mehr Infizierte, Horden kommen früher',
+    },
+    scavenge:
+      '{n} Kisten zum Durchsuchen: {required} schalten das Funkgerät frei, alle gehen ins Lager',
     recruit: 'Rekrutieren ＋',
     recruitTip:
       'Eine Person aus der Zuflucht greift zu den Waffen: eine weniger zum Evakuieren, und ihre Patronen kommen aus dem Lager.',
@@ -594,6 +608,7 @@ export const de: Catalog = {
     stop: 'Halt (leert die Reihe)',
   },
   interact: {
+    search: 'Kiste durchsuchen',
     collect: '{item} holen',
     rescue: '{person} retten',
     radio: 'Funkgerät aktivieren',
@@ -737,6 +752,64 @@ export const de: Catalog = {
     melee: 'Knüppel/Messer',
   },
   missions: {
+    'comboio-parado': {
+      displayName: 'Liegengebliebener Konvoi',
+      briefing:
+        'Ein Versorgungskonvoi blieb auf der Avenida Norte stehen, als die Horden aus der Stadt herunterkamen. Die Lastwagen sind noch beladen. Durchsucht mindestens drei Ladungen, holt den Werkzeugkasten aus der Werkstatt, rettet den Fahrer, der sich im Büro versteckt, und verlasst das Gebiet über den Parkplatz im Süden. Je mehr Ladungen, desto mehr isst das Schutzlager — und desto mehr Lärm macht ihr.',
+      area: 'Werkstatt',
+      item: 'den Werkzeugkasten',
+      itemTag: 'WERKZEUG',
+      itemDone: 'Werkzeug',
+      person: 'den Fahrer',
+      personTag: 'FAHRER',
+      civilianRole: 'Konvoifahrer',
+      objectives: {
+        enterPerimeter: 'In die Autowerkstatt gelangen',
+        collectMedicine: 'Den Werkzeugkasten in der Werkstatt holen (5 s)',
+        rescueCivilian: 'Den Fahrer im Büro retten (3 s)',
+        scavengeSupplies: '3 Ladungen des Konvois durchsuchen (je 4 s)',
+        activateExtraction: 'Das Funkgerät auf dem Südparkplatz einschalten',
+        holdExtraction: '20 s mit dem Fahrer auf dem Parkplatz durchhalten',
+      },
+      intel: [
+        'Die Horden ziehen von Norden die Allee herunter. Bleibt von der Fahrbahnmitte weg, wenn der Alarm steigt.',
+        'Jede durchsuchte Ladung macht Lärm: Geschleifte Kisten hört man einen halben Block weit. Drei schalten das Funkgerät frei; der Rest ist Gewinn.',
+        'Alles, was ihr durchsucht, kommt ins Schutzlager, wenn die Evakuierung gelingt: Essen, Munition und Teile.',
+        'An der Tankstelle steht ein Schreier zwischen den Zapfsäulen. Der Laden hat noch volle Regale.',
+        'Der quer stehende Bus in der Seitenstraße hat noch das Gepäck der Fahrgäste.',
+        'In der Werkstatt ist ein Brocken. Die Hintertür ist verschlossen; die vorderen Tore stehen offen.',
+        'Der Fahrer ist verletzt und kämpft nicht: Nach der Rettung folgt er dem Trupp.',
+      ],
+    },
+    'feira-fantasma': {
+      displayName: 'Geistermarkt',
+      briefing:
+        'Der Mercadão Leste schloss mit vollen Ständen. Drinnen wandern die Infizierten zwischen den Regalen. Durchsucht mindestens drei Stände, holt das Milchpulver aus dem Verwaltungsbüro, holt den Händler aus dem Kühlraum und verlasst das Gebiet über den Parkplatz im Südwesten. Die Halle hallt: Jeder Schuss drinnen ruft den ganzen Block herbei.',
+      area: 'Markthalle',
+      item: 'das Milchpulver',
+      itemTag: 'MILCH',
+      itemDone: 'Milchpulver',
+      person: 'den Händler',
+      personTag: 'HÄNDLER',
+      civilianRole: 'Markthändler',
+      objectives: {
+        enterPerimeter: 'In die Markthalle gelangen',
+        collectMedicine: 'Das Milchpulver in der Verwaltung holen (5 s)',
+        rescueCivilian: 'Den Händler aus dem Kühlraum holen (3 s)',
+        scavengeSupplies: '3 Marktstände durchsuchen (je 4 s)',
+        activateExtraction: 'Das Funkgerät auf dem Südwestparkplatz einschalten',
+        holdExtraction: '20 s mit dem Händler auf dem Parkplatz durchhalten',
+      },
+      intel: [
+        'Die Halle ist groß und geschlossen: Schüsse drinnen hallen und rufen den ganzen Block herbei.',
+        'Einen Stand zu durchsuchen macht Lärm. Drei schalten das Funkgerät frei; jeder weitere Stand bringt Essen, Medizin oder Teile fürs Schutzlager.',
+        'Das Büro liegt in der Nordwestecke, der Kühlraum in der Nordostecke, je eins auf jeder Seite des Nordtors.',
+        'In der Halle und in der Südstraße sind Schreier. Ein Schrei lockt alles in der Nähe an.',
+        'Ein Brocken streift zwischen den Ständen auf der Ostseite umher.',
+        'Die Osttür ist verschlossen. Die Westtür führt zum Ladehof, wo ihr startet.',
+        'Der Händler ist schwach und kämpft nicht: Nach der Rettung folgt er dem Trupp.',
+      ],
+    },
     'a-ultima-farmacia': {
       displayName: 'Die letzte Apotheke',
       briefing:
@@ -857,10 +930,11 @@ export const de: Catalog = {
     sectors: {
       abrigo: 'Der Unterschlupf. Nehmen die Infizierten die Schule, ist es vorbei.',
       ferrugem: 'Neben dem Unterschlupf. Apotheke und Märkte haben noch etwas zu holen.',
-      avenida: 'Hier kommen die Horden aus der Stadt herunter. Noch kein Einsatzplan.',
+      avenida:
+        'Hier kommen die Horden aus der Stadt herunter. Ein Versorgungskonvoi steht mitten auf der Allee, noch beladen.',
       centro: 'Die Gesundheitsstation hält die Nacht durch, mit dem letzten Vorrat Antibiotika.',
       ferrovia: 'Der Ausgang. Jeder gelungene Einsatz hier bringt einen Konvoi Menschen weg.',
-      mercadao: 'Befallen und laut. Noch kein Einsatzplan.',
+      mercadao: 'Befallen und laut. Die Marktstände wurden voller Lebensmittel geschlossen.',
     },
     blocks: {
       'campaign-over': 'Die Kampagne ist vorbei.',
@@ -907,6 +981,7 @@ export const de: Catalog = {
       ammoShort: 'Die Munition im Lager reichte nicht, um alle nachzurüsten.',
       recruited: '{name} hat zu den Waffen gegriffen und ist dabei.',
       roundsReturned: '{count} Extra-Patronen gingen zurück ins Lager.',
+      scavenged: '{count} Kiste(n) durchsucht: {bits}.',
     },
     stage: {
       healthy: 'wohlauf',

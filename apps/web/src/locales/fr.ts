@@ -10,6 +10,7 @@ export const fr: Catalog = {
       activateExtraction: "Activer la radio d'extraction sur le parking sud",
       holdExtraction: "Tenir la zone d'extraction 20 s avec la civile",
       holdPosition: "Défendre le bâtiment jusqu'à l'arrivée des secours",
+      scavengeSupplies: 'Fouiller les réserves',
     },
     bands: {
       calm: 'calme',
@@ -71,6 +72,7 @@ export const fr: Catalog = {
       noMembers: "L'escouade n'a plus de membres",
       requiresMedicine: "Récupérez {item} avant d'appeler l'extraction",
       requiresDefence: "Tenez jusqu'à la fin du siège avant d'appeler le convoi",
+      requiresScavenge: "Fouillez assez de réserves avant d'appeler le transport",
       obstructed: 'Action empêchée : le passage est obstrué',
       missionEnded: 'Mission terminée',
       queueFull: 'File pleine : 8 points par escouade au maximum',
@@ -131,6 +133,9 @@ export const fr: Catalog = {
       'Personne à l’intérieur : le chrono de la défense est arrêté (encore {seconds} s)',
     defenceResumed: 'De retour à l’intérieur : le chrono de la défense repart (encore {seconds} s)',
     defenceDone: 'Le siège est passé : faites signe au convoi',
+    cacheSearched: 'Réserves fouillées : {count}/{required}',
+    scavengeDone:
+      'Assez de réserves ({count} sur {total}) : la radio fonctionne. Le reste est du bonus.',
     and: 'et',
     orderIssued: '{squad} : ordre {order}',
     orderBlocked: '{squad} : {reason}',
@@ -191,6 +196,7 @@ export const fr: Catalog = {
     defenceBanner: 'Défense : tenez le bâtiment — {held}/{need} s',
     defencePaused: 'personne à l’intérieur : le chrono est arrêté',
     siegeSoon: 'Siège dans {seconds} s — préparez-vous',
+    cache: 'CAISSE',
     noiseTitle:
       "Bruit récent : plus il est fort, plus les infectés l'entendent et plus les renforts arrivent",
     alarmTitle:
@@ -397,6 +403,7 @@ export const fr: Catalog = {
     night: 'nuit',
     perimeter: 'Périmètre : {area}',
     defended: 'Zone à défendre',
+    caches: 'Caisses ({n})',
     extraction: 'Extraction',
     entrances: 'Entrées des infectés',
     objectives: 'Objectifs',
@@ -516,6 +523,12 @@ export const fr: Catalog = {
     unknownBody: "Sécurisez un secteur voisin pour savoir ce qu'il y a ici.",
     shelterTag: 'Abri',
     siegeTag: 'Assiégée',
+    variant: {
+      quiet: "Secteur presque sûr : moins d'infectés et des hordes plus tardives",
+      standard: "Infectés comme d'habitude",
+      overrun: "Secteur envahi : plus d'infectés et des hordes plus tôt",
+    },
+    scavenge: '{n} caisses à fouiller : {required} débloquent la radio, et toutes vont au stock',
     recruit: 'Recruter ＋',
     recruitTip:
       "Une personne de l'abri prend les armes : une de moins à évacuer, et ses balles sortent du stock.",
@@ -595,6 +608,7 @@ export const fr: Catalog = {
     stop: 'Stop (vide la file)',
   },
   interact: {
+    search: 'Fouiller la caisse',
     collect: 'Récupérer {item}',
     rescue: 'Secourir {person}',
     radio: 'Activer la radio',
@@ -742,6 +756,64 @@ export const fr: Catalog = {
     melee: 'Matraque/couteau',
   },
   missions: {
+    'comboio-parado': {
+      displayName: 'Convoi Immobilisé',
+      briefing:
+        "Un convoi de ravitaillement s'est arrêté sur l'Avenida Norte quand les hordes sont descendues de la ville. Les camions sont encore chargés. Fouillez au moins trois chargements, prenez la caisse à outils au garage, sauvez le chauffeur caché dans le bureau et sortez par le parking sud. Plus de chargements, c'est plus de vivres pour l'abri — et plus de bruit.",
+      area: 'garage',
+      item: 'la caisse à outils',
+      itemTag: 'OUTILS',
+      itemDone: 'Outils',
+      person: 'le chauffeur',
+      personTag: 'CHAUFFEUR',
+      civilianRole: 'Chauffeur du convoi',
+      objectives: {
+        enterPerimeter: 'Entrer dans le garage',
+        collectMedicine: 'Prendre la caisse à outils au garage (5 s)',
+        rescueCivilian: 'Sauver le chauffeur dans le bureau (3 s)',
+        scavengeSupplies: 'Fouiller 3 chargements du convoi (4 s chacun)',
+        activateExtraction: 'Activer la radio au parking sud',
+        holdExtraction: 'Tenir 20 s au parking avec le chauffeur',
+      },
+      intel: [
+        "Les hordes descendent l'avenue depuis le nord. Quittez le milieu de la chaussée quand l'alerte monte.",
+        "Chaque chargement fouillé fait du bruit : les caisses traînées s'entendent à un demi-pâté de maisons. Trois débloquent la radio ; le reste est du bonus.",
+        "Tout ce que vous fouillez revient à l'abri si l'extraction réussit : vivres, munitions et pièces.",
+        'La station-service cache un hurleur entre les pompes. Sa boutique a encore des rayons pleins.',
+        'Le bus en travers de la rue latérale contient les bagages des passagers.',
+        'Il y a une brute dans le garage. La porte arrière est verrouillée ; les portes de devant sont ouvertes.',
+        "Le chauffeur est blessé et ne se bat pas : il suit l'escouade après le sauvetage.",
+      ],
+    },
+    'feira-fantasma': {
+      displayName: 'Marché Fantôme',
+      briefing:
+        "Le Mercadão Leste a fermé avec ses étals pleins. À l'intérieur, les infectés errent entre les rayons. Fouillez au moins trois étals, prenez le lait en poudre au bureau de la gestion, sortez le marchand de la chambre froide et partez par le parking sud-ouest. La halle résonne : chaque tir à l'intérieur appelle tout le quartier.",
+      area: 'marché',
+      item: 'le lait en poudre',
+      itemTag: 'LAIT',
+      itemDone: 'Lait en poudre',
+      person: 'le marchand',
+      personTag: 'MARCHAND',
+      civilianRole: 'Marchand',
+      objectives: {
+        enterPerimeter: 'Entrer dans la halle du marché',
+        collectMedicine: 'Prendre le lait en poudre au bureau (5 s)',
+        rescueCivilian: 'Sortir le marchand de la chambre froide (3 s)',
+        scavengeSupplies: 'Fouiller 3 étals du marché (4 s chacun)',
+        activateExtraction: 'Activer la radio au parking sud-ouest',
+        holdExtraction: 'Tenir 20 s au parking avec le marchand',
+      },
+      intel: [
+        "La halle est grande et fermée : les tirs à l'intérieur résonnent et appellent tout le quartier.",
+        "Fouiller un étal fait du bruit. Trois débloquent la radio ; chaque étal en plus, ce sont des vivres, des remèdes ou des pièces pour l'abri.",
+        "Le bureau est dans l'angle nord-ouest et la chambre froide dans l'angle nord-est, de part et d'autre de la porte nord.",
+        'Il y a des hurleurs dans la halle et dans la rue sud. Un hurlement attire tout alentour.',
+        'Une brute rôde parmi les étals du côté est.',
+        'La porte est est verrouillée. La porte ouest donne sur la cour de chargement, où vous commencez.',
+        "Le marchand est faible et ne se bat pas : il suit l'escouade après le sauvetage.",
+      ],
+    },
     'a-ultima-farmacia': {
       displayName: 'La dernière pharmacie',
       briefing:
@@ -863,10 +935,11 @@ export const fr: Catalog = {
     sectors: {
       abrigo: "L'abri. Si les infectés prennent l'école, c'est fini.",
       ferrugem: "À côté de l'abri. La pharmacie et les marchés ont encore de quoi emporter.",
-      avenida: "Les hordes venues de la ville descendent par ici. Pas encore de plan d'opération.",
+      avenida:
+        "Les hordes venues de la ville descendent par ici. Un convoi de ravitaillement s'est arrêté au milieu de l'avenue, encore chargé.",
       centro: "Le poste de santé tient la nuit, avec le dernier stock d'antibiotiques.",
       ferrovia: 'La sortie. Chaque opération réussie ici emmène un convoi de personnes.',
-      mercadao: "Infesté et bruyant. Pas encore de plan d'opération.",
+      mercadao: 'Infesté et bruyant. Les étals du marché ont fermé pleins de nourriture.',
     },
     blocks: {
       'campaign-over': 'La campagne est terminée.',
@@ -913,6 +986,7 @@ export const fr: Catalog = {
       ammoShort: "Les munitions du stock n'ont pas suffi à réarmer tout le monde.",
       recruited: "{name} a pris les armes et rejoint l'équipe.",
       roundsReturned: '{count} balles en plus sont revenues au stock.',
+      scavenged: '{count} caisse(s) fouillée(s) : {bits}.',
     },
     stage: {
       healthy: 'bien',

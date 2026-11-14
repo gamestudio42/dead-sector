@@ -345,7 +345,13 @@ test('the quit button exists only inside the desktop shell', async ({ page }) =>
   expect(await page.evaluate(() => (window as any).__quit)).toBe(true);
 });
 
-for (const id of ['sinal-fraco', 'plantao-noturno', 'cerco-dom-bosco'])
+for (const id of [
+  'sinal-fraco',
+  'plantao-noturno',
+  'cerco-dom-bosco',
+  'comboio-parado',
+  'feira-fantasma',
+])
   test(`mission ${id} loads its own map, texts and objectives`, async ({ page }) => {
     const errors = trackErrors(page);
     await page.goto('/?lang=pt-BR');
@@ -382,6 +388,39 @@ test('defence: the siege is announced, the hold banner counts, and the plan hold
   expect(errors).toEqual([]);
 });
 
+test('scavenging: caches on the map, a counter on the objective, and the plan brings them home', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-new-mission').click();
+  await page.getByTestId('pick-comboio-parado').click();
+  await expect(page.locator('.obj-list li')).toHaveCount(6);
+  await expect(page.getByTestId('briefing')).toContainText('Cargas (5)');
+  await page.getByTestId('btn-deploy').click();
+  await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.startPlan('mission'));
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.fastForward(420));
+  expect(await hook(page, (h) => h.state().mission.cachesSearched.length)).toBeGreaterThanOrEqual(
+    1,
+  );
+  await expect(page.getByTestId('objectives')).toContainText('Revirar 3 cargas do comboio');
+  await expect(page.getByTestId('objectives')).toContainText('/3');
+  // the convoy on the avenue: searched loads open, the rest still marked
+  const tip = page.getByTestId('tip-ok');
+  if (await tip.isVisible()) await tip.click();
+  await hook(page, (h) => (h.centerOn(44, 24), null));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${SHOTS}/scavenge-1280x720.png` });
+  await playPlanToEnd(page, 'mission');
+  await expect(page.getByTestId('debrief')).toBeVisible({ timeout: 15_000 });
+  expect(await hook(page, (h) => h.state().mission.status)).toBe('success');
+  expect(await hook(page, (h) => h.state().mission.cachesSearched.length)).toBeGreaterThanOrEqual(
+    3,
+  );
+  expect(errors).toEqual([]);
+});
+
 test('campaign: strategic map, operations, losses and days persist', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/?lang=pt-BR');
@@ -393,8 +432,10 @@ test('campaign: strategic map, operations, losses and days persist', async ({ pa
 
   // the far sectors are hidden until a neighbour is secured
   await expect(page.getByTestId('sector-ferrovia')).toHaveAttribute('data-status', 'unknown');
+  // the avenue borders the shelter: its convoy can be raided, but the sector is overrun
   await page.getByTestId('sector-avenida').click();
-  await expect(page.getByTestId('sector-block')).toContainText('plano de operação');
+  await expect(page.getByTestId('sector-variant')).toContainText('Setor tomado');
+  await expect(page.getByTestId('btn-operate')).toBeVisible();
 
   const food = Number(await page.getByTestId('stock-food').textContent());
   await page.getByTestId('sector-ferrugem').click();

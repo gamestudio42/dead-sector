@@ -115,7 +115,9 @@ describe('strategic layer: decisions have explicit costs', () => {
     const c = newCampaign(content, 'ferrugem');
     expect(sectorStatus(def, c, 'centro')).toBe('unknown');
     expect(operationBlockReason(content, c, 'centro')).toBe('unknown');
-    expect(operationBlockReason(content, c, 'avenida')).toBe('no-plan');
+    // the avenue borders the shelter: its stalled convoy can be raided from day one
+    expect(operationBlockReason(content, c, 'avenida')).toBeNull();
+    expect(operationBlockReason(content, c, 'mercadao')).toBe('unknown');
     expect(operationBlockReason(content, c, 'ferrugem')).toBeNull();
     const after = applyOperationResult(content, c, 'ferrugem', finished(c)).campaign;
     expect(after.operatedToday).toBe(true);

@@ -76,13 +76,14 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 - **Desktop shell**: Electron app in `apps/desktop` serving the game offline from `app://game/`, packaged as a strict
   snap following the Vazante setup, with `--smoke` and `--bench` modes (ADR 0014).
 
-- **Strategic campaign (Phase 6, stages 6.1–6.3 of 5)**: pure seeded campaign layer with connected sectors, stock,
+- **Strategic campaign (Phase 6, stages 6.1–6.4 of 5)**: pure seeded campaign layer with connected sectors, stock,
   shelter population, one operation per day, nightly food, healing, rearming and infection, horde migration driven by
   density and mission noise, a deadline and an evacuation goal; save migration from the linear campaign; map and
   shelter screen. The campaign briefing assigns
   each living survivor to a squad or to the shelter and draws extra rounds from the stock, and the shelter recruits
-  one person a day as a fighter (ADR 0022). Not yet: sector operations beyond the three missions, shelter
-  upgrades, campaign difficulties (ADR 0015). Stock and migration values are provisional, checked only by scripted runs.
+  one person a day as a fighter (ADR 0022). Every sector has an operation: Avenida Norte and Mercadão Leste are
+  scavenging runs where each supply cache searched comes home as stock, and a sector's state makes its mission quiet
+  or overrun (ADR 0023). Not yet: shelter upgrades, campaign difficulties (ADR 0015). Stock and migration values are provisional, checked only by scripted runs.
   When the shelter's infestation reaches 35% at night it is besieged: the next day's only operation is Cerco na Dom
   Bosco, and losing or skipping it costs people of the shelter (ADR 0021).
 
@@ -117,9 +118,9 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **196/196** ✓ (plus the opt-in balance report).
-- `pnpm e2e`: **18/18** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
-  at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, the campaign siege, campaign deployment and recruits, and the
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **205/205** ✓ (plus the opt-in balance report).
+- `pnpm e2e`: **21/21** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
+  at 1280×720 and 1920×1080, options, controls, every mission's map and texts, a scavenging run, the campaign flow with carry-over, the campaign siege, campaign deployment and recruits, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
   serves on a dedicated port (4317, `strictPort`, never reusing another server).
 - **Determinism of the optimisation**: final-state hashes of five complete scripted missions (three maps, four routes)

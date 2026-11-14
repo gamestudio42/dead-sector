@@ -15,6 +15,8 @@ export interface Interactable {
 
 export const CABINET_ID = 'cabinet';
 export const BEACON_ID = 'beacon';
+/** Interactable id of a supply cache: `cache:<id from the mission>`. */
+export const cacheTargetId = (id: string): string => `cache:${id}`;
 
 export function aliveMembers(state: GameState, ctx: TickContext, squad: Squad): Survivor[] {
   const out: Survivor[] = [];
@@ -58,6 +60,12 @@ export function orderTarget(
   return listInteractables(world, state).find((i) => i.id === order.targetEntityId) ?? null;
 }
 
+/** True when the mission has no scavenging or enough caches were searched for the radio. */
+export function scavengeDone(world: World, state: GameState): boolean {
+  const sc = world.mission.objectives.scavenge;
+  return !sc || state.mission.cachesSearched.length >= sc.required;
+}
+
 /** Everything a squad can interact with right now (doors, cabinet, civilian, extraction beacon). */
 export function listInteractables(world: World, state: GameState): Interactable[] {
   const out: Interactable[] = [];
@@ -78,6 +86,13 @@ export function listInteractables(world: World, state: GameState): Interactable[
     position: { x: cab.x + 1, y: cab.y + 0.5 },
     available: !state.mission.medicineCollected,
   });
+  for (const k of world.mission.objectives.scavenge?.caches ?? [])
+    out.push({
+      id: cacheTargetId(k.id),
+      kind: 'cache',
+      position: cellCenter(k.cell.x, k.cell.y),
+      available: !state.mission.cachesSearched.includes(k.id),
+    });
   const civ = state.survivors.find((s) => s.isObjectiveCivilian);
   if (civ)
     out.push({
@@ -358,6 +373,8 @@ export function planOrder(
       return block(state, squad, order, 'requiresMedicine');
     if (target.kind === 'beacon' && world.mission.objectives.defence && !state.mission.defenceDone)
       return block(state, squad, order, 'requiresDefence');
+    if (target.kind === 'beacon' && !scavengeDone(world, state))
+      return block(state, squad, order, 'requiresScavenge');
     const candidates = [...members].sort(
       (a, b) =>
         dist(a.position, target.position) - dist(b.position, target.position) ||

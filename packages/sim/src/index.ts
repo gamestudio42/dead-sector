@@ -13,7 +13,13 @@ export { findPath, nearestStandableCell, enterCost } from './systems/Pathfinding
 export { propagateNoise, emitNoise } from './systems/Noise';
 export { survivorCanSee, survivorVisionRange } from './systems/Perception';
 export { zombieCanSee, detectionFactor } from './systems/ZombieAI';
-export { listInteractables, CABINET_ID, BEACON_ID, type Interactable } from './systems/Orders';
+export {
+  listInteractables,
+  CABINET_ID,
+  BEACON_ID,
+  cacheTargetId,
+  type Interactable,
+} from './systems/Orders';
 export { shotHitChance } from './systems/Combat';
 export { stressRatePerSecond, updatePanicState, bandFor } from './systems/Psychology';
 export { inRect, civilianOf } from './systems/Objectives';

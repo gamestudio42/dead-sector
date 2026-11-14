@@ -15,7 +15,7 @@ import { SeededRng, seedToRngState } from '../engine/SeededRng';
 import { blocksMovement } from '../spatial/Grid';
 import { cellCenter, dist } from '../spatial/vec';
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 export const SURVIVOR_RADIUS = 0.25;
 export const ZOMBIE_RADIUS = 0.28;
 
@@ -27,13 +27,31 @@ export const OBJECTIVE_ORDER: ObjectiveId[] = [
   'holdExtraction',
 ];
 
-/** The mission's objectives in order: a defence mission holds its position before the radio. */
+/**
+ * The mission's objectives in order: a scavenging mission searches its caches and a defence mission
+ * holds its position before the radio.
+ */
 export function objectiveOrder(mission: Pick<MissionDef, 'objectives'>): ObjectiveId[] {
-  if (!mission.objectives.defence) return OBJECTIVE_ORDER;
   const out = [...OBJECTIVE_ORDER];
-  out.splice(out.indexOf('activateExtraction'), 0, 'holdPosition');
+  const extra: ObjectiveId[] = [];
+  if (mission.objectives.scavenge) extra.push('scavengeSupplies');
+  if (mission.objectives.defence) extra.push('holdPosition');
+  out.splice(out.indexOf('activateExtraction'), 0, ...extra);
   return out;
 }
+
+/**
+ * How a campaign sector's state changes its mission: more infected at the start and earlier hordes
+ * in an infested sector, fewer in a nearly secured one. The default changes nothing.
+ */
+export interface MissionVariant {
+  /** Multiplies every starting zombie zone (rounded, never below 1 for a non-empty zone). */
+  zombieMultiplier: number;
+  /** Multiplies the time to the first horde. */
+  hordeDelayMultiplier: number;
+}
+
+export const STANDARD_VARIANT: MissionVariant = { zombieMultiplier: 1, hordeDelayMultiplier: 1 };
 
 function makeSurvivor(
   t: Pick<
@@ -195,6 +213,8 @@ export function createMissionState(
   carry?: CarryOver,
   /** Strategic layer: reinforcements follow how infested the sector is on the day. */
   reinforcementMultiplier = 1,
+  /** Strategic layer: the starting infected and hordes follow the sector's state. */
+  variant: MissionVariant = STANDARD_VARIANT,
 ): GameState {
   const mission = content.missions[missionId];
   if (!mission) throw new Error(`Unknown mission ${missionId}`);
@@ -288,7 +308,9 @@ export function createMissionState(
       alarm: 0,
       alarmLevel: 0,
       hordesSpawned: 0,
-      nextHordeTick: mission.hordes ? Math.round(mission.hordes.firstAtSeconds * 10) : -1,
+      nextHordeTick: mission.hordes
+        ? Math.round(mission.hordes.firstAtSeconds * variant.hordeDelayMultiplier * 10)
+        : -1,
       pendingHorde: null,
       siegeStartTick: mission.objectives.defence
         ? Math.round(mission.objectives.defence.startsAtSeconds * 10)
@@ -301,6 +323,7 @@ export function createMissionState(
         : 0,
       defenceHolding: false,
       defenceDone: false,
+      cachesSearched: [],
       lastHordeTick: -100000,
     },
     stats: {
@@ -423,7 +446,9 @@ export function createMissionState(
 
   const spawns = mission.squads.map((s) => s.spawn);
   for (const zone of mission.zombieZones) {
-    for (let i = 0; i < zone.count; i++) {
+    const count =
+      zone.count === 0 ? 0 : Math.max(1, Math.round(zone.count * variant.zombieMultiplier));
+    for (let i = 0; i < count; i++) {
       let pos: Vec2 | null = null;
       for (let attempt = 0; attempt < 80 && !pos; attempt++) {
         const x = rng.int(zone.rect.x0, zone.rect.x1);

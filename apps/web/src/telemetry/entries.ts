@@ -112,6 +112,9 @@ export function entriesForEvents(events: readonly SimEvent[], state: GameState):
       case 'DEFENCE_COMPLETED':
         out.push({ kind: 'defence', ...at });
         break;
+      case 'CACHE_SEARCHED':
+        out.push({ kind: 'cache', ...at, cacheId: p['cacheId'], count: p['count'] });
+        break;
       case 'EXTRACTION_STARTED':
         out.push({ kind: 'extraction', ...at });
         break;

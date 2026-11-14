@@ -10,6 +10,7 @@ export const ptBR: Catalog = {
       activateExtraction: 'Ativar o rádio de extração no estacionamento sul',
       holdExtraction: 'Resistir 20 s na área de extração com a civil',
       holdPosition: 'Defender o prédio até o resgate chegar',
+      scavengeSupplies: 'Revirar os suprimentos',
     },
     bands: {
       calm: 'calmo',
@@ -71,6 +72,7 @@ export const ptBR: Catalog = {
       noMembers: 'Esquadrão sem integrantes',
       requiresMedicine: 'Recolha {item} antes de chamar a extração',
       requiresDefence: 'Resista até o fim do cerco antes de chamar o comboio',
+      requiresScavenge: 'Revire suprimentos suficientes antes de chamar o resgate',
       obstructed: 'Ação impedida: passagem obstruída',
       missionEnded: 'Missão encerrada',
       queueFull: 'Fila cheia: no máximo 8 pontos por esquadrão',
@@ -130,6 +132,9 @@ export const ptBR: Catalog = {
     defencePaused: 'Ninguém no prédio: o tempo da defesa parou (faltam {seconds} s)',
     defenceResumed: 'De volta ao prédio: o tempo da defesa voltou a correr (faltam {seconds} s)',
     defenceDone: 'O cerco passou: sinalize o comboio',
+    cacheSearched: 'Suprimentos revirados: {count}/{required}',
+    scavengeDone:
+      'Suprimentos suficientes ({count} de {total}): o rádio já funciona. O resto é lucro.',
     and: 'e',
     orderIssued: '{squad}: ordem {order}',
     orderBlocked: '{squad}: {reason}',
@@ -190,6 +195,7 @@ export const ptBR: Catalog = {
     defenceBanner: 'Defesa: segurem o prédio — {held}/{need} s',
     defencePaused: 'ninguém lá dentro: o tempo parou',
     siegeSoon: 'Cerco em {seconds} s — preparem-se',
+    cache: 'CARGA',
     noiseTitle: 'Ruído recente: quanto mais alto, mais infectados ouvem e mais reforços chegam',
     alarmTitle:
       'Alerta do bairro: tiros, portas, vidro e gritos acumulam; em Alerta vêm mais corredores, em Caçada uma horda é atraída',
@@ -394,6 +400,7 @@ export const ptBR: Catalog = {
     night: 'noite',
     perimeter: 'Perímetro: {area}',
     defended: 'Área a defender',
+    caches: 'Cargas ({n})',
     extraction: 'Extração',
     entrances: 'Entradas de infectados',
     objectives: 'Objetivos',
@@ -511,6 +518,12 @@ export const ptBR: Catalog = {
     unknownBody: 'Assegure um setor vizinho para saber o que há aqui.',
     shelterTag: 'Abrigo',
     siegeTag: 'Sitiada',
+    variant: {
+      quiet: 'Setor quase limpo: menos infectados e hordas mais tardias',
+      standard: 'Infectados como de costume',
+      overrun: 'Setor tomado: mais infectados e hordas mais cedo',
+    },
+    scavenge: '{n} cargas para revirar: {required} liberam o rádio, e todas vão para o estoque',
     recruit: 'Recrutar ＋',
     recruitTip:
       'Uma pessoa do abrigo pega em armas: uma a menos para evacuar, e suas balas saem do estoque.',
@@ -590,6 +603,7 @@ export const ptBR: Catalog = {
     stop: 'Parar (cancela a fila)',
   },
   interact: {
+    search: 'Revirar a carga',
     collect: 'Recolher {item}',
     rescue: 'Resgatar {person}',
     radio: 'Ativar o rádio',
@@ -729,6 +743,64 @@ export const ptBR: Catalog = {
     melee: 'Bastão/faca',
   },
   missions: {
+    'comboio-parado': {
+      displayName: 'Comboio Parado',
+      briefing:
+        'Um comboio de abastecimento parou na Avenida Norte quando as hordas desceram da cidade. Os caminhões ainda estão carregados. Revire pelo menos três cargas, pegue a caixa de ferramentas na oficina, resgate o motorista escondido no escritório e saia pelo estacionamento sul. Quanto mais cargas, mais o abrigo come — e mais barulho vocês fazem.',
+      area: 'oficina',
+      item: 'a caixa de ferramentas',
+      itemTag: 'FERRAMENTAS',
+      itemDone: 'Ferramentas',
+      person: 'o motorista',
+      personTag: 'MOTORISTA',
+      civilianRole: 'Motorista do comboio',
+      objectives: {
+        enterPerimeter: 'Entrar na oficina mecânica',
+        collectMedicine: 'Pegar a caixa de ferramentas na oficina (5 s)',
+        rescueCivilian: 'Resgatar o motorista no escritório (3 s)',
+        scavengeSupplies: 'Revirar 3 cargas do comboio (4 s cada)',
+        activateExtraction: 'Ativar o rádio no estacionamento sul',
+        holdExtraction: 'Resistir 20 s no estacionamento com o motorista',
+      },
+      intel: [
+        'As hordas descem pela avenida, vindas do norte. Fique longe do meio da pista quando o alerta subir.',
+        'Cada carga revirada faz barulho: caixas arrastadas são ouvidas a meia quadra. Três abrem o rádio; o resto é lucro.',
+        'Tudo o que vocês revirarem volta para o abrigo se a extração der certo: comida, munição e peças.',
+        'O posto de gasolina tem um gritador entre as bombas. A loja do posto ainda tem prateleiras cheias.',
+        'O ônibus atravessado na rua lateral guarda a bagagem dos passageiros.',
+        'A oficina tem um brutamontes lá dentro. A porta dos fundos está trancada; as portas da frente estão abertas.',
+        'O motorista está ferido e não luta: ele segue a equipe depois do resgate.',
+      ],
+    },
+    'feira-fantasma': {
+      displayName: 'Feira Fantasma',
+      briefing:
+        'O Mercadão Leste fechou com as bancas cheias. Lá dentro, os infectados andam entre as prateleiras. Revire pelo menos três bancas, pegue o leite em pó no escritório da administração, tire o feirante preso na câmara fria e saia pelo estacionamento sudoeste. O salão ecoa: cada tiro lá dentro chama o quarteirão inteiro.',
+      area: 'mercadão',
+      item: 'o leite em pó',
+      itemTag: 'LEITE',
+      itemDone: 'Leite em pó',
+      person: 'o feirante',
+      personTag: 'FEIRANTE',
+      civilianRole: 'Feirante',
+      objectives: {
+        enterPerimeter: 'Entrar no salão do mercadão',
+        collectMedicine: 'Pegar o leite em pó na administração (5 s)',
+        rescueCivilian: 'Tirar o feirante da câmara fria (3 s)',
+        scavengeSupplies: 'Revirar 3 bancas do mercadão (4 s cada)',
+        activateExtraction: 'Ativar o rádio no estacionamento sudoeste',
+        holdExtraction: 'Resistir 20 s no estacionamento com o feirante',
+      },
+      intel: [
+        'O salão é grande e fechado: tiros lá dentro ecoam e chamam o quarteirão inteiro.',
+        'Revirar uma banca faz barulho. Três abrem o rádio; cada banca a mais é comida, remédio ou peças para o abrigo.',
+        'A administração fica no canto noroeste e a câmara fria no nordeste, uma de cada lado do portão norte.',
+        'Há gritadores no salão e na rua sul. O grito atrai tudo ao redor.',
+        'Um brutamontes ronda as bancas do lado leste.',
+        'A porta leste está trancada. A porta oeste dá para o pátio de carga, onde vocês começam.',
+        'O feirante está fraco e não luta: ele segue a equipe depois do resgate.',
+      ],
+    },
     'a-ultima-farmacia': {
       displayName: 'A Última Farmácia',
       briefing:
@@ -849,10 +921,11 @@ export const ptBR: Catalog = {
     sectors: {
       abrigo: 'O abrigo. Se os infectados tomarem a escola, acabou.',
       ferrugem: 'Vizinho do abrigo. A farmácia e os mercados ainda têm o que levar.',
-      avenida: 'Por aqui descem as hordas vindas da cidade. Ainda sem plano de operação.',
+      avenida:
+        'Por aqui descem as hordas vindas da cidade. Um comboio de abastecimento parou no meio da avenida, ainda carregado.',
       centro: 'O posto de saúde resiste à noite, com o último estoque de antibióticos.',
       ferrovia: 'A saída. Cada operação bem-sucedida aqui leva um comboio de pessoas embora.',
-      mercadao: 'Infestado e barulhento. Ainda sem plano de operação.',
+      mercadao: 'Infestado e barulhento. As bancas do mercadão fecharam cheias de comida.',
     },
     blocks: {
       'campaign-over': 'A campanha terminou.',
@@ -899,6 +972,7 @@ export const ptBR: Catalog = {
       ammoShort: 'A munição do estoque não bastou para rearmar todo mundo.',
       recruited: '{name} pegou em armas e entrou para a equipe.',
       roundsReturned: '{count} balas extras voltaram ao estoque.',
+      scavenged: '{count} carga(s) revirada(s): {bits}.',
     },
     stage: {
       healthy: 'bem',

@@ -30,6 +30,8 @@ import {
   squadSlots,
   type Deployment,
   reinforcementMultiplier,
+  OPERATION_VARIANTS,
+  operationVariant,
   objectiveOrder,
   type CampaignState,
 } from '@dead-sector/sim';
@@ -92,7 +94,7 @@ export class BriefingScene extends Phaser.Scene {
             <canvas data-el="map" width="${world.width * PX}" height="${world.height * PX}"></canvas>
             <div class="map-legend small">
               <span><i style="background:#5aa9ff"></i>Alfa</span><span><i style="background:#ffad4d"></i>Bravo</span>
-              <span><i class="dash"></i>${text('briefing.perimeter', { area: MT.area })}</span><span><i style="background:#7fbf6a"></i>${text('briefing.extraction')}</span>${mission.objectives.defence ? `<span><i style="background:#e0a040"></i>${text('briefing.defended')}</span>` : ''}
+              <span><i class="dash"></i>${text('briefing.perimeter', { area: MT.area })}</span><span><i style="background:#7fbf6a"></i>${text('briefing.extraction')}</span>${mission.objectives.defence ? `<span><i style="background:#e0a040"></i>${text('briefing.defended')}</span>` : ''}${mission.objectives.scavenge ? `<span><i style="background:#e0b050"></i>${text('briefing.caches', { n: mission.objectives.scavenge.caches.length })}</span>` : ''}
               <span><i style="background:#e0563e"></i>${text('briefing.entrances')}</span>
             </div>
           </div>
@@ -300,6 +302,9 @@ export class BriefingScene extends Phaser.Scene {
         carry: campaign ? carryOver(campaign) : undefined,
         reinforcements: campaign?.activeSectorId
           ? reinforcementMultiplier(campaign.sectors[campaign.activeSectorId]?.infestation ?? 50)
+          : undefined,
+        variant: campaign?.activeSectorId
+          ? OPERATION_VARIANTS[operationVariant(content, campaign, campaign.activeSectorId)]
           : undefined,
       });
     };

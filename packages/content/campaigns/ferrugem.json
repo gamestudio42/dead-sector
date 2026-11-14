@@ -108,20 +108,20 @@
     {
       "id": "avenida",
       "displayName": "Avenida Norte",
-      "blurb": "Por aqui descem as hordas vindas da cidade. Ainda sem plano de operação.",
+      "blurb": "Por aqui descem as hordas vindas da cidade. Um comboio de abastecimento parou no meio da avenida, ainda carregado.",
       "pos": {
         "x": 30,
         "y": 22
       },
       "neighbors": ["abrigo", "ferrugem", "centro"],
-      "missionId": null,
+      "missionId": "comboio-parado",
       "infestation": 70,
       "growth": 3,
       "reward": {
-        "food": 0,
+        "food": 4,
         "medicine": 0,
-        "ammo": 0,
-        "parts": 0,
+        "ammo": 10,
+        "parts": 3,
         "people": 0
       },
       "evacuates": 0
@@ -171,20 +171,20 @@
     {
       "id": "mercadao",
       "displayName": "Mercadão Leste",
-      "blurb": "Infestado e barulhento. Ainda sem plano de operação.",
+      "blurb": "Infestado e barulhento. As bancas do mercadão fecharam cheias de comida.",
       "pos": {
         "x": 90,
         "y": 44
       },
       "neighbors": ["centro", "ferrovia"],
-      "missionId": null,
+      "missionId": "feira-fantasma",
       "infestation": 75,
       "growth": 2,
       "reward": {
-        "food": 0,
-        "medicine": 0,
+        "food": 12,
+        "medicine": 1,
         "ammo": 0,
-        "parts": 0,
+        "parts": 1,
         "people": 0
       },
       "evacuates": 0

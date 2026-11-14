@@ -239,6 +239,32 @@ export const missionSchema = z.object({
           .min(1),
       })
       .optional(),
+    /**
+     * Scavenging: supply caches spread over the map. Each search takes `searchSeconds` and is
+     * heard around it; the radio works once `required` caches are searched. Every cache searched
+     * is carried home on a successful extraction, so going for more pays.
+     */
+    scavenge: z
+      .object({
+        searchSeconds: z.number().positive(),
+        searchNoise: z.number().min(0).max(100),
+        required: z.number().int().positive(),
+        caches: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              cell: cellSchema,
+              loot: z.object({
+                food: z.number().int().nonnegative().default(0),
+                medicine: z.number().int().nonnegative().default(0),
+                ammo: z.number().int().nonnegative().default(0),
+                parts: z.number().int().nonnegative().default(0),
+              }),
+            }),
+          )
+          .min(1),
+      })
+      .optional(),
   }),
   /** Player-facing PT-BR texts for this mission (objective names, item and person, intel). */
   texts: z.object({
@@ -255,6 +281,7 @@ export const missionSchema = z.object({
       activateExtraction: z.string().min(1),
       holdExtraction: z.string().min(1),
       holdPosition: z.string().min(1).optional(),
+      scavengeSupplies: z.string().min(1).optional(),
     }),
     intel: z.array(z.string().min(1)),
   }),

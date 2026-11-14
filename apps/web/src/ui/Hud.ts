@@ -583,6 +583,18 @@ export class Hud {
         case 'DEFENCE_COMPLETED':
           this.push(state, text('log.defenceDone'), 'good');
           break;
+        case 'CACHE_SEARCHED': {
+          const count = Number(p['count']);
+          const required = Number(p['required']);
+          this.push(
+            state,
+            count === required
+              ? text('log.scavengeDone', { count, total: String(p['total']) })
+              : text('log.cacheSearched', { count, required }),
+            count >= required ? 'good' : '',
+          );
+          break;
+        }
         case 'HORDE_SPAWNED':
           this.push(
             state,
@@ -711,8 +723,14 @@ export class Hud {
     const { state, world } = view;
     const els = this.els;
     const current = state.objectives.find((o) => o.status === 'pending');
+    const sc = world.mission.objectives.scavenge;
+    // the scavenging objective shows how many caches are searched so far
+    const label = (id: string) =>
+      id === 'scavengeSupplies' && sc
+        ? `${T.objectives[id]} · ${Math.min(state.mission.cachesSearched.length, sc.required)}/${sc.required}`
+        : T.objectives[id];
     (els['objective'] as HTMLElement).textContent = current
-      ? `▶ ${T.objectives[current.id]}`
+      ? `▶ ${label(current.id)}`
       : (T.outcome[state.mission.status] ?? '');
     (els['clock'] as HTMLElement).textContent =
       `${fmtTime(state.tick / 10)} / ${fmtTime(state.mission.timeLimitTicks / 10)}`;
@@ -764,7 +782,7 @@ export class Hud {
                   ? 'obj-current'
                   : '';
           const mark = o.status === 'completed' ? '✓' : o.status === 'failed' ? '✗' : '○';
-          return `<li class="${cls}">${mark} ${T.objectives[o.id]}</li>`;
+          return `<li class="${cls}">${mark} ${label(o.id)}</li>`;
         })
         .join(''),
     );

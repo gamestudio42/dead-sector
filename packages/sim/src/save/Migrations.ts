@@ -46,6 +46,12 @@ const MIGRATIONS: Record<number, Migration> = {
     m['defenceDone'] ??= false;
     return state;
   },
+  // v5: scavenging missions (supply caches); older saves searched none
+  4: (state) => {
+    const m = state['mission'] as Record<string, unknown>;
+    m['cachesSearched'] ??= [];
+    return state;
+  },
 };
 
 export class SaveVersionError extends Error {}

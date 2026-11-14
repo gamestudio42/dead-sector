@@ -8,6 +8,7 @@ export const en = {
       activateExtraction: 'Activate the extraction radio in the south parking lot',
       holdExtraction: 'Hold the extraction area for 20 s with the civilian',
       holdPosition: 'Hold the building until help arrives',
+      scavengeSupplies: 'Scavenge the supplies',
     },
     bands: {
       calm: 'calm',
@@ -69,6 +70,7 @@ export const en = {
       noMembers: 'Squad has no members',
       requiresMedicine: 'Collect {item} before calling extraction',
       requiresDefence: 'Hold out until the siege is over before calling the convoy',
+      requiresScavenge: 'Scavenge enough supplies before calling the transport',
       obstructed: 'Action blocked: the way is obstructed',
       missionEnded: 'Mission over',
       queueFull: 'Queue full: 8 points per squad at most',
@@ -128,6 +130,8 @@ export const en = {
     defencePaused: 'Nobody inside: the defence timer has stopped ({seconds} s left)',
     defenceResumed: 'Back inside: the defence timer is running ({seconds} s left)',
     defenceDone: 'The siege is over: signal the convoy',
+    cacheSearched: 'Supplies searched: {count}/{required}',
+    scavengeDone: 'Enough supplies ({count} of {total}): the radio works now. The rest is profit.',
     and: 'and',
     orderIssued: '{squad}: order {order}',
     orderBlocked: '{squad}: {reason}',
@@ -188,6 +192,7 @@ export const en = {
     defenceBanner: 'Defence: hold the building — {held}/{need} s',
     defencePaused: 'nobody inside: the timer is stopped',
     siegeSoon: 'Siege in {seconds} s — get ready',
+    cache: 'CACHE',
     noiseTitle:
       'Recent noise: the louder it is, the more infected hear it and the more reinforcements arrive',
     alarmTitle:
@@ -394,6 +399,7 @@ export const en = {
     night: 'night',
     perimeter: 'Perimeter: {area}',
     defended: 'Area to defend',
+    caches: 'Caches ({n})',
     extraction: 'Extraction',
     entrances: 'Infected entrances',
     objectives: 'Objectives',
@@ -511,6 +517,12 @@ export const en = {
     unknownBody: 'Secure a neighboring sector to learn what is here.',
     shelterTag: 'Shelter',
     siegeTag: 'Besieged',
+    variant: {
+      quiet: 'Sector almost clear: fewer infected and later hordes',
+      standard: 'Infected as usual',
+      overrun: 'Sector overrun: more infected and earlier hordes',
+    },
+    scavenge: '{n} caches to search: {required} unlock the radio, and all of them go to the stock',
     recruit: 'Recruit ＋',
     recruitTip:
       'One person of the shelter takes up arms: one fewer to evacuate, and their rounds come from the stock.',
@@ -590,6 +602,7 @@ export const en = {
     stop: 'Stop (clears the queue)',
   },
   interact: {
+    search: 'Search the cache',
     collect: 'Collect {item}',
     rescue: 'Rescue {person}',
     radio: 'Activate the radio',
@@ -729,6 +742,64 @@ export const en = {
     melee: 'Club/knife',
   },
   missions: {
+    'comboio-parado': {
+      displayName: 'Stalled Convoy',
+      briefing:
+        'A supply convoy stopped on Avenida Norte when the hordes came down from the city. The trucks are still loaded. Search at least three loads, take the toolbox from the garage, rescue the driver hiding in the office and leave through the south parking lot. The more loads, the more the shelter eats — and the more noise you make.',
+      area: 'garage',
+      item: 'the toolbox',
+      itemTag: 'TOOLS',
+      itemDone: 'Tools',
+      person: 'the driver',
+      personTag: 'DRIVER',
+      civilianRole: 'Convoy driver',
+      objectives: {
+        enterPerimeter: "Get into the mechanic's garage",
+        collectMedicine: 'Take the toolbox in the garage (5 s)',
+        rescueCivilian: 'Rescue the driver in the office (3 s)',
+        scavengeSupplies: 'Search 3 convoy loads (4 s each)',
+        activateExtraction: 'Activate the radio in the south parking lot',
+        holdExtraction: 'Hold 20 s in the parking lot with the driver',
+      },
+      intel: [
+        'The hordes come down the avenue from the north. Stay off the middle of the road when the alarm rises.',
+        'Every load you search makes noise: crates dragged around are heard half a block away. Three unlock the radio; the rest is profit.',
+        'Everything you search comes back to the shelter if the extraction works: food, ammunition and parts.',
+        'The gas station has a screamer between the pumps. Its shop still has full shelves.',
+        "The bus stuck across the side street holds the passengers' luggage.",
+        'There is a brute inside the garage. The back door is locked; the front doors are open.',
+        'The driver is hurt and does not fight: he follows the squad after the rescue.',
+      ],
+    },
+    'feira-fantasma': {
+      displayName: 'Ghost Market',
+      briefing:
+        'Mercadão Leste closed with its stalls full. Inside, the infected wander between the shelves. Search at least three stalls, take the powdered milk from the management office, get the vendor out of the cold room and leave through the south-west parking lot. The hall echoes: every shot inside calls the whole block.',
+      area: 'market',
+      item: 'the powdered milk',
+      itemTag: 'MILK',
+      itemDone: 'Powdered milk',
+      person: 'the vendor',
+      personTag: 'VENDOR',
+      civilianRole: 'Market vendor',
+      objectives: {
+        enterPerimeter: 'Get into the market hall',
+        collectMedicine: 'Take the powdered milk in the office (5 s)',
+        rescueCivilian: 'Get the vendor out of the cold room (3 s)',
+        scavengeSupplies: 'Search 3 market stalls (4 s each)',
+        activateExtraction: 'Activate the radio in the south-west parking lot',
+        holdExtraction: 'Hold 20 s in the parking lot with the vendor',
+      },
+      intel: [
+        'The hall is large and closed: shots inside echo and call the whole block.',
+        'Searching a stall makes noise. Three unlock the radio; every extra stall is food, medicine or parts for the shelter.',
+        'The office is in the north-west corner and the cold room in the north-east, one on each side of the north gate.',
+        'There are screamers in the hall and on the south street. A scream draws everything around.',
+        'A brute roams the stalls on the east side.',
+        'The east door is locked. The west door opens onto the loading yard, where you start.',
+        'The vendor is weak and does not fight: he follows the squad after the rescue.',
+      ],
+    },
     'a-ultima-farmacia': {
       displayName: 'The Last Pharmacy',
       briefing:
@@ -849,10 +920,11 @@ export const en = {
     sectors: {
       abrigo: 'The shelter. If the infected take the school, it is over.',
       ferrugem: 'Next to the shelter. The pharmacy and the markets still have something to take.',
-      avenida: 'The hordes from the city come down this way. No operation plan yet.',
+      avenida:
+        'The hordes from the city come down this way. A supply convoy stalled in the middle of the avenue, still loaded.',
       centro: 'The health post is holding through the night, with the last stock of antibiotics.',
       ferrovia: 'The way out. Each successful operation here takes a convoy of people away.',
-      mercadao: 'Infested and loud. No operation plan yet.',
+      mercadao: 'Infested and loud. The market stalls closed full of food.',
     },
     blocks: {
       'campaign-over': 'The campaign is over.',
@@ -899,6 +971,7 @@ export const en = {
       ammoShort: "The stock's ammunition was not enough to rearm everyone.",
       recruited: '{name} took up arms and joined the roster.',
       roundsReturned: '{count} extra rounds went back to the stock.',
+      scavenged: '{count} cache(s) searched: {bits}.',
     },
     stage: {
       healthy: 'well',

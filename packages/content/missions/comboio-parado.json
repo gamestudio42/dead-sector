@@ -1,0 +1,410 @@
+{
+  "id": "comboio-parado",
+  "displayName": "Comboio Parado",
+  "briefing": "Um comboio de abastecimento parou na Avenida Norte quando as hordas desceram da cidade. Os caminhões ainda estão carregados. Revire pelo menos três cargas, pegue a caixa de ferramentas na oficina, resgate o motorista escondido no escritório e saia pelo estacionamento sul. Quanto mais cargas, mais o abrigo come — e mais barulho vocês fazem.",
+  "mapId": "avenida-norte",
+  "canonicalSeed": 4242,
+  "difficultyId": "normal",
+  "timeLimitSeconds": 900,
+  "isNight": false,
+  "squads": [
+    {
+      "id": "alfa",
+      "displayName": "Alfa",
+      "memberIds": ["alfa-leader", "alfa-marksman", "alfa-medic", "alfa-civilian"],
+      "spawn": {
+        "x": 37.5,
+        "y": 72.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    },
+    {
+      "id": "bravo",
+      "displayName": "Bravo",
+      "memberIds": ["bravo-leader", "bravo-scout", "bravo-mechanic", "bravo-volunteer"],
+      "spawn": {
+        "x": 42.5,
+        "y": 72.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    }
+  ],
+  "civilian": {
+    "id": "civilian-otavio",
+    "name": "Otávio Lemos",
+    "role": "Motorista do comboio",
+    "position": {
+      "x": 68.5,
+      "y": 26.5
+    },
+    "maxHealth": 100
+  },
+  "zombieZones": [
+    {
+      "typeId": "walker",
+      "count": 4,
+      "rect": {
+        "x0": 34,
+        "y0": 4,
+        "x1": 45,
+        "y1": 34
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 32,
+        "y0": 36,
+        "x1": 47,
+        "y1": 46
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 2,
+      "rect": {
+        "x0": 34,
+        "y0": 6,
+        "x1": 45,
+        "y1": 20
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 52,
+        "y0": 7,
+        "x1": 63,
+        "y1": 29
+      }
+    },
+    {
+      "typeId": "heavy",
+      "count": 1,
+      "rect": {
+        "x0": 52,
+        "y0": 10,
+        "x1": 63,
+        "y1": 20
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 6,
+        "y0": 19,
+        "x1": 16,
+        "y1": 29
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 18,
+        "y0": 14,
+        "x1": 31,
+        "y1": 34
+      }
+    },
+    {
+      "typeId": "screamer",
+      "count": 1,
+      "rect": {
+        "x0": 18,
+        "y0": 14,
+        "x1": 31,
+        "y1": 34
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 48,
+        "y0": 40,
+        "x1": 70,
+        "y1": 45
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 52,
+        "y0": 49,
+        "x1": 73,
+        "y1": 57
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 1,
+      "rect": {
+        "x0": 4,
+        "y0": 47,
+        "x1": 28,
+        "y1": 52
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 1,
+      "rect": {
+        "x0": 34,
+        "y0": 48,
+        "x1": 45,
+        "y1": 60
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 1,
+      "rect": {
+        "x0": 60,
+        "y0": 2,
+        "x1": 76,
+        "y1": 5
+      }
+    }
+  ],
+  "spawners": [
+    {
+      "id": "spawn-north",
+      "cell": {
+        "x": 40,
+        "y": 0
+      }
+    },
+    {
+      "id": "spawn-east",
+      "cell": {
+        "x": 79,
+        "y": 41
+      }
+    },
+    {
+      "id": "spawn-west",
+      "cell": {
+        "x": 0,
+        "y": 41
+      }
+    },
+    {
+      "id": "spawn-south",
+      "cell": {
+        "x": 40,
+        "y": 79
+      }
+    }
+  ],
+  "hordes": {
+    "firstAtSeconds": 420,
+    "intervalSeconds": 200,
+    "max": 3,
+    "size": 8,
+    "heavyPerHorde": 1,
+    "warningSeconds": 20,
+    "routes": [
+      {
+        "spawnerId": "spawn-north",
+        "waypoints": [
+          {
+            "x": 40,
+            "y": 10
+          },
+          {
+            "x": 40,
+            "y": 30
+          },
+          {
+            "x": 40,
+            "y": 48
+          },
+          {
+            "x": 40,
+            "y": 66
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-east",
+        "waypoints": [
+          {
+            "x": 66,
+            "y": 42
+          },
+          {
+            "x": 46,
+            "y": 42
+          },
+          {
+            "x": 40,
+            "y": 30
+          },
+          {
+            "x": 40,
+            "y": 12
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-west",
+        "waypoints": [
+          {
+            "x": 12,
+            "y": 42
+          },
+          {
+            "x": 33,
+            "y": 42
+          },
+          {
+            "x": 40,
+            "y": 55
+          },
+          {
+            "x": 40,
+            "y": 70
+          }
+        ]
+      }
+    ]
+  },
+  "reinforcements": {
+    "budget": 16,
+    "maxConcurrent": 55,
+    "pressureThreshold": 120,
+    "pressureDecayPerSecond": 0.08,
+    "cooldownSeconds": 20,
+    "runnerChance": 0.15,
+    "minSurvivorDistance": 18
+  },
+  "objectives": {
+    "perimeter": {
+      "x0": 51,
+      "y0": 6,
+      "x1": 72,
+      "y1": 30
+    },
+    "cabinet": {
+      "cell": {
+        "x": 58,
+        "y": 9
+      },
+      "interactSeconds": 5
+    },
+    "civilianRescueSeconds": 3,
+    "extraction": {
+      "beacon": {
+        "x": 16.5,
+        "y": 64.5
+      },
+      "zone": {
+        "x0": 5,
+        "y0": 57,
+        "x1": 27,
+        "y1": 73
+      },
+      "activateSeconds": 2,
+      "holdSeconds": 20,
+      "activationNoise": 80,
+      "pulseNoise": 45,
+      "pulseSeconds": 5
+    },
+    "scavenge": {
+      "searchSeconds": 4,
+      "searchNoise": 35,
+      "required": 3,
+      "caches": [
+        {
+          "id": "truck-1",
+          "cell": {
+            "x": 39,
+            "y": 10
+          },
+          "loot": {
+            "food": 6,
+            "ammo": 10
+          }
+        },
+        {
+          "id": "truck-2",
+          "cell": {
+            "x": 40,
+            "y": 17
+          },
+          "loot": {
+            "food": 8
+          }
+        },
+        {
+          "id": "truck-3",
+          "cell": {
+            "x": 39,
+            "y": 25
+          },
+          "loot": {
+            "food": 4,
+            "ammo": 15
+          }
+        },
+        {
+          "id": "bus",
+          "cell": {
+            "x": 54,
+            "y": 43
+          },
+          "loot": {
+            "food": 3,
+            "medicine": 1,
+            "parts": 1
+          }
+        },
+        {
+          "id": "shop",
+          "cell": {
+            "x": 14,
+            "y": 27
+          },
+          "loot": {
+            "food": 5,
+            "medicine": 1
+          }
+        }
+      ]
+    }
+  },
+  "texts": {
+    "area": "oficina",
+    "item": "a caixa de ferramentas",
+    "itemTag": "FERRAMENTAS",
+    "itemDone": "Ferramentas",
+    "person": "o motorista",
+    "personTag": "MOTORISTA",
+    "objectives": {
+      "enterPerimeter": "Entrar na oficina mecânica",
+      "collectMedicine": "Pegar a caixa de ferramentas na oficina (5 s)",
+      "rescueCivilian": "Resgatar o motorista no escritório (3 s)",
+      "scavengeSupplies": "Revirar 3 cargas do comboio (4 s cada)",
+      "activateExtraction": "Ativar o rádio no estacionamento sul",
+      "holdExtraction": "Resistir 20 s no estacionamento com o motorista"
+    },
+    "intel": [
+      "As hordas descem pela avenida, vindas do norte. Fique longe do meio da pista quando o alerta subir.",
+      "Cada carga revirada faz barulho: caixas arrastadas são ouvidas a meia quadra. Três abrem o rádio; o resto é lucro.",
+      "Tudo o que vocês revirarem volta para o abrigo se a extração der certo: comida, munição e peças.",
+      "O posto de gasolina tem um gritador entre as bombas. A loja do posto ainda tem prateleiras cheias.",
+      "O ônibus atravessado na rua lateral guarda a bagagem dos passageiros.",
+      "A oficina tem um brutamontes lá dentro. A porta dos fundos está trancada; as portas da frente estão abertas.",
+      "O motorista está ferido e não luta: ele segue a equipe depois do resgate."
+    ]
+  }
+}

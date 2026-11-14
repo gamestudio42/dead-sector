@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   BEACON_ID,
   CABINET_ID,
+  cacheTargetId,
   type GameState,
   type SimEvent,
   type Squad,
@@ -300,6 +301,23 @@ export class EntityRenderer {
         .fillRect(cx - 5, cy - 1.5, 10, 3);
       this.label(CABINET_ID, MT.itemTag, cx, cy - 11, '#9ff0d8');
     }
+    // supply caches: a crate with a pulsing ring until searched, then an open crate
+    for (const k of mission.objectives.scavenge?.caches ?? []) {
+      const id = cacheTargetId(k.id);
+      const kx = (k.cell.x + 0.5) * CELL;
+      const ky = (k.cell.y + 0.5) * CELL;
+      const done = state.mission.cachesSearched.includes(k.id);
+      g.fillStyle(done ? 0x4a3f2c : 0x8a6a34).fillRect(kx - 5, ky - 4, 10, 8);
+      g.lineStyle(1, done ? 0x6b5a3a : 0xe0b050, 0.9).strokeRect(kx - 5, ky - 4, 10, 8);
+      if (done) {
+        g.lineStyle(1, 0x6b5a3a, 0.9).lineBetween(kx - 5, ky - 4, kx - 7, ky - 8);
+        continue;
+      }
+      g.lineStyle(1, 0xe0b050, 0.9).lineBetween(kx - 5, ky, kx + 5, ky);
+      const pulse = 0.6 + 0.4 * Math.sin(timeMs / 300 + k.cell.x);
+      g.lineStyle(1, 0xe0b050, 0.45 * pulse).strokeCircle(kx, ky, 9);
+      this.label(id, text('hud.cache'), kx, ky - 10, '#f0cf80');
+    }
 
     // last-known contacts (never live positions of unseen zombies)
     for (const c of state.contacts) {
@@ -492,6 +510,10 @@ export class EntityRenderer {
       return { x: cell.x + 1, y: cell.y + 0.5 };
     }
     if (o.targetEntityId === BEACON_ID) return this.world.mission.objectives.extraction.beacon;
+    const cache = this.world.mission.objectives.scavenge?.caches.find(
+      (k) => cacheTargetId(k.id) === o.targetEntityId,
+    );
+    if (cache) return { x: cache.cell.x + 0.5, y: cache.cell.y + 0.5 };
     return null;
   }
 

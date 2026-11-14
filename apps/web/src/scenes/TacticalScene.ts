@@ -13,6 +13,7 @@ import {
   STEALTH_PLAN,
   tickPlan,
   type GameCommandInput,
+  type MissionVariant,
   type MoveMode,
   type OrderType,
   type PlanStep,
@@ -116,6 +117,7 @@ export class TacticalScene extends Phaser.Scene {
   private inCampaign = false;
   private carry: CarryOver | undefined;
   private reinforcements: number | undefined;
+  private variant: MissionVariant | undefined;
 
   create(data: {
     missionId?: string;
@@ -125,11 +127,13 @@ export class TacticalScene extends Phaser.Scene {
     campaign?: boolean;
     carry?: CarryOver;
     reinforcements?: number;
+    variant?: MissionVariant;
   }): void {
     this.missionId = data.missionId ?? MISSION_ID;
     this.inCampaign = !!data.campaign;
     this.carry = data.carry;
     this.reinforcements = data.reinforcements;
+    this.variant = data.variant;
     clearUi();
     const content = loadContent();
     if (data.save) {
@@ -142,6 +146,7 @@ export class TacticalScene extends Phaser.Scene {
           content,
           this.carry,
           this.reinforcements,
+          this.variant,
         );
         window.setTimeout(
           () => this.hud.toast(text('toasts.badSave', { message: (err as Error).message })),
@@ -155,6 +160,7 @@ export class TacticalScene extends Phaser.Scene {
         content,
         this.carry,
         this.reinforcements,
+        this.variant,
       );
     this.missionId = this.sim.state.missionId;
     setMissionTexts(this.sim.world.mission.texts, this.missionId);
@@ -542,6 +548,7 @@ export class TacticalScene extends Phaser.Scene {
           campaign: this.inCampaign,
           carry: this.carry,
           reinforcements: this.reinforcements,
+          variant: this.variant,
         });
       }
       if (a === 'menu') this.scene.start('Menu');
@@ -744,6 +751,7 @@ export class TacticalScene extends Phaser.Scene {
           campaign: this.inCampaign,
           carry: this.carry,
           reinforcements: this.reinforcements,
+          variant: this.variant,
         }),
       startPlan: (name: 'stealth' | 'combat' | 'mission') => {
         this.plan = {

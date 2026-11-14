@@ -63,12 +63,16 @@ export function fogLayer(
   return c;
 }
 
-/** Mission areas known from the briefing: perimeter, defended area, cabinet, extraction and radio. */
+/**
+ * Mission areas known from the briefing: perimeter, defended area, cabinet, supply caches (the ones
+ * not searched yet), extraction and radio.
+ */
 export function drawMissionMarks(
   g: CanvasRenderingContext2D,
   world: World,
   px: number,
   medicineCollected: boolean,
+  cachesSearched: readonly string[] = [],
 ): void {
   const o = world.mission.objectives;
   g.save();
@@ -84,6 +88,11 @@ export function drawMissionMarks(
     g.lineWidth = Math.max(1, px * 0.7);
     g.strokeRect(d.x0 * px, d.y0 * px, (d.x1 - d.x0 + 1) * px, (d.y1 - d.y0 + 1) * px);
     g.lineWidth = Math.max(1, px * 0.5);
+  }
+  for (const k of o.scavenge?.caches ?? []) {
+    if (cachesSearched.includes(k.id)) continue;
+    g.fillStyle = '#e0b050';
+    g.fillRect((k.cell.x + 0.5) * px - px, (k.cell.y + 0.5) * px - px, px * 2, px * 2);
   }
   const e = o.extraction.zone;
   g.fillStyle = 'rgba(127,191,106,0.22)';

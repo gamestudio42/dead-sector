@@ -120,7 +120,7 @@ export class DebriefScene extends Phaser.Scene {
     const canvas = screen.querySelector('[data-el=route]') as HTMLCanvasElement;
     const g = canvas.getContext('2d') as CanvasRenderingContext2D;
     g.drawImage(baseMap(world, PX), 0, 0);
-    drawMissionMarks(g, world, PX, state.mission.medicineCollected);
+    drawMissionMarks(g, world, PX, state.mission.medicineCollected, state.mission.cachesSearched);
     g.globalAlpha = 0.75;
     g.drawImage(fogLayer(state, world), 0, 0, canvas.width, canvas.height);
     g.globalAlpha = 1;

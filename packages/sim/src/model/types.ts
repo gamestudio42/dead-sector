@@ -33,6 +33,7 @@ export type BlockReason =
   | 'noMembers'
   | 'requiresMedicine'
   | 'requiresDefence'
+  | 'requiresScavenge'
   | 'noKits';
 
 export interface SquadOrder {
@@ -90,7 +91,7 @@ export type SurvivorActivity =
   | 'refusing'
   | 'dead';
 
-export type InteractKind = 'door' | 'cabinet' | 'civilian' | 'beacon' | 'barricade';
+export type InteractKind = 'door' | 'cabinet' | 'civilian' | 'beacon' | 'barricade' | 'cache';
 
 export interface Interaction {
   kind: InteractKind;
@@ -243,6 +244,7 @@ export type ObjectiveId =
   | 'collectMedicine'
   | 'rescueCivilian'
   | 'holdPosition'
+  | 'scavengeSupplies'
   | 'activateExtraction'
   | 'holdExtraction';
 
@@ -300,6 +302,8 @@ export interface MissionState {
   /** Someone is inside the defended area, so the timer runs. */
   defenceHolding: boolean;
   defenceDone: boolean;
+  /** Scavenging missions: ids of the supply caches searched so far, in order. */
+  cachesSearched: string[];
 }
 
 export interface MissionStats {
@@ -353,7 +357,8 @@ export type SimEventType =
   | 'SIEGE_INCOMING'
   | 'SIEGE_WAVE'
   | 'DEFENCE_HOLD_CHANGED'
-  | 'DEFENCE_COMPLETED';
+  | 'DEFENCE_COMPLETED'
+  | 'CACHE_SEARCHED';
 
 export interface SimEvent<T = Record<string, unknown>> {
   id: string;

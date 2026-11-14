@@ -10,6 +10,7 @@ export const es: Catalog = {
       activateExtraction: 'Activar la radio de extracción en el aparcamiento sur',
       holdExtraction: 'Resistir 20 s en la zona de extracción con la civil',
       holdPosition: 'Defender el edificio hasta que llegue la ayuda',
+      scavengeSupplies: 'Saquear los suministros',
     },
     bands: {
       calm: 'calma',
@@ -71,6 +72,7 @@ export const es: Catalog = {
       noMembers: 'El escuadrón no tiene integrantes',
       requiresMedicine: 'Recoge {item} antes de llamar a la extracción',
       requiresDefence: 'Resiste hasta que termine el asedio antes de llamar al convoy',
+      requiresScavenge: 'Saquea suficientes suministros antes de llamar al transporte',
       obstructed: 'Acción impedida: el paso está obstruido',
       missionEnded: 'Misión terminada',
       queueFull: 'Cola llena: 8 puntos por escuadrón como máximo',
@@ -130,6 +132,9 @@ export const es: Catalog = {
     defencePaused: 'Nadie dentro: el tiempo de la defensa se ha detenido (faltan {seconds} s)',
     defenceResumed: 'De vuelta dentro: el tiempo de la defensa corre otra vez (faltan {seconds} s)',
     defenceDone: 'El asedio ha pasado: haz la señal al convoy',
+    cacheSearched: 'Suministros saqueados: {count}/{required}',
+    scavengeDone:
+      'Suministros suficientes ({count} de {total}): la radio ya funciona. El resto es ganancia.',
     and: 'y',
     orderIssued: '{squad}: orden {order}',
     orderBlocked: '{squad}: {reason}',
@@ -190,6 +195,7 @@ export const es: Catalog = {
     defenceBanner: 'Defensa: aguantad el edificio — {held}/{need} s',
     defencePaused: 'nadie dentro: el tiempo está detenido',
     siegeSoon: 'Asedio en {seconds} s — preparaos',
+    cache: 'CARGA',
     noiseTitle: 'Ruido reciente: cuanto más alto, más infectados lo oyen y más refuerzos llegan',
     alarmTitle:
       'Alerta del barrio: disparos, puertas, vidrio y gritos la suben; en Alerta llegan más corredores, en Cacería atrae una horda',
@@ -396,6 +402,7 @@ export const es: Catalog = {
     night: 'noche',
     perimeter: 'Perímetro: {area}',
     defended: 'Zona a defender',
+    caches: 'Cargas ({n})',
     extraction: 'Extracción',
     entrances: 'Entradas de infectados',
     objectives: 'Objetivos',
@@ -514,6 +521,12 @@ export const es: Catalog = {
     unknownBody: 'Asegura un sector vecino para saber qué hay aquí.',
     shelterTag: 'Refugio',
     siegeTag: 'Sitiada',
+    variant: {
+      quiet: 'Sector casi limpio: menos infectados y hordas más tardías',
+      standard: 'Infectados como siempre',
+      overrun: 'Sector tomado: más infectados y hordas más tempranas',
+    },
+    scavenge: '{n} cargas para saquear: {required} desbloquean la radio, y todas van al almacén',
     recruit: 'Reclutar ＋',
     recruitTip:
       'Una persona del refugio toma las armas: una menos para evacuar, y sus balas salen del almacén.',
@@ -593,6 +606,7 @@ export const es: Catalog = {
     stop: 'Parar (cancela la cola)',
   },
   interact: {
+    search: 'Saquear la carga',
     collect: 'Recoger {item}',
     rescue: 'Rescatar a {person}',
     radio: 'Activar la radio',
@@ -736,6 +750,64 @@ export const es: Catalog = {
     melee: 'Porra/cuchillo',
   },
   missions: {
+    'comboio-parado': {
+      displayName: 'Convoy Detenido',
+      briefing:
+        'Un convoy de abastecimiento se detuvo en la Avenida Norte cuando las hordas bajaron de la ciudad. Los camiones siguen cargados. Saquea al menos tres cargas, toma la caja de herramientas del taller, rescata al conductor escondido en la oficina y sal por el aparcamiento sur. Cuantas más cargas, más come el refugio — y más ruido hacéis.',
+      area: 'taller',
+      item: 'la caja de herramientas',
+      itemTag: 'HERRAMIENTAS',
+      itemDone: 'Herramientas',
+      person: 'el conductor',
+      personTag: 'CONDUCTOR',
+      civilianRole: 'Conductor del convoy',
+      objectives: {
+        enterPerimeter: 'Entrar en el taller mecánico',
+        collectMedicine: 'Tomar la caja de herramientas del taller (5 s)',
+        rescueCivilian: 'Rescatar al conductor en la oficina (3 s)',
+        scavengeSupplies: 'Saquear 3 cargas del convoy (4 s cada una)',
+        activateExtraction: 'Activar la radio en el aparcamiento sur',
+        holdExtraction: 'Resistir 20 s en el aparcamiento con el conductor',
+      },
+      intel: [
+        'Las hordas bajan por la avenida desde el norte. Aléjate del centro de la calzada cuando suba la alerta.',
+        'Cada carga saqueada hace ruido: las cajas arrastradas se oyen a media manzana. Tres desbloquean la radio; el resto es ganancia.',
+        'Todo lo que saqueéis vuelve al refugio si la extracción sale bien: comida, munición y piezas.',
+        'La gasolinera tiene un chillón entre los surtidores. Su tienda aún tiene estantes llenos.',
+        'El autobús atravesado en la calle lateral guarda el equipaje de los pasajeros.',
+        'Hay un bruto dentro del taller. La puerta trasera está cerrada con llave; las delanteras están abiertas.',
+        'El conductor está herido y no lucha: sigue al escuadrón después del rescate.',
+      ],
+    },
+    'feira-fantasma': {
+      displayName: 'Mercado Fantasma',
+      briefing:
+        'El Mercadão Leste cerró con los puestos llenos. Dentro, los infectados vagan entre los estantes. Saquea al menos tres puestos, toma la leche en polvo de la oficina de administración, saca al vendedor de la cámara frigorífica y sal por el aparcamiento suroeste. La nave hace eco: cada disparo dentro llama a toda la manzana.',
+      area: 'mercado',
+      item: 'la leche en polvo',
+      itemTag: 'LECHE',
+      itemDone: 'Leche en polvo',
+      person: 'el vendedor',
+      personTag: 'VENDEDOR',
+      civilianRole: 'Vendedor del mercado',
+      objectives: {
+        enterPerimeter: 'Entrar en la nave del mercado',
+        collectMedicine: 'Tomar la leche en polvo en la administración (5 s)',
+        rescueCivilian: 'Sacar al vendedor de la cámara frigorífica (3 s)',
+        scavengeSupplies: 'Saquear 3 puestos del mercado (4 s cada uno)',
+        activateExtraction: 'Activar la radio en el aparcamiento suroeste',
+        holdExtraction: 'Resistir 20 s en el aparcamiento con el vendedor',
+      },
+      intel: [
+        'La nave es grande y cerrada: los disparos dentro hacen eco y llaman a toda la manzana.',
+        'Saquear un puesto hace ruido. Tres desbloquean la radio; cada puesto de más es comida, medicina o piezas para el refugio.',
+        'La administración está en la esquina noroeste y la cámara frigorífica en la noreste, una a cada lado de la puerta norte.',
+        'Hay chillones en la nave y en la calle sur. El chillido atrae todo lo que hay alrededor.',
+        'Un bruto ronda los puestos del lado este.',
+        'La puerta este está cerrada con llave. La puerta oeste da al patio de carga, donde empezáis.',
+        'El vendedor está débil y no lucha: sigue al escuadrón después del rescate.',
+      ],
+    },
     'a-ultima-farmacia': {
       displayName: 'La última farmacia',
       briefing:
@@ -856,10 +928,11 @@ export const es: Catalog = {
     sectors: {
       abrigo: 'El refugio. Si los infectados toman la escuela, se acabó.',
       ferrugem: 'Vecino del refugio. La farmacia y los mercados todavía tienen algo que llevarse.',
-      avenida: 'Por aquí bajan las hordas que vienen de la ciudad. Aún sin plan de operación.',
+      avenida:
+        'Por aquí bajan las hordas que vienen de la ciudad. Un convoy de abastecimiento se detuvo en mitad de la avenida, todavía cargado.',
       centro: 'El puesto de salud resiste de noche, con el último stock de antibióticos.',
       ferrovia: 'La salida. Cada operación exitosa aquí se lleva un convoy de personas.',
-      mercadao: 'Infestado y ruidoso. Aún sin plan de operación.',
+      mercadao: 'Infestado y ruidoso. Los puestos del mercado cerraron llenos de comida.',
     },
     blocks: {
       'campaign-over': 'La campaña terminó.',
@@ -906,6 +979,7 @@ export const es: Catalog = {
       ammoShort: 'La munición del almacén no alcanzó para rearmar a todos.',
       recruited: '{name} tomó las armas y se unió al equipo.',
       roundsReturned: '{count} balas extra volvieron al almacén.',
+      scavenged: '{count} carga(s) saqueada(s): {bits}.',
     },
     stage: {
       healthy: 'bien',

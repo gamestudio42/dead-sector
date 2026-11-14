@@ -13,7 +13,6 @@
 - Publish the trailer (`node tools/promo/trailer.mjs`, ~30 s, 1080p, silent) on the studio's video channel and in the
   Snap Store listing, with the 30 s score cue from `node tools/music/render.mjs` (`dead-sector-trailer-30s.wav`) as
   its soundtrack.
-- Phase 6.4: scavenging objective, operations for Avenida Norte and Mercadão Leste, variants by sector state.
 - Phase 6.5: shelter upgrades (parts have no use yet), campaign difficulties, economy balance report.
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
@@ -27,6 +26,10 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Phase 6.4: scavenging objective (supply caches with their own loot, three open the radio, everything searched comes
+  home), the operations Comboio Parado on Avenida Norte and Feira Fantasma on Mercadão Leste on two new maps built by
+  `tools/maps/build.mjs`, and quiet / overrun variants by sector state; save schema v5 (ADR 0023).
 
 - Defence objective (siege waves on a timetable, hold timer that pauses when the building is empty, radio locked
   until the hold is done, resupply cabinet) and the mission Cerco na Dom Bosco on the new map Escola Dom Bosco;

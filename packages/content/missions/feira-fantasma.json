@@ -1,0 +1,418 @@
+{
+  "id": "feira-fantasma",
+  "displayName": "Feira Fantasma",
+  "briefing": "O Mercadão Leste fechou com as bancas cheias. Lá dentro, os infectados andam entre as prateleiras. Revire pelo menos três bancas, pegue o leite em pó no escritório da administração, tire o feirante preso na câmara fria e saia pelo estacionamento sudoeste. O salão ecoa: cada tiro lá dentro chama o quarteirão inteiro.",
+  "mapId": "mercadao-leste",
+  "canonicalSeed": 5150,
+  "difficultyId": "normal",
+  "timeLimitSeconds": 900,
+  "isNight": false,
+  "squads": [
+    {
+      "id": "alfa",
+      "displayName": "Alfa",
+      "memberIds": ["alfa-leader", "alfa-marksman", "alfa-medic", "alfa-civilian"],
+      "spawn": {
+        "x": 8.5,
+        "y": 36.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    },
+    {
+      "id": "bravo",
+      "displayName": "Bravo",
+      "memberIds": ["bravo-leader", "bravo-scout", "bravo-mechanic", "bravo-volunteer"],
+      "spawn": {
+        "x": 8.5,
+        "y": 41.5
+      },
+      "firePolicy": "returnFire",
+      "moveMode": "move",
+      "barricadeKits": 2
+    }
+  ],
+  "civilian": {
+    "id": "civilian-raimundo",
+    "name": "Raimundo Paixão",
+    "role": "Feirante",
+    "position": {
+      "x": 57.5,
+      "y": 21.5
+    },
+    "maxHealth": 100
+  },
+  "zombieZones": [
+    {
+      "typeId": "walker",
+      "count": 4,
+      "rect": {
+        "x0": 19,
+        "y0": 25,
+        "x1": 40,
+        "y1": 40
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 4,
+      "rect": {
+        "x0": 41,
+        "y0": 25,
+        "x1": 61,
+        "y1": 40
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 19,
+        "y0": 41,
+        "x1": 40,
+        "y1": 57
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 3,
+      "rect": {
+        "x0": 41,
+        "y0": 41,
+        "x1": 61,
+        "y1": 57
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 1,
+      "rect": {
+        "x0": 29,
+        "y0": 19,
+        "x1": 51,
+        "y1": 23
+      }
+    },
+    {
+      "typeId": "screamer",
+      "count": 1,
+      "rect": {
+        "x0": 30,
+        "y0": 42,
+        "x1": 50,
+        "y1": 52
+      }
+    },
+    {
+      "typeId": "heavy",
+      "count": 1,
+      "rect": {
+        "x0": 41,
+        "y0": 25,
+        "x1": 61,
+        "y1": 34
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 1,
+      "rect": {
+        "x0": 19,
+        "y0": 19,
+        "x1": 27,
+        "y1": 23
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 13,
+        "y0": 13,
+        "x1": 66,
+        "y1": 17
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 63,
+        "y0": 20,
+        "x1": 68,
+        "y1": 56
+      }
+    },
+    {
+      "typeId": "walker",
+      "count": 2,
+      "rect": {
+        "x0": 19,
+        "y0": 59,
+        "x1": 66,
+        "y1": 65
+      }
+    },
+    {
+      "typeId": "runner",
+      "count": 1,
+      "rect": {
+        "x0": 63,
+        "y0": 40,
+        "x1": 68,
+        "y1": 56
+      }
+    },
+    {
+      "typeId": "screamer",
+      "count": 1,
+      "rect": {
+        "x0": 13,
+        "y0": 59,
+        "x1": 40,
+        "y1": 65
+      }
+    }
+  ],
+  "spawners": [
+    {
+      "id": "spawn-north",
+      "cell": {
+        "x": 71,
+        "y": 0
+      }
+    },
+    {
+      "id": "spawn-east",
+      "cell": {
+        "x": 79,
+        "y": 10
+      }
+    },
+    {
+      "id": "spawn-south",
+      "cell": {
+        "x": 71,
+        "y": 79
+      }
+    },
+    {
+      "id": "spawn-west",
+      "cell": {
+        "x": 0,
+        "y": 10
+      }
+    }
+  ],
+  "hordes": {
+    "firstAtSeconds": 480,
+    "intervalSeconds": 220,
+    "max": 3,
+    "size": 7,
+    "heavyPerHorde": 1,
+    "warningSeconds": 20,
+    "routes": [
+      {
+        "spawnerId": "spawn-north",
+        "waypoints": [
+          {
+            "x": 71,
+            "y": 10
+          },
+          {
+            "x": 40,
+            "y": 14
+          },
+          {
+            "x": 15,
+            "y": 14
+          },
+          {
+            "x": 8,
+            "y": 40
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-south",
+        "waypoints": [
+          {
+            "x": 71,
+            "y": 68
+          },
+          {
+            "x": 40,
+            "y": 62
+          },
+          {
+            "x": 15,
+            "y": 68
+          },
+          {
+            "x": 8,
+            "y": 74
+          }
+        ]
+      },
+      {
+        "spawnerId": "spawn-east",
+        "waypoints": [
+          {
+            "x": 65,
+            "y": 10
+          },
+          {
+            "x": 66,
+            "y": 38
+          },
+          {
+            "x": 66,
+            "y": 62
+          },
+          {
+            "x": 40,
+            "y": 63
+          }
+        ]
+      }
+    ]
+  },
+  "reinforcements": {
+    "budget": 26,
+    "maxConcurrent": 55,
+    "pressureThreshold": 90,
+    "pressureDecayPerSecond": 0.08,
+    "cooldownSeconds": 12,
+    "runnerChance": 0.2,
+    "minSurvivorDistance": 14
+  },
+  "objectives": {
+    "perimeter": {
+      "x0": 18,
+      "y0": 18,
+      "x1": 62,
+      "y1": 58
+    },
+    "cabinet": {
+      "cell": {
+        "x": 20,
+        "y": 20
+      },
+      "interactSeconds": 5
+    },
+    "civilianRescueSeconds": 3,
+    "extraction": {
+      "beacon": {
+        "x": 20.5,
+        "y": 74.5
+      },
+      "zone": {
+        "x0": 11,
+        "y0": 71,
+        "x1": 30,
+        "y1": 77
+      },
+      "activateSeconds": 2,
+      "holdSeconds": 20,
+      "activationNoise": 80,
+      "pulseNoise": 45,
+      "pulseSeconds": 5
+    },
+    "scavenge": {
+      "searchSeconds": 4,
+      "searchNoise": 40,
+      "required": 3,
+      "caches": [
+        {
+          "id": "stall-grains",
+          "cell": {
+            "x": 24,
+            "y": 30
+          },
+          "loot": {
+            "food": 7
+          }
+        },
+        {
+          "id": "stall-butcher",
+          "cell": {
+            "x": 46,
+            "y": 30
+          },
+          "loot": {
+            "food": 6,
+            "parts": 1
+          }
+        },
+        {
+          "id": "stall-pharmacy",
+          "cell": {
+            "x": 34,
+            "y": 36
+          },
+          "loot": {
+            "medicine": 2
+          }
+        },
+        {
+          "id": "stall-hardware",
+          "cell": {
+            "x": 56,
+            "y": 42
+          },
+          "loot": {
+            "parts": 2,
+            "ammo": 10
+          }
+        },
+        {
+          "id": "stall-produce",
+          "cell": {
+            "x": 24,
+            "y": 48
+          },
+          "loot": {
+            "food": 6
+          }
+        },
+        {
+          "id": "stall-bar",
+          "cell": {
+            "x": 46,
+            "y": 54
+          },
+          "loot": {
+            "food": 4,
+            "ammo": 8
+          }
+        }
+      ]
+    }
+  },
+  "texts": {
+    "area": "mercadão",
+    "item": "o leite em pó",
+    "itemTag": "LEITE",
+    "itemDone": "Leite em pó",
+    "person": "o feirante",
+    "personTag": "FEIRANTE",
+    "objectives": {
+      "enterPerimeter": "Entrar no salão do mercadão",
+      "collectMedicine": "Pegar o leite em pó na administração (5 s)",
+      "rescueCivilian": "Tirar o feirante da câmara fria (3 s)",
+      "scavengeSupplies": "Revirar 3 bancas do mercadão (4 s cada)",
+      "activateExtraction": "Ativar o rádio no estacionamento sudoeste",
+      "holdExtraction": "Resistir 20 s no estacionamento com o feirante"
+    },
+    "intel": [
+      "O salão é grande e fechado: tiros lá dentro ecoam e chamam o quarteirão inteiro.",
+      "Revirar uma banca faz barulho. Três abrem o rádio; cada banca a mais é comida, remédio ou peças para o abrigo.",
+      "A administração fica no canto noroeste e a câmara fria no nordeste, uma de cada lado do portão norte.",
+      "Há gritadores no salão e na rua sul. O grito atrai tudo ao redor.",
+      "Um brutamontes ronda as bancas do lado leste.",
+      "A porta leste está trancada. A porta oeste dá para o pátio de carga, onde vocês começam.",
+      "O feirante está fraco e não luta: ele segue a equipe depois do resgate."
+    ]
+  }
+}

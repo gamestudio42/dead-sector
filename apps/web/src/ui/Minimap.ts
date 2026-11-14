@@ -130,7 +130,13 @@ export class Minimap {
     const H = this.canvas.height;
     g.clearRect(0, 0, W, H);
     g.drawImage(baseMap(this.world, PX), 0, 0);
-    drawMissionMarks(g, this.world, PX, state.mission.medicineCollected);
+    drawMissionMarks(
+      g,
+      this.world,
+      PX,
+      state.mission.medicineCollected,
+      state.mission.cachesSearched,
+    );
     g.drawImage(fogLayer(state, this.world, this.fog), 0, 0, W, H);
 
     // known contacts

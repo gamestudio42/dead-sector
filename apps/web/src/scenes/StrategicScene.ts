@@ -8,6 +8,7 @@ import {
   recruit,
   recruitBlockReason,
   reinforcementMultiplier,
+  operationVariant,
   sectorStatus,
   treatInfection,
   type CampaignState,
@@ -294,6 +295,7 @@ export class StrategicScene extends Phaser.Scene {
     const missionId = operationMissionId(content, c, sec.id);
     const mission = missionId ? content.missions[missionId] : null;
     const siege = sec.id === def.shelterSectorId && !!mission;
+    const variant = operationVariant(content, c, sec.id);
     return `<h3 data-testid="sector-name">${sec.displayName}</h3>
       <div class="small sector-status ${siege ? 'infested' : status}">${siege ? text('strategic.siegeTag') : text(`strategic.status.${status}`)}</div>
       <p>${sectorBlurb(sec.id, sec.blurb)}</p>
@@ -307,6 +309,8 @@ export class StrategicScene extends Phaser.Scene {
                ${reward.length ? `<li>${text('strategic.reward', { looted: state.looted ? text('strategic.looted') : '', bits: reward.join(', ') })}</li>` : ''}
                ${sec.evacuates ? `<li>${text('strategic.evac', { n: sec.evacuates })}</li>` : ''}
                <li>${text('strategic.reinforcements', { n: reinforcementMultiplier(state.infestation).toFixed(1).replace('.', ',') })}</li>
+               ${variant !== 'standard' ? `<li class="${variant === 'overrun' ? 'warn-text' : ''}" data-testid="sector-variant">${text(`strategic.variant.${variant}`)}</li>` : ''}
+               ${mission.objectives.scavenge ? `<li>${text('strategic.scavenge', { n: mission.objectives.scavenge.caches.length, required: mission.objectives.scavenge.required })}</li>` : ''}
                <li>${text('strategic.cost')}</li>
              </ul>`
           : ''

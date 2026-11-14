@@ -334,6 +334,18 @@ export function formatNotice(notice: CampaignNotice): string {
       return fill(line.recruited, { name: notice.name });
     case 'rounds-returned':
       return fill(line.roundsReturned, { count: notice.count });
+    case 'scavenged':
+      return fill(line.scavenged, {
+        count: notice.caches,
+        bits: [
+          piece(notice.food, line.food),
+          piece(notice.medicine, line.medicine),
+          piece(notice.ammo, line.ammo),
+          piece(notice.parts, line.parts),
+        ]
+          .filter(Boolean)
+          .join(', '),
+      });
   }
 }
 

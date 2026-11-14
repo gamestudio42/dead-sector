@@ -30,6 +30,10 @@ import cercoMissionJson from '../missions/cerco-dom-bosco.json';
 import ferroviaMapJson from '../maps/patio-da-ferrovia.json';
 import centroVelhoMapJson from '../maps/centro-velho.json';
 import escolaMapJson from '../maps/escola-dom-bosco.json';
+import avenidaMapJson from '../maps/avenida-norte.json';
+import mercadaoMapJson from '../maps/mercadao-leste.json';
+import comboioMissionJson from '../missions/comboio-parado.json';
+import feiraMissionJson from '../missions/feira-fantasma.json';
 import ferrugemCampaignJson from '../campaigns/ferrugem.json';
 
 export * from '../schemas/index';
@@ -93,8 +97,22 @@ export const builtInRawContent: RawContent = {
   survivors: survivorsJson,
   difficulties: difficultyJson,
   rules: rulesJson,
-  missions: [pharmacyMissionJson, sinalFracoMissionJson, plantaoMissionJson, cercoMissionJson],
-  maps: [ferrugemMapJson, ferroviaMapJson, centroVelhoMapJson, escolaMapJson],
+  missions: [
+    pharmacyMissionJson,
+    sinalFracoMissionJson,
+    plantaoMissionJson,
+    cercoMissionJson,
+    comboioMissionJson,
+    feiraMissionJson,
+  ],
+  maps: [
+    ferrugemMapJson,
+    ferroviaMapJson,
+    centroVelhoMapJson,
+    escolaMapJson,
+    avenidaMapJson,
+    mercadaoMapJson,
+  ],
   campaigns: [ferrugemCampaignJson],
 };
 
@@ -177,6 +195,22 @@ export function validateContent(raw: RawContent): ContentBundle {
         const z = def.zone;
         if (z.x1 >= map.width || z.y1 >= map.height || z.x0 > z.x1 || z.y0 > z.y1)
           issues.push(`mission ${m.id} defence zone is outside the map`);
+      }
+      const sc = m.objectives.scavenge;
+      if (sc) {
+        if (sc.required > sc.caches.length)
+          issues.push(`mission ${m.id} requires more caches than it has`);
+        if (new Set(sc.caches.map((k) => k.id)).size !== sc.caches.length)
+          issues.push(`mission ${m.id} has duplicate cache ids`);
+        if (!m.texts.objectives.scavengeSupplies)
+          issues.push(`mission ${m.id} has scavenging but no scavengeSupplies text`);
+        const solid = new Set([...blocked, 'fence', 'bush', 'doorLocked', 'doorClosed']);
+        for (const k of sc.caches) {
+          const ch = map.rows[k.cell.y]?.[k.cell.x];
+          const tile = ch === undefined ? undefined : map.legend[ch];
+          if (!tile || solid.has(tile))
+            issues.push(`mission ${m.id} cache ${k.id} at ${k.cell.x},${k.cell.y} is not walkable`);
+        }
       }
     }
   }

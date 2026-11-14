@@ -17,6 +17,7 @@ const INTERACT_LABELS: Record<string, () => string> = {
   cabinet: () => text('interact.collect'),
   civilian: () => text('interact.rescue'),
   beacon: () => text('interact.radio'),
+  cache: () => text('interact.search'),
 };
 
 /** What a right click at `p` would act on: a visible infected, an available interactable, or nothing. */

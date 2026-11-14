@@ -94,6 +94,8 @@ export type CampaignNotice =
   | { kind: 'recovered'; name: string; before: number; after: number }
   | { kind: 'ammo-short' }
   | { kind: 'recruited'; name: string }
+  | { kind: 'built'; upgrade: string }
+  | { kind: 'harvest'; food: number }
   | { kind: 'rounds-returned'; count: number };
 
 /** Why a campaign ended. `legacy` keeps a sentence saved by an older version. */
@@ -117,6 +119,9 @@ export type OperationBlock =
   | 'no-route'
   | 'siege';
 
+/** Why an upgrade cannot be built now. Null means it can. */
+export type UpgradeBlock = 'campaign-over' | 'unknown' | 'built' | 'cost';
+
 /** Why nobody can be recruited now. Null means someone can. */
 export type RecruitBlock = 'campaign-over' | 'no-recruits' | 'nobody' | 'today' | 'full';
 
@@ -127,8 +132,10 @@ export interface Deployment {
 }
 
 export interface CampaignState {
-  version: 5;
+  version: 6;
   campaignId: string;
+  /** One of the campaign's difficulties; `normal` when it has none. */
+  difficultyId: string;
   seed: number;
   /** Strategic RNG, separate from every mission's. */
   rngState: number;
@@ -145,6 +152,8 @@ export interface CampaignState {
   recruitedToday: number;
   recruitsMade: number;
   roster: RosterEntry[];
+  /** Shelter upgrades built, in order. */
+  upgrades: string[];
   stock: Stock;
   /** People in the shelter who do not fight. */
   population: number;
@@ -193,8 +202,41 @@ function revealAround(def: CampaignDef, c: CampaignState): void {
   }
 }
 
-export function newCampaign(content: ContentBundle, campaignId: string, seed = 1): CampaignState {
+/** A campaign difficulty, or the campaign as designed when it defines none. */
+export interface Difficulty {
+  id: string;
+  stockMultiplier: number;
+  deadlineDays: number;
+  growthMultiplier: number;
+  reinforcementMultiplier: number;
+}
+
+export function difficultyOf(def: CampaignDef, difficultyId: string): Difficulty {
+  return (
+    def.difficulties.find((d) => d.id === difficultyId) ??
+    def.difficulties.find((d) => d.id === 'normal') ?? {
+      id: 'normal',
+      stockMultiplier: 1,
+      deadlineDays: def.victory.deadlineDays,
+      growthMultiplier: 1,
+      reinforcementMultiplier: 1,
+    }
+  );
+}
+
+/** The last day of this campaign, which depends on its difficulty. */
+export function campaignDeadline(content: ContentBundle, c: CampaignState): number {
+  return difficultyOf(defOf(content, c.campaignId), c.difficultyId).deadlineDays;
+}
+
+export function newCampaign(
+  content: ContentBundle,
+  campaignId: string,
+  seed = 1,
+  difficultyId = 'normal',
+): CampaignState {
   const def = defOf(content, campaignId);
+  const diff = difficultyOf(def, difficultyId);
   const roster = templatesFor(content, def).map((templateId): RosterEntry => {
     const t = content.survivors[templateId];
     if (!t) throw new Error(`Unknown survivor ${templateId}`);
@@ -213,10 +255,17 @@ export function newCampaign(content: ContentBundle, campaignId: string, seed = 1
       missionsSurvived: 0,
     };
   });
-  const { population, ...stock } = def.start;
+  const { population, ...start } = def.start;
+  const stock: Stock = {
+    food: Math.round(start.food * diff.stockMultiplier),
+    medicine: Math.round(start.medicine * diff.stockMultiplier),
+    ammo: Math.round(start.ammo * diff.stockMultiplier),
+    parts: Math.round(start.parts * diff.stockMultiplier),
+  };
   const c: CampaignState = {
-    version: 5,
+    version: 6,
     campaignId,
+    difficultyId: diff.id,
     seed,
     rngState: seedToRngState(seed),
     day: 1,
@@ -227,6 +276,7 @@ export function newCampaign(content: ContentBundle, campaignId: string, seed = 1
     recruitedToday: 0,
     recruitsMade: 0,
     roster,
+    upgrades: [],
     stock,
     population,
     evacuated: 0,
@@ -282,11 +332,13 @@ export function migrateCampaign(content: ContentBundle, raw: unknown): CampaignS
   };
   if (!old || !Array.isArray(old.roster) || !old.campaignId || !content.campaigns[old.campaignId])
     return null;
-  if (old.version && old.version >= 2 && old.version <= 5) {
+  if (old.version && old.version >= 2 && old.version <= 6) {
     const current = old as CampaignState;
     return {
       ...current,
-      version: 5,
+      version: 6,
+      difficultyId: current.difficultyId ?? 'normal',
+      upgrades: current.upgrades ?? [],
       roster: current.roster.map((r) => withIdentity(content, r)),
       recruitedToday: current.recruitedToday ?? 0,
       recruitsMade: current.recruitsMade ?? 0,
@@ -398,6 +450,93 @@ export function operationVariant(
   if (status === 'secured') return 'quiet';
   if (status === 'infested') return 'overrun';
   return 'standard';
+}
+
+/** Has the shelter built this upgrade, and what does it do. */
+function upgradeEffect<K extends CampaignDef['upgrades'][number]['effect']['kind']>(
+  def: CampaignDef,
+  c: CampaignState,
+  kind: K,
+): Extract<CampaignDef['upgrades'][number]['effect'], { kind: K }> | null {
+  for (const u of def.upgrades)
+    if (u.effect.kind === kind && c.upgrades.includes(u.id))
+      return u.effect as Extract<CampaignDef['upgrades'][number]['effect'], { kind: K }>;
+  return null;
+}
+
+/** Reinforcement budget multiplier of an operation: the sector's infestation and the difficulty. */
+export function operationReinforcements(
+  content: ContentBundle,
+  c: CampaignState,
+  sectorId: string,
+): number {
+  const def = defOf(content, c.campaignId);
+  const infestation = c.sectors[sectorId]?.infestation ?? 50;
+  return (
+    reinforcementMultiplier(infestation) * difficultyOf(def, c.difficultyId).reinforcementMultiplier
+  );
+}
+
+/** Everything the campaign changes in an operation's mission: the sector variant and the workshop. */
+export function missionModifiers(
+  content: ContentBundle,
+  c: CampaignState,
+  sectorId: string,
+): MissionVariant {
+  const def = defOf(content, c.campaignId);
+  const workshop = upgradeEffect(def, c, 'workshop');
+  return {
+    ...OPERATION_VARIANTS[operationVariant(content, c, sectorId)],
+    barricadeKitBonus: workshop?.barricadeKits ?? 0,
+  };
+}
+
+/** Why this upgrade cannot be built now; null when it can. */
+export function upgradeBlockReason(
+  content: ContentBundle,
+  c: CampaignState,
+  upgradeId: string,
+): UpgradeBlock | null {
+  const def = defOf(content, c.campaignId);
+  const u = def.upgrades.find((x) => x.id === upgradeId);
+  if (c.status !== 'active') return 'campaign-over';
+  if (!u) return 'unknown';
+  if (c.upgrades.includes(u.id)) return 'built';
+  const k = u.cost;
+  if (
+    c.stock.parts < k.parts ||
+    c.stock.food < k.food ||
+    c.stock.medicine < k.medicine ||
+    c.stock.ammo < k.ammo
+  )
+    return 'cost';
+  return null;
+}
+
+/** Builds a shelter upgrade with the stock; null when it cannot be done. It does not take the day. */
+export function buildUpgrade(
+  content: ContentBundle,
+  campaign: CampaignState,
+  upgradeId: string,
+): CampaignState | null {
+  if (upgradeBlockReason(content, campaign, upgradeId)) return null;
+  const def = defOf(content, campaign.campaignId);
+  const u = def.upgrades.find((x) => x.id === upgradeId)!;
+  const next = clone(campaign);
+  next.stock.parts -= u.cost.parts;
+  next.stock.food -= u.cost.food;
+  next.stock.medicine -= u.cost.medicine;
+  next.stock.ammo -= u.cost.ammo;
+  next.upgrades.push(u.id);
+  next.lastReport = [...next.lastReport, { kind: 'built', upgrade: u.id }];
+  return next;
+}
+
+/** Shelter infestation that raises a siege at night, later behind reinforced walls. */
+export function siegeThreshold(content: ContentBundle, c: CampaignState): number | null {
+  const def = defOf(content, c.campaignId);
+  if (!def.siege) return null;
+  return def.siege.raisedFrom + (upgradeEffect(def, c, 'walls')?.siegeThresholdBonus ?? 0);
 }
 
 export function missionSeed(content: ContentBundle, c: CampaignState, missionId: string): number {
@@ -580,7 +719,7 @@ function checkEnd(def: CampaignDef, c: CampaignState): void {
   } else if (!def.sectors.some((s) => s.evacuates > 0 && !c.sectors[s.id]!.lost)) {
     c.status = 'lost';
     c.endReason = { kind: 'route-lost' };
-  } else if (c.day > def.victory.deadlineDays) {
+  } else if (c.day > difficultyOf(def, c.difficultyId).deadlineDays) {
     c.status = 'lost';
     c.endReason = { kind: 'deadline' };
   }
@@ -713,7 +852,11 @@ function breach(def: CampaignDef, c: CampaignState, lines: CampaignNotice[]): vo
   const siege = def.siege;
   if (!siege) return;
   const shelter = def.sectors.find((s) => s.id === def.shelterSectorId)!;
-  const lost = Math.min(c.population, siege.breachLoss);
+  const walls = upgradeEffect(def, c, 'walls');
+  const lost = Math.min(
+    c.population,
+    Math.max(0, siege.breachLoss - (walls?.breachLossReduction ?? 0)),
+  );
   c.population -= lost;
   const s = c.sectors[shelter.id]!;
   s.infestation = clamp(s.infestation + siege.effect.failed);
@@ -745,6 +888,7 @@ function migrate(
   lines: CampaignNotice[],
 ): void {
   const m = def.migration;
+  const growth = difficultyOf(def, c.difficultyId).growthMultiplier;
   const before = Object.fromEntries(
     def.sectors.map((s) => [s.id, sectorStatus(def, c, s.id)]),
   ) as Record<string, SectorStatus>;
@@ -752,7 +896,7 @@ function migrate(
   const add = (id: string, v: number) => (delta[id] = (delta[id] ?? 0) + v);
   for (const sec of def.sectors) {
     const here = c.sectors[sec.id]!;
-    add(sec.id, sec.growth + rng.int(0, m.jitter));
+    add(sec.id, Math.round(sec.growth * growth) + rng.int(0, m.jitter));
     for (const n of sec.neighbors) {
       const there = c.sectors[n]!;
       // each connection is listed on both ends; only the higher side pushes
@@ -823,25 +967,32 @@ export function endDay(
     }
   }
 
+  const garden = upgradeEffect(def, next, 'garden');
+  if (garden) {
+    next.stock.food += garden.foodPerDay;
+    lines.push({ kind: 'harvest', food: garden.foodPerDay });
+  }
   const fighters = next.roster.filter((r) => r.alive).length;
   const need = Math.ceil((next.population + fighters) / def.peoplePerFood);
+  const pantry = next.stock.food;
   if (next.stock.food >= need) next.stock.food -= need;
   else {
     next.stock.food = 0;
     // whoever does not fight gives way first: the hungry leave or do not wake up
-    const lost = Math.min(next.population, 1 + Math.floor((need - campaign.stock.food) / 2));
+    const lost = Math.min(next.population, 1 + Math.floor((need - pantry) / 2));
     next.population -= lost;
     lines.push(lost ? { kind: 'starved', lost } : { kind: 'no-food' });
   }
 
   let shortOfAmmo = false;
   let returned = 0;
+  const heal = def.healFraction + (upgradeEffect(def, next, 'infirmary')?.healBonus ?? 0);
   for (const r of next.roster) {
     if (!r.alive) continue;
     const t = content.survivors[r.templateId];
     if (!t) continue;
     const before = r.health;
-    r.health = Math.min(t.maxHealth, r.health + Math.round(t.maxHealth * def.healFraction));
+    r.health = Math.min(t.maxHealth, r.health + Math.round(t.maxHealth * heal));
     if (r.health > before && before < t.maxHealth)
       lines.push({ kind: 'recovered', name: firstName(r.name), before, after: r.health });
     const w = content.weapons[t.weaponId];
@@ -878,7 +1029,8 @@ export function endDay(
     def.siege &&
     next.status === 'active' &&
     !home.lost &&
-    home.infestation >= def.siege.raisedFrom
+    home.infestation >=
+      def.siege.raisedFrom + (upgradeEffect(def, next, 'walls')?.siegeThresholdBonus ?? 0)
   ) {
     next.siegePending = true;
     lines.push({ kind: 'siege-raised', sector: shelter.displayName });

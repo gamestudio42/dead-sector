@@ -4,6 +4,7 @@ import type {
   DeploymentBlock,
   OperationBlock,
   RecruitBlock,
+  UpgradeBlock,
 } from '@dead-sector/sim';
 import { de } from '../locales/de';
 import { en, type Catalog } from '../locales/en';
@@ -334,6 +335,10 @@ export function formatNotice(notice: CampaignNotice): string {
       return fill(line.recruited, { name: notice.name });
     case 'rounds-returned':
       return fill(line.roundsReturned, { count: notice.count });
+    case 'built':
+      return fill(line.built, { upgrade: upgradeName(notice.upgrade) });
+    case 'harvest':
+      return fill(line.harvest, { food: notice.food });
     case 'scavenged':
       return fill(line.scavenged, {
         count: notice.caches,
@@ -359,6 +364,28 @@ export function formatEnd(end: CampaignEnd | null): string {
 
 export function formatBlock(code: OperationBlock | null): string {
   return code ? catalog().campaign.blocks[code] : '';
+}
+
+export function formatUpgradeBlock(code: UpgradeBlock | null): string {
+  return code ? catalog().strategic.upgradeBlocks[code] : '';
+}
+
+type Named = Record<string, { name: string; blurb: string } | undefined>;
+
+export function difficultyName(id: string): string {
+  return (catalog().campaign.difficulties as Named)[id]?.name ?? id;
+}
+
+export function difficultyBlurb(id: string): string {
+  return (catalog().campaign.difficulties as Named)[id]?.blurb ?? '';
+}
+
+export function upgradeName(id: string, fallback = id): string {
+  return (catalog().campaign.upgrades as Named)[id]?.name ?? fallback;
+}
+
+export function upgradeBlurb(id: string): string {
+  return (catalog().campaign.upgrades as Named)[id]?.blurb ?? '';
 }
 
 export function formatRecruitBlock(code: RecruitBlock | null): string {

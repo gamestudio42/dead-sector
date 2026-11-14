@@ -258,6 +258,7 @@ export const es: Catalog = {
     radioOn: 'RADIO ACTIVA',
   },
   menu: {
+    difficultyTitle: 'Elige la dificultad',
     subtitle: 'Táctica en tiempo real con pausa',
     campaign: 'Campaña: {name}',
     campaignSub: 'Evacúa el refugio en {days} días · las bajas son permanentes',
@@ -484,6 +485,19 @@ export const es: Catalog = {
     toShelter: 'Volver al refugio ▶',
   },
   strategic: {
+    upgrades: 'Mejoras del refugio',
+    build: 'Construir ({cost})',
+    built: 'Construida',
+    costParts: '{n} piezas',
+    costFood: '{n} comida',
+    costMedicine: '{n} medicina',
+    costAmmo: '{n} balas',
+    upgradeBlocks: {
+      'campaign-over': 'La campaña ha terminado.',
+      unknown: 'Mejora desconocida.',
+      built: 'Ya construida.',
+      cost: 'El almacén no cubre el coste.',
+    },
     kicker: 'Campaña · {name}',
     day: 'Día {day} de {total}',
     evacuated: 'Evacuados',
@@ -922,6 +936,26 @@ export const es: Catalog = {
     },
   },
   campaign: {
+    difficulties: {
+      facil: { name: 'Fácil', blurb: 'Más provisiones, 14 días, hordas más lentas' },
+      normal: { name: 'Normal', blurb: 'La campaña tal como se pensó: 12 días' },
+      dificil: {
+        name: 'Difícil',
+        blurb: 'Menos provisiones, 10 días, hordas más rápidas y más refuerzos',
+      },
+    },
+    upgrades: {
+      horta: { name: 'Huerto en el patio', blurb: '+2 de comida cada noche' },
+      enfermaria: { name: 'Enfermería', blurb: 'los heridos se recuperan más rápido por la noche' },
+      oficina: {
+        name: 'Taller de tablas',
+        blurb: '+1 kit de tablas por escuadrón en cada operación',
+      },
+      muro: {
+        name: 'Muro reforzado',
+        blurb: 'el asedio tarda más y una brecha cuesta 2 personas menos',
+      },
+    },
     displayName: 'Setor Ferrugem',
     intro:
       'El refugio en la Escola Dom Bosco no aguanta mucho. Evacúa al grupo por las vías antes de que caiga el sector. Cada operación cuesta un día, comida y munición, y el ruido que hagan atrae a las hordas.',
@@ -980,6 +1014,8 @@ export const es: Catalog = {
       recruited: '{name} tomó las armas y se unió al equipo.',
       roundsReturned: '{count} balas extra volvieron al almacén.',
       scavenged: '{count} carga(s) saqueada(s): {bits}.',
+      built: '{upgrade} lista.',
+      harvest: 'El huerto dio {food} de comida.',
     },
     stage: {
       healthy: 'bien',

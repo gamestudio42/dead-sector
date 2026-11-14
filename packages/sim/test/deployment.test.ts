@@ -148,7 +148,7 @@ describe('roster by id, deployment and recruits', () => {
     );
     const old = { ...c, version: 4, roster, recruitedToday: undefined, recruitsMade: undefined };
     const back = migrateCampaign(content, old)!;
-    expect(back.version).toBe(5);
+    expect(back.version).toBe(6);
     expect(back.recruitsMade).toBe(0);
     expect(back.roster[0]).toMatchObject({
       id: 'alfa-leader',

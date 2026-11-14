@@ -425,6 +425,7 @@ test('campaign: strategic map, operations, losses and days persist', async ({ pa
   const errors = trackErrors(page);
   await page.goto('/?lang=pt-BR');
   await page.getByTestId('btn-campaign').click();
+  await page.getByTestId('diff-normal').click();
   await expect(page.getByTestId('strategic')).toBeVisible();
   await expect(page.getByTestId('campaign-day')).toHaveText('Dia 1 de 12');
   await expect(page.getByTestId('btn-end-day')).toBeInViewport();
@@ -492,6 +493,7 @@ test('campaign siege: the shelter is besieged at night and the siege is the only
   const errors = trackErrors(page);
   await page.goto('/?lang=pt-BR');
   await page.getByTestId('btn-campaign').click();
+  await page.getByTestId('diff-normal').click();
   await expect(page.getByTestId('campaign-day')).toHaveText('Dia 1 de 12');
   // push the shelter close to the threshold, as days of migration would
   await page.evaluate(async () => {
@@ -543,6 +545,7 @@ test('campaign deployment: recruit from the shelter, choose who goes and draw ex
   const errors = trackErrors(page);
   await page.goto('/?lang=pt-BR');
   await page.getByTestId('btn-campaign').click();
+  await page.getByTestId('diff-normal').click();
   await expect(page.getByTestId('strategic')).toBeVisible();
   const population = Number(await page.getByTestId('population').textContent());
   const ammo = Number(await page.getByTestId('stock-ammo').textContent());
@@ -611,4 +614,35 @@ test('installable app: manifest, offline start after the first visit, credits wi
   await expect(page.getByTestId('credits')).toContainText(/Versão 0\.1\.0/);
   await context.setOffline(false);
   expect(errors.filter((e) => !e.includes('net::ERR_INTERNET_DISCONNECTED'))).toEqual([]);
+});
+
+test('campaign difficulty and shelter upgrades: hard is shorter, the workshop adds a kit', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-campaign').click();
+  await expect(page.getByTestId('difficulty-pick')).toBeVisible();
+  await page.getByTestId('diff-dificil').click();
+  await expect(page.getByTestId('campaign-day')).toHaveText('Dia 1 de 10');
+  await expect(page.getByTestId('campaign-difficulty')).toHaveText('Difícil');
+
+  // the wall needs more parts than the shelter has; the workshop does not
+  await expect(page.getByTestId('build-muro')).toBeDisabled();
+  await page.getByTestId('build-oficina').click();
+  await expect(page.getByTestId('upgrade-oficina')).toContainText('Construída');
+  await expect(page.getByTestId('campaign-report')).toContainText('Oficina de tábuas pronta.');
+  await page.getByTestId('upgrade-oficina').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${SHOTS}/strategic-upgrades-1280x720.png` });
+
+  // the next operation takes one more plank kit per squad
+  await page.getByTestId('sector-ferrugem').click();
+  await page.getByTestId('btn-operate').click();
+  await expect(page.getByTestId('briefing')).toBeVisible();
+  await page.getByTestId('btn-deploy').click();
+  await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
+  expect(await hook(page, (h) => h.state().squads.map((s: any) => s.barricadeKits))).toEqual([
+    3, 3,
+  ]);
+  expect(errors).toEqual([]);
 });

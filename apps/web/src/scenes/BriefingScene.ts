@@ -29,9 +29,8 @@ import {
   missionSeed,
   squadSlots,
   type Deployment,
-  reinforcementMultiplier,
-  OPERATION_VARIANTS,
-  operationVariant,
+  missionModifiers,
+  operationReinforcements,
   objectiveOrder,
   type CampaignState,
 } from '@dead-sector/sim';
@@ -301,10 +300,10 @@ export class BriefingScene extends Phaser.Scene {
         campaign: inCampaign,
         carry: campaign ? carryOver(campaign) : undefined,
         reinforcements: campaign?.activeSectorId
-          ? reinforcementMultiplier(campaign.sectors[campaign.activeSectorId]?.infestation ?? 50)
+          ? operationReinforcements(content, campaign, campaign.activeSectorId)
           : undefined,
         variant: campaign?.activeSectorId
-          ? OPERATION_VARIANTS[operationVariant(content, campaign, campaign.activeSectorId)]
+          ? missionModifiers(content, campaign, campaign.activeSectorId)
           : undefined,
       });
     };

@@ -10,6 +10,9 @@
 
 ## NEXT
 
+- Economy tuning from `docs/testing/economy.md` (ADR 0024): rounds are the binding resource (the Sinal Fraco route
+  fires ~230 rounds, the starting stock is 140), food is loose, and difficulty barely moves the policy's win rate.
+  Check against playtest round 1 before changing values, and teach the report policy to pick the scavenging runs.
 - Publish the trailer (`node tools/promo/trailer.mjs`, ~30 s, 1080p, silent) on the studio's video channel and in the
   Snap Store listing, with the 30 s score cue from `node tools/music/render.mjs` (`dead-sector-trailer-30s.wav`) as
   its soundtrack.
@@ -26,6 +29,10 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Phase 6.5: shelter upgrades bought with parts (garden, infirmary, plank workshop, reinforced wall), three campaign
+  difficulties chosen in the menu (stock, deadline, growth, reinforcements), campaign save version 6, and the economy
+  report `pnpm economy` (ADR 0024). Phase 6 is complete.
 
 - Phase 6.4: scavenging objective (supply caches with their own loot, three open the radio, everything searched comes
   home), the operations Comboio Parado on Avenida Norte and Feira Fantasma on Mercadão Leste on two new maps built by

@@ -256,6 +256,7 @@ export const en = {
     radioOn: 'RADIO ON',
   },
   menu: {
+    difficultyTitle: 'Choose the difficulty',
     subtitle: 'Pausable real-time tactics',
     campaign: 'Campaign: {name}',
     campaignSub: 'Evacuate the shelter in {days} days · losses are permanent',
@@ -481,6 +482,19 @@ export const en = {
     toShelter: 'Back to the shelter ▶',
   },
   strategic: {
+    upgrades: 'Shelter upgrades',
+    build: 'Build ({cost})',
+    built: 'Built',
+    costParts: '{n} parts',
+    costFood: '{n} food',
+    costMedicine: '{n} medicine',
+    costAmmo: '{n} rounds',
+    upgradeBlocks: {
+      'campaign-over': 'The campaign is over.',
+      unknown: 'Unknown upgrade.',
+      built: 'Already built.',
+      cost: 'The stock does not cover the cost.',
+    },
     kicker: 'Campaign · {name}',
     day: 'Day {day} of {total}',
     evacuated: 'Evacuated',
@@ -914,6 +928,23 @@ export const en = {
     },
   },
   campaign: {
+    difficulties: {
+      facil: { name: 'Easy', blurb: 'More stock, 14 days, slower hordes' },
+      normal: { name: 'Normal', blurb: 'The campaign as designed: 12 days' },
+      dificil: {
+        name: 'Hard',
+        blurb: 'Less stock, 10 days, faster hordes and more reinforcements',
+      },
+    },
+    upgrades: {
+      horta: { name: 'Vegetable patch', blurb: '+2 food every night' },
+      enfermaria: { name: 'Infirmary', blurb: 'the wounded recover faster at night' },
+      oficina: { name: 'Plank workshop', blurb: '+1 plank kit per squad on every operation' },
+      muro: {
+        name: 'Reinforced wall',
+        blurb: 'the siege comes later and a breach costs 2 fewer people',
+      },
+    },
     displayName: 'Setor Ferrugem',
     intro:
       'The shelter at Escola Dom Bosco will not hold for long. Evacuate the group along the tracks before the sector falls. Each operation costs a day, food and ammunition, and the noise you make draws the hordes.',
@@ -972,6 +1003,8 @@ export const en = {
       recruited: '{name} took up arms and joined the roster.',
       roundsReturned: '{count} extra rounds went back to the stock.',
       scavenged: '{count} cache(s) searched: {bits}.',
+      built: '{upgrade} is ready.',
+      harvest: 'The vegetable patch gave {food} food.',
     },
     stage: {
       healthy: 'well',

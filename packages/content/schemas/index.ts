@@ -328,6 +328,23 @@ export const campaignSchema = z.object({
       breachLoss: z.number().int().nonnegative(),
     })
     .optional(),
+  /**
+   * People of the shelter who can take up arms, and the extra rounds a squad may draw from the
+   * stock when it deploys. Optional.
+   */
+  recruits: z
+    .object({
+      templateId: z.string().min(1),
+      /** Names given to recruits, in order of recruitment. */
+      names: z.array(z.string().min(1)).min(1),
+      /** Living fighters the shelter can keep. */
+      maxRoster: z.number().int().positive(),
+      perDay: z.number().int().positive(),
+      /** Extra rounds per armed member, in steps, that a squad may take from the stock. */
+      extraRoundsStep: z.number().int().positive(),
+      extraRoundsMax: z.number().int().nonnegative(),
+    })
+    .optional(),
   sectors: z.array(sectorSchema).min(2),
 });
 

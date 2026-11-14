@@ -13,7 +13,6 @@
 - Publish the trailer (`node tools/promo/trailer.mjs`, ~30 s, 1080p, silent) on the studio's video channel and in the
   Snap Store listing, with the 30 s score cue from `node tools/music/render.mjs` (`dead-sector-trailer-30s.wav`) as
   its soundtrack.
-- Phase 6.3: choose who deploys and how much ammo they take, roster by ID, recruits from the population.
 - Phase 6.4: scavenging objective, operations for Avenida Norte and Mercadão Leste, variants by sector state.
 - Phase 6.5: shelter upgrades (parts have no use yet), campaign difficulties, economy balance report.
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
@@ -53,6 +52,10 @@
 - Combat effects baked with EffectCraft (flash, sparks, blood, ichor, dust, splinters, glass, shriek, infected
   death) and ambient loops (wreck fire and smoke, radio beacon) and interface animations (horde, night, convoy, fallen sector, objective, rescue, bite, panic), with alpha and loop-seam checks, manifest and
   particle fallback (ADR 0016).
+
+- Phase 6.3: the campaign roster is known by id; the campaign briefing chooses who goes in each squad (or stays at
+  the shelter) and the extra rounds each squad draws from the stock; the shelter recruits one person a day into
+  the roster (ADR 0022).
 
 - Campaign siege: when the shelter's infestation reaches 35% at night, the next day's only operation is Cerco na
   Dom Bosco; holding it pushes the horde back, losing or skipping it costs 3 people (ADR 0021).

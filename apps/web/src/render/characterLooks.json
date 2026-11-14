@@ -81,6 +81,15 @@
       "band": null,
       "headgear": "none",
       "weapon": "none"
+    },
+    "recruit": {
+      "jacket": "#4f5a3a",
+      "pants": "#34363a",
+      "skin": "#c8956c",
+      "hair": "#1e1a17",
+      "band": "#d8d2c0",
+      "headgear": "cap",
+      "weapon": "pistol"
     }
   },
   "walkers": [

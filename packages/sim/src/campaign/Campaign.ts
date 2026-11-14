@@ -4,7 +4,13 @@ import type { GameState, InfectionStage, MissionStatus } from '../model/types';
 
 /** What one survivor brings from mission to mission. */
 export interface RosterEntry {
+  /** Unique in the campaign; the template id for the original squads. */
+  id: string;
+  /** Stats, weapon and look. Recruits share one template. */
   templateId: string;
+  name: string;
+  /** Squad this survivor deploys with; null stays in the shelter. */
+  squadId: string | null;
   alive: boolean;
   health: number;
   infection: InfectionStage;
@@ -77,7 +83,9 @@ export type CampaignNotice =
   | { kind: 'starved'; lost: number }
   | { kind: 'no-food' }
   | { kind: 'recovered'; name: string; before: number; after: number }
-  | { kind: 'ammo-short' };
+  | { kind: 'ammo-short' }
+  | { kind: 'recruited'; name: string }
+  | { kind: 'rounds-returned'; count: number };
 
 /** Why a campaign ended. `legacy` keeps a sentence saved by an older version. */
 export type CampaignEnd =
@@ -100,8 +108,17 @@ export type OperationBlock =
   | 'no-route'
   | 'siege';
 
+/** Why nobody can be recruited now. Null means someone can. */
+export type RecruitBlock = 'campaign-over' | 'no-recruits' | 'nobody' | 'today' | 'full';
+
+/** Who deploys where for one operation, and the extra rounds per armed member of each squad. */
+export interface Deployment {
+  squads: Record<string, string | null>;
+  extraRounds: Record<string, number>;
+}
+
 export interface CampaignState {
-  version: 4;
+  version: 5;
   campaignId: string;
   seed: number;
   /** Strategic RNG, separate from every mission's. */
@@ -115,6 +132,9 @@ export interface CampaignState {
   siegePending: boolean;
   /** Sieges fought or suffered so far. */
   sieges: number;
+  /** People recruited today, and in the whole campaign (which also names the next one). */
+  recruitedToday: number;
+  recruitsMade: number;
   roster: RosterEntry[];
   stock: Stock;
   /** People in the shelter who do not fight. */
@@ -166,15 +186,18 @@ function revealAround(def: CampaignDef, c: CampaignState): void {
 
 export function newCampaign(content: ContentBundle, campaignId: string, seed = 1): CampaignState {
   const def = defOf(content, campaignId);
-  const roster = templatesFor(content, def).map((templateId) => {
+  const roster = templatesFor(content, def).map((templateId): RosterEntry => {
     const t = content.survivors[templateId];
     if (!t) throw new Error(`Unknown survivor ${templateId}`);
     const w = content.weapons[t.weaponId];
     return {
+      id: templateId,
       templateId,
+      name: t.name,
+      squadId: t.squadId,
       alive: true,
       health: t.maxHealth,
-      infection: 'healthy' as InfectionStage,
+      infection: 'healthy',
       bitten: false,
       ammo: (w?.magazineCapacity ?? 0) + t.reserveRounds,
       kills: 0,
@@ -183,7 +206,7 @@ export function newCampaign(content: ContentBundle, campaignId: string, seed = 1
   });
   const { population, ...stock } = def.start;
   const c: CampaignState = {
-    version: 4,
+    version: 5,
     campaignId,
     seed,
     rngState: seedToRngState(seed),
@@ -192,6 +215,8 @@ export function newCampaign(content: ContentBundle, campaignId: string, seed = 1
     activeSectorId: null,
     siegePending: false,
     sieges: 0,
+    recruitedToday: 0,
+    recruitsMade: 0,
     roster,
     stock,
     population,
@@ -228,6 +253,17 @@ function asEnd(raw: unknown): CampaignEnd | null {
   return raw as CampaignEnd;
 }
 
+/** Before version 5 a survivor was known by its template: that becomes its id, name and squad. */
+function withIdentity(content: ContentBundle, r: Partial<RosterEntry>): RosterEntry {
+  const t = content.survivors[r.templateId ?? ''];
+  return {
+    ...(r as RosterEntry),
+    id: r.id ?? r.templateId ?? '',
+    name: r.name ?? t?.name ?? r.templateId ?? '',
+    squadId: r.squadId !== undefined ? r.squadId : (t?.squadId ?? null),
+  };
+}
+
 /** Reads a stored campaign of any version; null when it cannot be used. */
 export function migrateCampaign(content: ContentBundle, raw: unknown): CampaignState | null {
   const old = raw as Omit<Partial<CampaignState>, 'version'> & {
@@ -237,11 +273,14 @@ export function migrateCampaign(content: ContentBundle, raw: unknown): CampaignS
   };
   if (!old || !Array.isArray(old.roster) || !old.campaignId || !content.campaigns[old.campaignId])
     return null;
-  if (old.version === 2 || old.version === 3 || old.version === 4) {
+  if (old.version && old.version >= 2 && old.version <= 5) {
     const current = old as CampaignState;
     return {
       ...current,
-      version: 4,
+      version: 5,
+      roster: current.roster.map((r) => withIdentity(content, r)),
+      recruitedToday: current.recruitedToday ?? 0,
+      recruitsMade: current.recruitsMade ?? 0,
       siegePending: current.siegePending ?? false,
       sieges: current.sieges ?? 0,
       lastReport: asNotices(current.lastReport),
@@ -254,7 +293,7 @@ export function migrateCampaign(content: ContentBundle, raw: unknown): CampaignS
   const rescued = old.rescued ?? [];
   const c = newCampaign(content, old.campaignId, history.length + 1);
   c.day = history.length + 1;
-  c.roster = old.roster;
+  c.roster = old.roster.map((r) => withIdentity(content, r));
   c.history = history;
   c.rescued = rescued;
   c.population += rescued.length;
@@ -331,13 +370,19 @@ export function missionSeed(content: ContentBundle, c: CampaignState, missionId:
   return (content.missions[missionId]?.canonicalSeed ?? 0) + tries;
 }
 
-/** Carry-over handed to `createMissionState`: who deploys and in what condition. */
-export type CarryOver = Record<string, Omit<RosterEntry, 'templateId' | 'missionsSurvived'>>;
+/**
+ * Carry-over handed to `createMissionState`, by roster id: who deploys, in which squad and in what
+ * condition.
+ */
+export type CarryOver = Record<string, Omit<RosterEntry, 'id' | 'missionsSurvived'>>;
 
 export function carryOver(c: CampaignState): CarryOver {
   const out: CarryOver = {};
   for (const r of c.roster)
-    out[r.templateId] = {
+    out[r.id] = {
+      templateId: r.templateId,
+      name: r.name,
+      squadId: r.squadId,
       alive: r.alive,
       health: r.health,
       infection: r.infection,
@@ -346,6 +391,140 @@ export function carryOver(c: CampaignState): CarryOver {
       kills: r.kills,
     };
   return out;
+}
+
+/** How many survivors each squad of a mission fields. */
+export function squadSlots(content: ContentBundle, missionId: string): Record<string, number> {
+  const mission = content.missions[missionId];
+  if (!mission) throw new Error(`Unknown mission ${missionId}`);
+  return Object.fromEntries(mission.squads.map((sq) => [sq.id, sq.memberIds.length]));
+}
+
+/** Rounds a survivor's weapon holds when fully loaded (magazine + standard reserve). */
+export function fullLoad(content: ContentBundle, templateId: string): number {
+  const t = content.survivors[templateId];
+  const w = t ? content.weapons[t.weaponId] : undefined;
+  return w && w.magazineCapacity > 0 ? w.magazineCapacity + t!.reserveRounds : 0;
+}
+
+/** Stock rounds a deployment draws: its extra rounds for every armed member who goes. */
+export function deploymentCost(content: ContentBundle, c: CampaignState, d: Deployment): number {
+  let cost = 0;
+  for (const r of c.roster) {
+    const squad = d.squads[r.id];
+    if (!r.alive || !squad || fullLoad(content, r.templateId) === 0) continue;
+    cost += d.extraRounds[squad] ?? 0;
+  }
+  return cost;
+}
+
+/** Why a deployment cannot go; null when it can. */
+export type DeploymentBlock = 'nobody' | 'squad-full' | 'rounds' | 'not-enough-ammo';
+
+export function deploymentBlockReason(
+  content: ContentBundle,
+  c: CampaignState,
+  missionId: string,
+  d: Deployment,
+): DeploymentBlock | null {
+  const def = defOf(content, c.campaignId);
+  const slots = squadSlots(content, missionId);
+  const count: Record<string, number> = {};
+  for (const r of c.roster) {
+    const squad = d.squads[r.id];
+    if (!r.alive || !squad) continue;
+    if (!(squad in slots)) return 'squad-full';
+    count[squad] = (count[squad] ?? 0) + 1;
+  }
+  if (!Object.keys(count).length) return 'nobody';
+  if (Object.entries(count).some(([sq, n]) => n > slots[sq]!)) return 'squad-full';
+  const step = def.recruits?.extraRoundsStep ?? 1;
+  const max = def.recruits?.extraRoundsMax ?? 0;
+  if (Object.values(d.extraRounds).some((v) => v < 0 || v > max || v % step !== 0)) return 'rounds';
+  if (deploymentCost(content, c, d) > c.stock.ammo) return 'not-enough-ammo';
+  return null;
+}
+
+/** The squads as the roster stands: each survivor's last squad, extra rounds at zero. */
+export function currentDeployment(c: CampaignState): Deployment {
+  return {
+    squads: Object.fromEntries(c.roster.filter((r) => r.alive).map((r) => [r.id, r.squadId])),
+    extraRounds: {},
+  };
+}
+
+/**
+ * Sends the squads out: everyone's squad is remembered for the next operation, and the extra
+ * rounds move from the stock to the armed members who go. Null when the deployment is invalid.
+ */
+export function deploy(
+  content: ContentBundle,
+  campaign: CampaignState,
+  missionId: string,
+  d: Deployment,
+): CampaignState | null {
+  if (deploymentBlockReason(content, campaign, missionId, d)) return null;
+  const next = clone(campaign);
+  next.stock.ammo -= deploymentCost(content, campaign, d);
+  for (const r of next.roster) {
+    if (!r.alive || !(r.id in d.squads)) continue;
+    r.squadId = d.squads[r.id] ?? null;
+    if (r.squadId && fullLoad(content, r.templateId) > 0) r.ammo += d.extraRounds[r.squadId] ?? 0;
+  }
+  return next;
+}
+
+export function recruitBlockReason(content: ContentBundle, c: CampaignState): RecruitBlock | null {
+  const rec = defOf(content, c.campaignId).recruits;
+  if (c.status !== 'active') return 'campaign-over';
+  if (!rec) return 'no-recruits';
+  if (c.population <= 0) return 'nobody';
+  if (c.recruitedToday >= rec.perDay) return 'today';
+  if (c.roster.filter((r) => r.alive).length >= rec.maxRoster) return 'full';
+  return null;
+}
+
+/**
+ * One person of the shelter takes up arms: one fewer to evacuate, one more fighter to feed the
+ * same. Their rounds come from the stock. They join the squad with fewer people, if it has room.
+ */
+export function recruit(content: ContentBundle, campaign: CampaignState): CampaignState | null {
+  if (recruitBlockReason(content, campaign)) return null;
+  const def = defOf(content, campaign.campaignId);
+  const rec = def.recruits!;
+  const t = content.survivors[rec.templateId]!;
+  const next = clone(campaign);
+  const n = next.recruitsMade;
+  const name =
+    rec.names[n % rec.names.length]! +
+    (n >= rec.names.length ? ` ${Math.floor(n / rec.names.length) + 1}` : '');
+  const first = def.sectors.find((s) => s.missionId)?.missionId;
+  const slots = first ? squadSlots(content, first) : {};
+  const size = (sq: string) => next.roster.filter((r) => r.alive && r.squadId === sq).length;
+  const squad =
+    Object.keys(slots)
+      .filter((sq) => size(sq) < slots[sq]!)
+      .sort((a, b) => size(a) - size(b) || (a < b ? -1 : 1))[0] ?? null;
+  const ammo = Math.min(fullLoad(content, t.id), next.stock.ammo);
+  next.stock.ammo -= ammo;
+  next.population -= 1;
+  next.recruitedToday += 1;
+  next.recruitsMade += 1;
+  next.roster.push({
+    id: `recruit-${n + 1}`,
+    templateId: t.id,
+    name,
+    squadId: squad,
+    alive: true,
+    health: t.maxHealth,
+    infection: 'healthy',
+    bitten: false,
+    ammo,
+    kills: 0,
+    missionsSurvived: 0,
+  });
+  next.lastReport = [...next.lastReport, { kind: 'recruited', name }];
+  return next;
 }
 
 const firstName = (name: string) => name.split(' ')[0] ?? name;
@@ -396,7 +575,7 @@ export function applyOperationResult(
 
   for (const r of next.roster) {
     if (!r.alive) continue;
-    const s = final.survivors.find((x) => x.templateId === r.templateId && x.squadId !== null);
+    const s = final.survivors.find((x) => x.id === r.id && x.squadId !== null);
     if (!s) continue; // did not deploy
     r.kills = s.kills;
     if (!s.alive) {
@@ -493,16 +672,16 @@ function breach(def: CampaignDef, c: CampaignState, lines: CampaignNotice[]): vo
 export function treatInfection(
   content: ContentBundle,
   campaign: CampaignState,
-  templateId: string,
+  rosterId: string,
 ): CampaignState | null {
-  const r = campaign.roster.find((x) => x.templateId === templateId);
+  const r = campaign.roster.find((x) => x.id === rosterId);
   if (!r || !r.alive || r.infection === 'healthy' || campaign.stock.medicine <= 0) return null;
   const next = clone(campaign);
-  const t = next.roster.find((x) => x.templateId === templateId)!;
+  const t = next.roster.find((x) => x.id === rosterId)!;
   t.infection = 'healthy';
   t.bitten = false;
   next.stock.medicine -= 1;
-  next.lastReport = [...next.lastReport, { kind: 'treated', name: nameOf(content, templateId) }];
+  next.lastReport = [...next.lastReport, { kind: 'treated', name: t.name }];
   return next;
 }
 
@@ -581,7 +760,7 @@ export function endDay(
   for (const r of next.roster) {
     if (!r.alive || r.infection === 'healthy') continue;
     const stage = NEXT_STAGE[r.infection];
-    const name = nameOf(content, r.templateId);
+    const name = r.name;
     if (stage === 'turn') {
       r.alive = false;
       turnedOvernight.push(name);
@@ -604,6 +783,7 @@ export function endDay(
   }
 
   let shortOfAmmo = false;
+  let returned = 0;
   for (const r of next.roster) {
     if (!r.alive) continue;
     const t = content.survivors[r.templateId];
@@ -611,10 +791,17 @@ export function endDay(
     const before = r.health;
     r.health = Math.min(t.maxHealth, r.health + Math.round(t.maxHealth * def.healFraction));
     if (r.health > before && before < t.maxHealth)
-      lines.push({ kind: 'recovered', name: firstName(t.name), before, after: r.health });
+      lines.push({ kind: 'recovered', name: firstName(r.name), before, after: r.health });
     const w = content.weapons[t.weaponId];
     if (w && w.magazineCapacity > 0) {
       const missing = w.magazineCapacity + t.reserveRounds - r.ammo;
+      if (missing < 0) {
+        // extra rounds taken out and not fired go back to the stock
+        r.ammo += missing;
+        next.stock.ammo -= missing;
+        returned -= missing;
+        continue;
+      }
       const taken = Math.min(next.stock.ammo, missing);
       if (taken < missing) shortOfAmmo = true;
       if (taken > 0) {
@@ -625,10 +812,12 @@ export function endDay(
   }
 
   if (shortOfAmmo) lines.push({ kind: 'ammo-short' });
+  if (returned) lines.push({ kind: 'rounds-returned', count: returned });
 
   migrate(def, next, rng, lines);
   next.day += 1;
   next.operatedToday = false;
+  next.recruitedToday = 0;
   revealAround(def, next);
   checkEnd(def, next);
   const shelter = def.sectors.find((s) => s.id === def.shelterSectorId)!;
@@ -644,8 +833,4 @@ export function endDay(
   }
   next.lastReport = lines;
   return { campaign: next, report: { lines, turnedOvernight } };
-}
-
-function nameOf(content: ContentBundle, templateId: string): string {
-  return content.survivors[templateId]?.name ?? templateId;
 }

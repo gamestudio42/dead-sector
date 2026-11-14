@@ -496,6 +496,52 @@ test('campaign siege: the shelter is besieged at night and the siege is the only
   expect(errors).toEqual([]);
 });
 
+test('campaign deployment: recruit from the shelter, choose who goes and draw extra rounds', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-campaign').click();
+  await expect(page.getByTestId('strategic')).toBeVisible();
+  const population = Number(await page.getByTestId('population').textContent());
+  const ammo = Number(await page.getByTestId('stock-ammo').textContent());
+  await page.getByTestId('btn-recruit').click();
+  await expect(page.getByTestId('population')).toHaveText(String(population - 1));
+  await expect(page.getByTestId('campaign-report')).toContainText('Joana Prado pegou em armas');
+  await expect(page.getByTestId('btn-recruit')).toBeDisabled();
+  await expect(page.getByTestId('recruit-note')).toContainText('hoje');
+  const afterRecruit = Number(await page.getByTestId('stock-ammo').textContent());
+  expect(afterRecruit).toBeLessThan(ammo);
+
+  await page.getByTestId('sector-ferrugem').click();
+  await page.getByTestId('btn-operate').click();
+  await expect(page.getByTestId('assign-recruit-1')).toHaveValue('');
+  await page.getByTestId('assign-alfa-medic').selectOption('');
+  await page.getByTestId('assign-recruit-1').selectOption('alfa');
+  await expect(page.getByTestId('count-alfa')).toHaveText('Alfa: 4/4');
+  // a fifth member does not fit
+  await page.getByTestId('assign-bravo-scout').selectOption('alfa');
+  await expect(page.getByTestId('deploy-note')).toContainText('vagas');
+  await expect(page.getByTestId('btn-deploy')).toBeDisabled();
+  await page.getByTestId('assign-bravo-scout').selectOption('bravo');
+  await page.getByTestId('extra-alfa').selectOption('12');
+  // leader, marksman and recruit are armed: 3 × 12
+  await expect(page.getByTestId('deploy-note')).toContainText('Custa 36 balas');
+  await page.getByTestId('btn-deploy').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${SHOTS}/briefing-deployment-1280x720.png` });
+  await page.getByTestId('btn-deploy').click();
+  await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
+  const team = await hook(page, (h) =>
+    h
+      .state()
+      .survivors.filter((s: any) => s.squadId)
+      .map((s: any) => `${s.squadId}:${s.id}:${s.name}`),
+  );
+  expect(team).toContain('alfa:recruit-1:Joana Prado');
+  expect(team.some((t: string) => t.includes('alfa-medic'))).toBe(false);
+  expect(errors).toEqual([]);
+});
+
 test('installable app: manifest, offline start after the first visit, credits with version', async ({
   page,
   context,

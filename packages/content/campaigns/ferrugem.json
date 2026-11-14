@@ -41,6 +41,27 @@
     },
     "breachLoss": 3
   },
+  "recruits": {
+    "templateId": "recruit",
+    "maxRoster": 12,
+    "perDay": 1,
+    "extraRoundsStep": 12,
+    "extraRoundsMax": 24,
+    "names": [
+      "Joana Prado",
+      "Marcos Teixeira",
+      "Ana Lúcia Ramos",
+      "Davi Nogueira",
+      "Sueli Castro",
+      "Renato Abreu",
+      "Kelly Moraes",
+      "Wagner Pires",
+      "Patrícia Leal",
+      "Edson Farias",
+      "Cláudia Rezende",
+      "Tiago Barros"
+    ]
+  },
   "sectors": [
     {
       "id": "abrigo",

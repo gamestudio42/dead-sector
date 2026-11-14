@@ -105,7 +105,7 @@ describe('campaign siege on the shelter', () => {
     delete c.siegePending;
     delete c.sieges;
     const back = migrateCampaign(content, { ...c, version: 3 })!;
-    expect(back.version).toBe(4);
+    expect(back.version).toBe(5);
     expect(back.siegePending).toBe(false);
     expect(back.sieges).toBe(0);
   });

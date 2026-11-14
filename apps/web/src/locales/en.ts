@@ -409,6 +409,17 @@ export const en = {
     stealth: 'Stealth',
     state: 'State',
     ready: 'ready',
+    deployTitle: 'Who goes',
+    squadCol: 'Squad',
+    stayHome: 'Stays at the shelter',
+    extraRounds: 'Extra rounds per armed member',
+    deployCost: 'Costs {n} rounds from the stock ({stock} available).',
+    deployBlocks: {
+      nobody: 'Nobody is assigned.',
+      'squad-full': 'A squad is over its slots.',
+      rounds: 'Invalid number of rounds.',
+      'not-enough-ammo': 'Not enough rounds in the stock.',
+    },
     seed: 'Seed:',
     canonical: '(canonical)',
     variation: '(variation)',
@@ -500,6 +511,16 @@ export const en = {
     unknownBody: 'Secure a neighboring sector to learn what is here.',
     shelterTag: 'Shelter',
     siegeTag: 'Besieged',
+    recruit: 'Recruit ＋',
+    recruitTip:
+      'One person of the shelter takes up arms: one fewer to evacuate, and their rounds come from the stock.',
+    recruitBlocks: {
+      'campaign-over': 'The campaign is over.',
+      'no-recruits': 'This campaign has no recruits.',
+      nobody: 'There is nobody in the shelter to recruit.',
+      today: 'Someone was already recruited today.',
+      full: 'The roster is full.',
+    },
     siegeBanner:
       'Siege! The horde surrounds the school. Defend the shelter today or {n} people die tonight.',
     siegeNote: 'Ending the day without defending the school costs {n} people.',
@@ -699,6 +720,7 @@ export const en = {
     'bravo-scout': 'Scout',
     'bravo-mechanic': 'Mechanic',
     'bravo-volunteer': 'Volunteer',
+    recruit: 'Recruit',
   },
   weapons: {
     pistol: 'Pistol',
@@ -875,6 +897,8 @@ export const en = {
       noFood: 'The shelter ran out of food.',
       recovered: '{name} recovered (health {before} → {after}).',
       ammoShort: "The stock's ammunition was not enough to rearm everyone.",
+      recruited: '{name} took up arms and joined the roster.',
+      roundsReturned: '{count} extra rounds went back to the stock.',
     },
     stage: {
       healthy: 'well',

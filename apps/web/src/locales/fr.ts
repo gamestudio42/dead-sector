@@ -504,6 +504,12 @@ export const fr: Catalog = {
     unknownTitle: 'Secteur inconnu',
     unknownBody: "Sécurisez un secteur voisin pour savoir ce qu'il y a ici.",
     shelterTag: 'Abri',
+    siegeTag: 'Assiégée',
+    siegeBanner:
+      "Siège ! La horde encercle l'école. Défendez l'abri aujourd'hui ou {n} personnes mourront cette nuit.",
+    siegeNote: "Terminer la journée sans défendre l'école coûte {n} personnes.",
+    siegePanel:
+      "La horde est aux portes. Tenez le bâtiment jusqu'à la fin du siège ; si l'école tombe, {n} personnes sont perdues.",
     foodBit: '{n} nourriture',
     medicineBit: '{n} médicaments',
     ammoBit: '{n} balles',
@@ -849,6 +855,7 @@ export const fr: Catalog = {
       secured: 'Secteur déjà sécurisé.',
       'nobody-to-evacuate': 'Il ne reste plus personne à évacuer.',
       'no-route': "Pas de route : sécurisez d'abord un secteur voisin.",
+      siege: "L'école est assiégée : aujourd'hui, la seule opération est de défendre l'abri.",
     },
     ends: {
       evacuated: '{count} personnes ont quitté le secteur.',
@@ -872,6 +879,9 @@ export const fr: Catalog = {
       sectorLost: '{sector} a été perdu face aux infectés.',
       infectedReturned: 'Les infectés sont revenus à {sector}.',
       shelterSurrounded: 'Les infectés encerclent {sector}.',
+      siegeRaised: "{sector} est assiégée : défendez l'école aujourd'hui.",
+      siegeBroken: 'Le siège de {sector} a été brisé.',
+      shelterBreached: 'Les infectés sont entrés dans {sector} : {lost} personnes ont été perdues.',
       treated: 'Traitement appliqué à {name} : infection éliminée.',
       turned: "{name} s'est transformé pendant la nuit.",
       worsened: '{name} a empiré : maintenant {stage}.',

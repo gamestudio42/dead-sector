@@ -502,6 +502,12 @@ export const es: Catalog = {
     unknownTitle: 'Sector desconocido',
     unknownBody: 'Asegura un sector vecino para saber qué hay aquí.',
     shelterTag: 'Refugio',
+    siegeTag: 'Sitiada',
+    siegeBanner:
+      '¡Cerco! La horda rodea la escuela. Defiendan el refugio hoy o {n} personas morirán esta noche.',
+    siegeNote: 'Terminar el día sin defender la escuela cuesta {n} personas.',
+    siegePanel:
+      'La horda está en las puertas. Resistan en el edificio hasta que pase el cerco; si la escuela cae, se pierden {n} personas.',
     foodBit: '{n} comida',
     medicineBit: '{n} medicinas',
     ammoBit: '{n} balas',
@@ -842,6 +848,7 @@ export const es: Catalog = {
       secured: 'Sector ya asegurado.',
       'nobody-to-evacuate': 'Ya no queda nadie por evacuar.',
       'no-route': 'Sin ruta: asegura un sector vecino primero.',
+      siege: 'La escuela está sitiada: hoy la única operación es defender el refugio.',
     },
     ends: {
       evacuated: '{count} personas salieron del sector.',
@@ -865,6 +872,9 @@ export const es: Catalog = {
       sectorLost: '{sector} se perdió ante los infectados.',
       infectedReturned: 'Los infectados volvieron a {sector}.',
       shelterSurrounded: 'Los infectados cercan {sector}.',
+      siegeRaised: '{sector} está sitiada: defiendan la escuela hoy.',
+      siegeBroken: 'Se rompió el cerco a {sector}.',
+      shelterBreached: 'Los infectados entraron en {sector}: se perdieron {lost} personas.',
       treated: 'Tratamiento aplicado a {name}: infección eliminada.',
       turned: '{name} se transformó durante la noche.',
       worsened: '{name} empeoró: ahora está {stage}.',

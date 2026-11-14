@@ -444,6 +444,58 @@ test('campaign: strategic map, operations, losses and days persist', async ({ pa
   expect(errors).toEqual([]);
 });
 
+test('campaign siege: the shelter is besieged at night and the siege is the only operation', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  const errors = trackErrors(page);
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-campaign').click();
+  await expect(page.getByTestId('campaign-day')).toHaveText('Dia 1 de 12');
+  // push the shelter close to the threshold, as days of migration would
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((ok, ko) => {
+      const r = indexedDB.open('dead-sector', 1);
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => ko(r.error);
+    });
+    const get = () =>
+      new Promise<string>((ok) => {
+        const r = db.transaction('saves').objectStore('saves').get('campaign');
+        r.onsuccess = () => ok(r.result as string);
+      });
+    const c = JSON.parse(await get());
+    c.sectors.abrigo.infestation = 40;
+    await new Promise<void>((ok) => {
+      const tx = db.transaction('saves', 'readwrite');
+      tx.objectStore('saves').put(JSON.stringify(c), 'campaign');
+      tx.oncomplete = () => ok();
+    });
+  });
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-campaign').click();
+  await page.getByTestId('btn-end-day').click();
+  await expect(page.getByTestId('siege-banner')).toContainText('Cerco!');
+  await expect(page.getByTestId('night-note')).toContainText('custa 3 pessoas');
+  await expect(page.getByTestId('sector-abrigo')).toContainText('Sitiada');
+  await page.getByTestId('sector-ferrugem').click();
+  await expect(page.getByTestId('sector-block')).toContainText('sitiada');
+  await page.getByTestId('sector-abrigo').click();
+  await page.screenshot({ path: `${SHOTS}/strategic-siege-1280x720.png` });
+  await page.getByTestId('btn-operate').click();
+  await expect(page.getByTestId('briefing')).toContainText('Cerco na Dom Bosco');
+  await page.getByTestId('btn-deploy').click();
+  await page.waitForFunction(() => !!(window as any).__DEAD_SECTOR__);
+  await playPlanToEnd(page, 'mission');
+  await expect(page.getByTestId('interlude')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('interlude')).toContainText('rompido');
+  await page.getByTestId('btn-to-shelter').click();
+  await expect(page.getByTestId('strategic')).toBeVisible();
+  await expect(page.getByTestId('siege-banner')).toHaveCount(0);
+  await expect(page.getByTestId('sector-abrigo')).toContainText('Abrigo');
+  expect(errors).toEqual([]);
+});
+
 test('installable app: manifest, offline start after the first visit, credits with version', async ({
   page,
   context,

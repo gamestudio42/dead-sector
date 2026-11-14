@@ -1516,6 +1516,35 @@ button.sector.lost i {
   background: #000;
   border-color: var(--danger);
 }
+button.sector.besieged i {
+  background: var(--danger);
+  outline-color: var(--danger);
+  animation: siege-pulse 1.2s ease-in-out infinite;
+}
+button.sector.besieged small {
+  color: var(--danger);
+  font-weight: 600;
+}
+@keyframes siege-pulse {
+  50% {
+    outline-offset: 5px;
+    outline-color: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button.sector.besieged i {
+    animation: none;
+  }
+}
+.siege-banner {
+  margin-bottom: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--danger);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: rgba(224, 86, 62, 0.12);
+  font-weight: 600;
+}
 button.sector b {
   font-size: 13px;
 }

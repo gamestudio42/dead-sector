@@ -270,7 +270,7 @@ describe('strategic layer: decisions have explicit costs', () => {
       status: 'active',
     };
     const c = migrateCampaign(content, v1)!;
-    expect(c.version).toBe(3);
+    expect(c.version).toBe(4);
     expect(c.roster[0]!.alive).toBe(false);
     expect(c.stock.medicine).toBe(3);
     expect(c.population).toBe(def.start.population + 2);
@@ -292,7 +292,8 @@ describe('strategic layer: decisions have explicit costs', () => {
       endReason: 'A rota de evacuação caiu.' as unknown as CampaignState['endReason'],
     };
     const c = migrateCampaign(content, v2)!;
-    expect(c.version).toBe(3);
+    expect(c.version).toBe(4);
+    expect(c.siegePending).toBe(false);
     expect(c.lastReport).toEqual([{ kind: 'legacy', text: 'Os infectados tomaram o abrigo.' }]);
     expect(c.endReason).toEqual({ kind: 'legacy', text: 'A rota de evacuação caiu.' });
   });

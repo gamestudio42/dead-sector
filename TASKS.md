@@ -21,7 +21,6 @@
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
 - Art upgrade, next step: give the Blender characters sculpted heads and hands, cloth folds and a few faces; add
   more walker variants (only 4 today), reusing `tools/sprites/bake_characters.py`.
-- Campaign siege: when the shelter's infestation climbs, raise Cerco na Dom Bosco as a forced operation (ADR 0020).
 
 ## BLOCKED
 
@@ -54,6 +53,9 @@
 - Combat effects baked with EffectCraft (flash, sparks, blood, ichor, dust, splinters, glass, shriek, infected
   death) and ambient loops (wreck fire and smoke, radio beacon) and interface animations (horde, night, convoy, fallen sector, objective, rescue, bite, panic), with alpha and loop-seam checks, manifest and
   particle fallback (ADR 0016).
+
+- Campaign siege: when the shelter's infestation reaches 35% at night, the next day's only operation is Cerco na
+  Dom Bosco; holding it pushes the horde back, losing or skipping it costs 3 people (ADR 0021).
 
 - Phase 6, stages 6.1 and 6.2: strategic layer with sector map, shelter, stock, daily turn, horde migration,
   evacuation goal and deadline; browser tests run in CI before publishing (ADR 0015).

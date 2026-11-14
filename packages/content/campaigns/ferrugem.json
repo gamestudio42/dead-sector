@@ -31,6 +31,16 @@
     "partial": -20,
     "failed": 10
   },
+  "siege": {
+    "missionId": "cerco-dom-bosco",
+    "raisedFrom": 35,
+    "effect": {
+      "success": -30,
+      "partial": -20,
+      "failed": 10
+    },
+    "breachLoss": 3
+  },
   "sectors": [
     {
       "id": "abrigo",

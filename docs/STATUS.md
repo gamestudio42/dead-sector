@@ -81,6 +81,8 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   density and mission noise, a deadline and an evacuation goal; save migration from the linear campaign; map and
   shelter screen. Not yet: choosing who deploys, recruits, sector operations beyond the three missions, shelter
   upgrades, campaign difficulties (ADR 0015). Stock and migration values are provisional, checked only by scripted runs.
+  When the shelter's infestation reaches 35% at night it is besieged: the next day's only operation is Cerco na Dom
+  Bosco, and losing or skipping it costs people of the shelter (ADR 0021).
 
 - **Baked combat effects**: muzzle flash, impact sparks, blood, ichor, dust, door and barricade splinters, glass,
   the screamer's shriek and infected deaths, plus seamless loops of wreck fire, wreck smoke and the radio beacon,
@@ -113,9 +115,9 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **181/181** ✓ (plus the opt-in balance report).
-- `pnpm e2e`: **16/16** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
-  at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, and the
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **187/187** ✓ (plus the opt-in balance report).
+- `pnpm e2e`: **17/17** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
+  at 1280×720 and 1920×1080, options, controls, both new missions, the campaign flow with carry-over, the campaign siege, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
   serves on a dedicated port (4317, `strictPort`, never reusing another server).
 - **Determinism of the optimisation**: final-state hashes of five complete scripted missions (three maps, four routes)

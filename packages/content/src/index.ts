@@ -186,6 +186,23 @@ export function validateContent(raw: RawContent): ContentBundle {
       issues.push(`campaign ${c.id} has no shelter sector ${c.shelterSectorId}`);
     if (!c.sectors.some((sec) => sec.missionId && sec.evacuates > 0))
       issues.push(`campaign ${c.id} has no sector that can evacuate people`);
+    if (c.siege) {
+      const siege = bundle.missions[c.siege.missionId];
+      if (!siege)
+        issues.push(`campaign ${c.id} siege references unknown mission ${c.siege.missionId}`);
+      else if (!siege.objectives.defence)
+        issues.push(`campaign ${c.id} siege mission ${siege.id} has no defence objective`);
+      else {
+        // the siege is fought by the campaign's roster, so it may only field those survivors
+        const first = c.sectors.find((sec) => sec.missionId)?.missionId;
+        const roster = new Set(
+          (first ? (bundle.missions[first]?.squads ?? []) : []).flatMap((sq) => sq.memberIds),
+        );
+        for (const id of siege.squads.flatMap((sq) => sq.memberIds))
+          if (!roster.has(id))
+            issues.push(`campaign ${c.id} siege fields ${id}, who is not in the roster`);
+      }
+    }
     for (const sec of c.sectors) {
       if (sec.missionId && !bundle.missions[sec.missionId])
         issues.push(

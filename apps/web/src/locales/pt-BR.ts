@@ -499,6 +499,12 @@ export const ptBR: Catalog = {
     unknownTitle: 'Setor desconhecido',
     unknownBody: 'Assegure um setor vizinho para saber o que há aqui.',
     shelterTag: 'Abrigo',
+    siegeTag: 'Sitiada',
+    siegeBanner:
+      'Cerco! A horda cerca a escola. Defendam o abrigo hoje ou {n} pessoas morrem esta noite.',
+    siegeNote: 'Encerrar o dia sem defender a escola custa {n} pessoas.',
+    siegePanel:
+      'A horda está nos portões. Segurem o prédio até o cerco passar; se a escola cair, {n} pessoas se perdem.',
     foodBit: '{n} comida',
     medicineBit: '{n} remédios',
     ammoBit: '{n} balas',
@@ -835,6 +841,7 @@ export const ptBR: Catalog = {
       secured: 'Setor já assegurado.',
       'nobody-to-evacuate': 'Não há mais ninguém para evacuar.',
       'no-route': 'Sem rota: assegure um setor vizinho primeiro.',
+      siege: 'A escola está sitiada: hoje só há a defesa do abrigo.',
     },
     ends: {
       evacuated: '{count} pessoas saíram do setor.',
@@ -858,6 +865,9 @@ export const ptBR: Catalog = {
       sectorLost: '{sector} foi perdido para os infectados.',
       infectedReturned: 'Infectados voltaram a {sector}.',
       shelterSurrounded: 'Infectados cercam {sector}.',
+      siegeRaised: '{sector} está sitiada: defendam a escola hoje.',
+      siegeBroken: 'O cerco a {sector} foi rompido.',
+      shelterBreached: 'Os infectados entraram em {sector}: {lost} pessoas se perderam.',
       treated: 'Tratamento aplicado em {name}: infecção eliminada.',
       turned: '{name} se transformou durante a noite.',
       worsened: '{name} piorou: agora está {stage}.',

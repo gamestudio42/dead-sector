@@ -68,6 +68,9 @@ export type CampaignNotice =
   | { kind: 'sector-lost'; sector: string }
   | { kind: 'infected-returned'; sector: string }
   | { kind: 'shelter-surrounded'; sector: string }
+  | { kind: 'siege-raised'; sector: string }
+  | { kind: 'siege-broken'; sector: string }
+  | { kind: 'shelter-breached'; sector: string; lost: number }
   | { kind: 'treated'; name: string }
   | { kind: 'turned'; name: string }
   | { kind: 'worsened'; name: string; stage: InfectionStage }
@@ -94,10 +97,11 @@ export type OperationBlock =
   | 'already-operated'
   | 'secured'
   | 'nobody-to-evacuate'
-  | 'no-route';
+  | 'no-route'
+  | 'siege';
 
 export interface CampaignState {
-  version: 3;
+  version: 4;
   campaignId: string;
   seed: number;
   /** Strategic RNG, separate from every mission's. */
@@ -107,6 +111,10 @@ export interface CampaignState {
   operatedToday: boolean;
   /** Sector of the operation being played, so its result is folded into the right place. */
   activeSectorId: string | null;
+  /** The shelter is besieged: today's only operation is the siege mission. */
+  siegePending: boolean;
+  /** Sieges fought or suffered so far. */
+  sieges: number;
   roster: RosterEntry[];
   stock: Stock;
   /** People in the shelter who do not fight. */
@@ -175,13 +183,15 @@ export function newCampaign(content: ContentBundle, campaignId: string, seed = 1
   });
   const { population, ...stock } = def.start;
   const c: CampaignState = {
-    version: 3,
+    version: 4,
     campaignId,
     seed,
     rngState: seedToRngState(seed),
     day: 1,
     operatedToday: false,
     activeSectorId: null,
+    siegePending: false,
+    sieges: 0,
     roster,
     stock,
     population,
@@ -227,11 +237,13 @@ export function migrateCampaign(content: ContentBundle, raw: unknown): CampaignS
   };
   if (!old || !Array.isArray(old.roster) || !old.campaignId || !content.campaigns[old.campaignId])
     return null;
-  if (old.version === 2 || old.version === 3) {
+  if (old.version === 2 || old.version === 3 || old.version === 4) {
     const current = old as CampaignState;
     return {
       ...current,
-      version: 3,
+      version: 4,
+      siegePending: current.siegePending ?? false,
+      sieges: current.sieges ?? 0,
       lastReport: asNotices(current.lastReport),
       endReason: asEnd(current.endReason),
     };
@@ -268,6 +280,18 @@ export function sectorStatus(def: CampaignDef, c: CampaignState, sectorId: strin
   return s.infestation >= def.thresholds.infestedFrom ? 'infested' : 'contested';
 }
 
+/** The mission an operation in this sector plays: the siege at a besieged shelter. */
+export function operationMissionId(
+  content: ContentBundle,
+  c: CampaignState,
+  sectorId: string,
+): string | null {
+  const def = defOf(content, c.campaignId);
+  if (sectorId === def.shelterSectorId)
+    return c.siegePending && def.siege ? def.siege.missionId : null;
+  return def.sectors.find((s) => s.id === sectorId)?.missionId ?? null;
+}
+
 /** Why an operation cannot start in this sector right now; null when it can. */
 export function operationBlockReason(
   content: ContentBundle,
@@ -278,6 +302,11 @@ export function operationBlockReason(
   const sec = def.sectors.find((s) => s.id === sectorId);
   if (!sec) throw new Error(`Unknown sector ${sectorId}`);
   if (c.status !== 'active') return 'campaign-over';
+  if (sectorId === def.shelterSectorId) {
+    if (!operationMissionId(content, c, sectorId)) return 'no-plan';
+    return c.operatedToday ? 'already-operated' : null;
+  }
+  if (c.siegePending) return 'siege';
   if (!sec.missionId) return 'no-plan';
   const status = sectorStatus(def, c, sectorId);
   if (status === 'unknown') return 'unknown';
@@ -363,6 +392,7 @@ export function applyOperationResult(
   const deaths: string[] = [];
   const outcome = final.mission.status;
   const success = outcome === 'success' || outcome === 'partial';
+  const siege = sectorId === def.shelterSectorId && next.siegePending ? def.siege : undefined;
 
   for (const r of next.roster) {
     if (!r.alive) continue;
@@ -391,7 +421,12 @@ export function applyOperationResult(
   }
 
   const civ = final.survivors.find((s) => s.isObjectiveCivilian);
-  const rescued = civ?.extracted ? civ.name : null;
+  // in a siege the civilian already lives in the shelter: nobody new arrives, but a death counts
+  const rescued = civ?.extracted && !siege ? civ.name : null;
+  if (siege && civ && !civ.alive) {
+    next.population = Math.max(0, next.population - 1);
+    lines.push({ kind: 'did-not-return', name: civ.name });
+  }
   if (rescued) {
     next.rescued.push(rescued);
     next.population += 1;
@@ -417,13 +452,21 @@ export function applyOperationResult(
     next.evacuated += moved;
     if (moved) lines.push({ kind: 'convoy', count: moved });
   }
-  state.infestation = clamp(
-    state.infestation +
-      def.operationEffect[success ? (outcome === 'success' ? 'success' : 'partial') : 'failed'],
-  );
-  const heat = Math.round(final.stats.totalNoise / def.migration.noisePerHeat);
-  state.noise += heat;
-  if (heat >= 10) lines.push({ kind: 'noise-heat', sector: sec.displayName });
+  const effectKey = success ? (outcome === 'success' ? 'success' : 'partial') : 'failed';
+  if (siege) {
+    next.siegePending = false;
+    next.sieges += 1;
+    if (success) {
+      state.infestation = clamp(state.infestation + siege.effect[effectKey]);
+      lines.push({ kind: 'siege-broken', sector: sec.displayName });
+    } else breach(def, next, lines);
+    // the fight was at home: its noise is the horde already there, not heat that draws more
+  } else {
+    state.infestation = clamp(state.infestation + def.operationEffect[effectKey]);
+    const heat = Math.round(final.stats.totalNoise / def.migration.noisePerHeat);
+    state.noise += heat;
+    if (heat >= 10) lines.push({ kind: 'noise-heat', sector: sec.displayName });
+  }
 
   next.history.push({ missionId: final.missionId, outcome, deaths, rescued });
   next.operatedToday = true;
@@ -432,6 +475,18 @@ export function applyOperationResult(
   checkEnd(def, next);
   next.lastReport = lines;
   return { campaign: next, report: { lines, turnedOvernight: [] } };
+}
+
+/** A siege lost or not fought: the infected get into the shelter and take people with them. */
+function breach(def: CampaignDef, c: CampaignState, lines: CampaignNotice[]): void {
+  const siege = def.siege;
+  if (!siege) return;
+  const shelter = def.sectors.find((s) => s.id === def.shelterSectorId)!;
+  const lost = Math.min(c.population, siege.breachLoss);
+  c.population -= lost;
+  const s = c.sectors[shelter.id]!;
+  s.infestation = clamp(s.infestation + siege.effect.failed);
+  lines.push({ kind: 'shelter-breached', sector: shelter.displayName, lost });
 }
 
 /** Spends one dose on one survivor; null when it cannot be done. */
@@ -516,6 +571,13 @@ export function endDay(
   const lines: CampaignNotice[] = [];
   const turnedOvernight: string[] = [];
 
+  if (next.siegePending) {
+    // nobody went to the school: the siege happens anyway
+    next.siegePending = false;
+    next.sieges += 1;
+    breach(def, next, lines);
+  }
+
   for (const r of next.roster) {
     if (!r.alive || r.infection === 'healthy') continue;
     const stage = NEXT_STAGE[r.infection];
@@ -569,6 +631,17 @@ export function endDay(
   next.operatedToday = false;
   revealAround(def, next);
   checkEnd(def, next);
+  const shelter = def.sectors.find((s) => s.id === def.shelterSectorId)!;
+  const home = next.sectors[shelter.id]!;
+  if (
+    def.siege &&
+    next.status === 'active' &&
+    !home.lost &&
+    home.infestation >= def.siege.raisedFrom
+  ) {
+    next.siegePending = true;
+    lines.push({ kind: 'siege-raised', sector: shelter.displayName });
+  }
   next.lastReport = lines;
   return { campaign: next, report: { lines, turnedOvernight } };
 }

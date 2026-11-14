@@ -314,6 +314,20 @@ export const campaignSchema = z.object({
   }),
   /** Infestation change after an operation, by outcome. */
   operationEffect: z.object({ success: z.number(), partial: z.number(), failed: z.number() }),
+  /**
+   * The shelter under siege: when its infestation reaches `raisedFrom` at night, the next day's
+   * only operation is `missionId`, played at the shelter. Optional.
+   */
+  siege: z
+    .object({
+      missionId: z.string().min(1),
+      raisedFrom: z.number().min(1).max(99),
+      /** Shelter infestation change after the siege, by outcome. */
+      effect: z.object({ success: z.number(), partial: z.number(), failed: z.number() }),
+      /** People of the shelter lost when the siege is lost or not fought. */
+      breachLoss: z.number().int().nonnegative(),
+    })
+    .optional(),
   sectors: z.array(sectorSchema).min(2),
 });
 

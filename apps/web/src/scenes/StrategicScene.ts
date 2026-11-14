@@ -4,6 +4,7 @@ import {
   endDay,
   newCampaign,
   operationBlockReason,
+  operationMissionId,
   reinforcementMultiplier,
   sectorStatus,
   treatInfection,
@@ -112,12 +113,15 @@ export class StrategicScene extends Phaser.Scene {
 
   private operate(sectorId: string): void {
     const content = loadContent();
-    const missionId = content.campaigns[CAMPAIGN_ID]!.sectors.find(
-      (s) => s.id === sectorId,
-    )?.missionId;
+    const missionId = operationMissionId(content, this.campaign, sectorId);
     if (!missionId || operationBlockReason(content, this.campaign, sectorId)) return;
     const c = { ...this.campaign, activeSectorId: sectorId };
-    Playtest.log('operation', { sector: sectorId, missionId, ...campaignFields(c) });
+    Playtest.log('operation', {
+      sector: sectorId,
+      missionId,
+      siege: c.siegePending,
+      ...campaignFields(c),
+    });
     void CampaignStore.save(c).then(() =>
       this.scene.start('Briefing', { missionId, campaign: true }),
     );
@@ -145,6 +149,7 @@ export class StrategicScene extends Phaser.Scene {
     const fighters = c.roster.filter((r) => r.alive).length;
     const foodNeed = Math.ceil((c.population + fighters) / def.peoplePerFood);
     const byId = new Map(def.sectors.map((s) => [s.id, s]));
+    const siegeLoss = Math.min(c.population, def.siege?.breachLoss ?? 0);
 
     const edges = def.sectors
       .flatMap((s) =>
@@ -162,10 +167,11 @@ export class StrategicScene extends Phaser.Scene {
       .map((s) => {
         const status = sectorStatus(def, c, s.id);
         const shelter = s.id === def.shelterSectorId;
-        return `<button class="sector ${status} ${shelter ? 'shelter' : ''} ${this.selected === s.id ? 'selected' : ''}"
+        const besieged = shelter && c.siegePending;
+        return `<button class="sector ${status} ${shelter ? 'shelter' : ''} ${besieged ? 'besieged' : ''} ${this.selected === s.id ? 'selected' : ''}"
           style="left:${s.pos.x}%;top:${s.pos.y}%" data-sector="${s.id}" data-testid="sector-${s.id}" data-status="${status}">
           <i></i>${status === 'lost' ? fxIcon('sector_lost', { still: !(this.freshNight && c.lastReport.some((l) => l.kind === 'sector-lost' && l.sector === s.displayName)) }) : ''}<b>${status === 'unknown' ? '???' : s.displayName}</b>
-          <small>${status === 'unknown' ? text('strategic.status.unknown') : shelter ? text('strategic.shelterTag') : `${text(`strategic.status.${status}`)} · ${Math.round(c.sectors[s.id]!.infestation)}%`}</small>
+          <small>${status === 'unknown' ? text('strategic.status.unknown') : besieged ? text('strategic.siegeTag') : shelter ? text('strategic.shelterTag') : `${text(`strategic.status.${status}`)} · ${Math.round(c.sectors[s.id]!.infestation)}%`}</small>
         </button>`;
       })
       .join('');
@@ -212,11 +218,12 @@ export class StrategicScene extends Phaser.Scene {
           <span style="flex:1"></span>
           ${
             c.status === 'active'
-              ? `<span class="small">${text('strategic.nightNote', { need: foodNeed })}</span>
+              ? `<span class="small ${c.siegePending ? 'warn-text' : ''}" data-testid="night-note">${c.siegePending ? text('strategic.siegeNote', { n: siegeLoss }) : text('strategic.nightNote', { need: foodNeed })}</span>
                  <button data-act="endDay" class="${c.operatedToday ? 'primary' : ''}" data-testid="btn-end-day">${text('strategic.endDay')}</button>`
               : `<button data-act="restart" class="primary" data-testid="btn-new-campaign">${text('strategic.newCampaign')}</button>`
           }
         </div>
+        ${c.status === 'active' && c.siegePending ? `<div class="siege-banner" data-testid="siege-banner">${text('strategic.siegeBanner', { n: siegeLoss })}</div>` : ''}
         ${c.status === 'active' ? '' : `<div class="campaign-end ${c.status}" data-testid="campaign-end"><h3>${c.status === 'won' ? text('strategic.won') : text('strategic.lost')}</h3><p>${formatEnd(c.endReason)}</p></div>`}
         <div class="strategic-grid">
           <div class="sector-map" data-testid="sector-map">
@@ -256,9 +263,11 @@ export class StrategicScene extends Phaser.Scene {
       pay(r.parts) && text('strategic.partsBit', { n: pay(r.parts) }),
       pay(r.people) && text('strategic.peopleBit', { n: pay(r.people) }),
     ].filter(Boolean);
-    const mission = sec.missionId ? content.missions[sec.missionId] : null;
+    const missionId = operationMissionId(content, c, sec.id);
+    const mission = missionId ? content.missions[missionId] : null;
+    const siege = sec.id === def.shelterSectorId && !!mission;
     return `<h3 data-testid="sector-name">${sec.displayName}</h3>
-      <div class="small sector-status ${status}">${text(`strategic.status.${status}`)}</div>
+      <div class="small sector-status ${siege ? 'infested' : status}">${siege ? text('strategic.siegeTag') : text(`strategic.status.${status}`)}</div>
       <p>${sectorBlurb(sec.id, sec.blurb)}</p>
       <div class="meter-row"><small>${text('strategic.infestation')}</small><span class="meter"><i style="width:${state.infestation}%"></i></span><b>${Math.round(state.infestation)}%</b></div>
       ${state.noise >= 2 ? `<p class="small warn-text">${text('strategic.noiseWarn')}</p>` : ''}
@@ -266,6 +275,7 @@ export class StrategicScene extends Phaser.Scene {
         mission
           ? `<h4>${missionTitle(mission.id, mission.displayName)}${mission.isNight ? ` <span class="night-tag">${text('menu.night')}</span>` : ''}</h4>
              <ul class="intel">
+               ${siege ? `<li class="warn-text">${text('strategic.siegePanel', { n: Math.min(c.population, def.siege?.breachLoss ?? 0) })}</li>` : ''}
                ${reward.length ? `<li>${text('strategic.reward', { looted: state.looted ? text('strategic.looted') : '', bits: reward.join(', ') })}</li>` : ''}
                ${sec.evacuates ? `<li>${text('strategic.evac', { n: sec.evacuates })}</li>` : ''}
                <li>${text('strategic.reinforcements', { n: reinforcementMultiplier(state.infestation).toFixed(1).replace('.', ',') })}</li>

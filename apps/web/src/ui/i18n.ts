@@ -300,6 +300,12 @@ export function formatNotice(notice: CampaignNotice): string {
       return fill(line.infectedReturned, { sector: notice.sector });
     case 'shelter-surrounded':
       return fill(line.shelterSurrounded, { sector: notice.sector });
+    case 'siege-raised':
+      return fill(line.siegeRaised, { sector: notice.sector });
+    case 'siege-broken':
+      return fill(line.siegeBroken, { sector: notice.sector });
+    case 'shelter-breached':
+      return fill(line.shelterBreached, { sector: notice.sector, lost: notice.lost });
     case 'treated':
       return fill(line.treated, { name: notice.name });
     case 'turned':

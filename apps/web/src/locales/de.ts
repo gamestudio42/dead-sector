@@ -503,6 +503,12 @@ export const de: Catalog = {
     unknownTitle: 'Unbekannter Sektor',
     unknownBody: 'Sichert einen Nachbarsektor, um zu erfahren, was hier ist.',
     shelterTag: 'Unterschlupf',
+    siegeTag: 'Belagert',
+    siegeBanner:
+      'Belagerung! Die Horde umstellt die Schule. Verteidigt heute die Zuflucht, sonst sterben heute Nacht {n} Menschen.',
+    siegeNote: 'Den Tag zu beenden, ohne die Schule zu verteidigen, kostet {n} Menschen.',
+    siegePanel:
+      'Die Horde steht an den Toren. Haltet das Gebäude, bis die Belagerung vorbei ist; fällt die Schule, sind {n} Menschen verloren.',
     foodBit: '{n} Nahrung',
     medicineBit: '{n} Medizin',
     ammoBit: '{n} Patronen',
@@ -843,6 +849,7 @@ export const de: Catalog = {
       secured: 'Sektor bereits gesichert.',
       'nobody-to-evacuate': 'Es ist niemand mehr zu evakuieren.',
       'no-route': 'Keine Route: sichert zuerst einen Nachbarsektor.',
+      siege: 'Die Schule wird belagert: Heute bleibt nur die Verteidigung der Zuflucht.',
     },
     ends: {
       evacuated: '{count} Menschen haben den Sektor verlassen.',
@@ -866,6 +873,9 @@ export const de: Catalog = {
       sectorLost: '{sector} ging an die Infizierten verloren.',
       infectedReturned: 'Infizierte kehrten nach {sector} zurück.',
       shelterSurrounded: 'Infizierte umzingeln {sector}.',
+      siegeRaised: '{sector} wird belagert: Verteidigt heute die Schule.',
+      siegeBroken: 'Die Belagerung von {sector} ist gebrochen.',
+      shelterBreached: 'Die Infizierten sind in {sector} eingedrungen: {lost} Menschen verloren.',
       treated: 'Behandlung bei {name}: Infektion beseitigt.',
       turned: '{name} hat sich in der Nacht verwandelt.',
       worsened: '{name} wurde schlimmer: jetzt {stage}.',

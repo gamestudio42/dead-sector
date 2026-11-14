@@ -499,6 +499,12 @@ export const en = {
     unknownTitle: 'Unknown sector',
     unknownBody: 'Secure a neighboring sector to learn what is here.',
     shelterTag: 'Shelter',
+    siegeTag: 'Besieged',
+    siegeBanner:
+      'Siege! The horde surrounds the school. Defend the shelter today or {n} people die tonight.',
+    siegeNote: 'Ending the day without defending the school costs {n} people.',
+    siegePanel:
+      'The horde is at the gates. Hold the building until the siege passes; if the school falls, {n} people are lost.',
     foodBit: '{n} food',
     medicineBit: '{n} medicine',
     ammoBit: '{n} rounds',
@@ -835,6 +841,7 @@ export const en = {
       secured: 'Sector already secured.',
       'nobody-to-evacuate': 'There is nobody left to evacuate.',
       'no-route': 'No route: secure a neighboring sector first.',
+      siege: 'The school is under siege: today the only operation is defending the shelter.',
     },
     ends: {
       evacuated: '{count} people left the sector.',
@@ -858,6 +865,9 @@ export const en = {
       sectorLost: '{sector} was lost to the infected.',
       infectedReturned: 'Infected returned to {sector}.',
       shelterSurrounded: 'Infected surround {sector}.',
+      siegeRaised: '{sector} is under siege: defend the school today.',
+      siegeBroken: 'The siege of {sector} was broken.',
+      shelterBreached: 'The infected got into {sector}: {lost} people were lost.',
       treated: 'Treatment applied to {name}: infection cleared.',
       turned: '{name} turned during the night.',
       worsened: '{name} got worse: now {stage}.',

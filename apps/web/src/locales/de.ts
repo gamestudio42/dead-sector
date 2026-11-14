@@ -411,6 +411,17 @@ export const de: Catalog = {
     stealth: 'Heimlichkeit',
     state: 'Zustand',
     ready: 'bereit',
+    deployTitle: 'Wer geht',
+    squadCol: 'Trupp',
+    stayHome: 'Bleibt in der Zuflucht',
+    extraRounds: 'Extra-Patronen pro Bewaffnetem',
+    deployCost: 'Kostet {n} Patronen aus dem Lager ({stock} verfügbar).',
+    deployBlocks: {
+      nobody: 'Niemand ist eingeteilt.',
+      'squad-full': 'Ein Trupp hat zu viele Mitglieder.',
+      rounds: 'Ungültige Patronenzahl.',
+      'not-enough-ammo': 'Nicht genug Patronen im Lager.',
+    },
     seed: 'Startwert:',
     canonical: '(kanonisch)',
     variation: '(Variante)',
@@ -504,6 +515,16 @@ export const de: Catalog = {
     unknownBody: 'Sichert einen Nachbarsektor, um zu erfahren, was hier ist.',
     shelterTag: 'Unterschlupf',
     siegeTag: 'Belagert',
+    recruit: 'Rekrutieren ＋',
+    recruitTip:
+      'Eine Person aus der Zuflucht greift zu den Waffen: eine weniger zum Evakuieren, und ihre Patronen kommen aus dem Lager.',
+    recruitBlocks: {
+      'campaign-over': 'Die Kampagne ist vorbei.',
+      'no-recruits': 'Diese Kampagne hat keine Rekruten.',
+      nobody: 'In der Zuflucht ist niemand zum Rekrutieren.',
+      today: 'Heute wurde schon jemand rekrutiert.',
+      full: 'Die Truppe ist vollständig.',
+    },
     siegeBanner:
       'Belagerung! Die Horde umstellt die Schule. Verteidigt heute die Zuflucht, sonst sterben heute Nacht {n} Menschen.',
     siegeNote: 'Den Tag zu beenden, ohne die Schule zu verteidigen, kostet {n} Menschen.',
@@ -707,6 +728,7 @@ export const de: Catalog = {
     'bravo-scout': 'Späherin',
     'bravo-mechanic': 'Mechaniker',
     'bravo-volunteer': 'Freiwillige',
+    recruit: 'Rekrut',
   },
   weapons: {
     pistol: 'Pistole',
@@ -883,6 +905,8 @@ export const de: Catalog = {
       noFood: 'Im Unterschlupf fehlte Nahrung.',
       recovered: '{name} hat sich erholt (Leben {before} → {after}).',
       ammoShort: 'Die Munition im Lager reichte nicht, um alle nachzurüsten.',
+      recruited: '{name} hat zu den Waffen gegriffen und ist dabei.',
+      roundsReturned: '{count} Extra-Patronen gingen zurück ins Lager.',
     },
     stage: {
       healthy: 'wohlauf',

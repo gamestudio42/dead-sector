@@ -134,5 +134,22 @@
     "medicine": 40,
     "mechanics": 25,
     "stealth": 55
+  },
+  {
+    "id": "recruit",
+    "name": "Recruta",
+    "role": "Recruta",
+    "squadId": "bravo",
+    "isLeader": false,
+    "weaponId": "pistol",
+    "reserveRounds": 12,
+    "maxHealth": 85,
+    "courage": 35,
+    "discipline": 35,
+    "leadership": 15,
+    "marksmanship": 35,
+    "medicine": 20,
+    "mechanics": 25,
+    "stealth": 45
   }
 ]

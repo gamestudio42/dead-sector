@@ -324,7 +324,12 @@ export function createMissionState(
   const taken = new Set<number>();
 
   for (const sq of mission.squads) {
-    const deploying = sq.memberIds.filter((id) => !carry || carry[id]?.alive !== false);
+    // a campaign deploys whoever the player put in this squad, up to the mission's slots
+    const deploying = carry
+      ? Object.keys(carry)
+          .filter((id) => carry[id]!.alive && carry[id]!.squadId === sq.id)
+          .slice(0, sq.memberIds.length)
+      : sq.memberIds;
     const cells = freeCellsAround(world, state, sq.spawn, deploying.length, taken);
     const squad: Squad = {
       id: sq.id,
@@ -339,11 +344,14 @@ export function createMissionState(
       spawn: { ...sq.spawn },
     };
     deploying.forEach((memberId, i) => {
-      const t = content.survivors[memberId];
-      if (!t) throw new Error(`Unknown survivor ${memberId}`);
+      const c = carry?.[memberId];
+      const templateId = c?.templateId ?? memberId;
+      const t = content.survivors[templateId];
+      if (!t) throw new Error(`Unknown survivor ${templateId}`);
       const w = content.weapons[t.weaponId];
       if (!w) throw new Error(`Unknown weapon ${t.weaponId}`);
-      const s = makeSurvivor(t, cells[i] ?? sq.spawn, sq.id, t.isLeader, t.maxHealth, {
+      const leads = t.isLeader && !squad.leaderId;
+      const s = makeSurvivor(t, cells[i] ?? sq.spawn, sq.id, leads, t.maxHealth, {
         weaponId: w.id,
         magazineRounds: w.magazineCapacity,
         reserveRounds: t.reserveRounds,
@@ -353,8 +361,9 @@ export function createMissionState(
         cooldown: 0,
       });
       s.moveMode = sq.moveMode;
-      const c = carry?.[memberId];
       if (c) {
+        s.id = memberId;
+        s.name = c.name;
         s.health = Math.max(1, Math.min(t.maxHealth, c.health));
         s.infection = c.infection;
         s.bitten = c.bitten;
@@ -365,7 +374,7 @@ export function createMissionState(
         }
       }
       squad.memberIds.push(s.id);
-      if (t.isLeader && !squad.leaderId) squad.leaderId = s.id;
+      if (leads) squad.leaderId = s.id;
       state.survivors.push(s);
     });
     if (!squad.leaderId && squad.memberIds.length) {

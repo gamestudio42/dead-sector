@@ -7,6 +7,7 @@ import { clearUi, uiRoot } from '../ui/dom';
 import { CampaignStore } from '../ui/CampaignStore';
 import {
   catalog,
+  formatDeploymentBlock,
   missionBriefing,
   missionTitle,
   MT,
@@ -17,10 +18,17 @@ import {
   weaponLabel,
 } from '../ui/i18n';
 import { baseMap, drawMissionMarks } from '../ui/MapCanvas';
-import { MISSION_ID } from './MenuScene';
+import { CAMPAIGN_ID, MISSION_ID } from './MenuScene';
 import {
   carryOver,
+  currentDeployment,
+  deploy,
+  deploymentBlockReason,
+  deploymentCost,
+  fullLoad,
   missionSeed,
+  squadSlots,
+  type Deployment,
   reinforcementMultiplier,
   objectiveOrder,
   type CampaignState,
@@ -53,6 +61,7 @@ export class BriefingScene extends Phaser.Scene {
     const world = this.backdrop.world;
     let seed = mission.canonicalSeed;
     let campaign: CampaignState | null = null;
+    let deployment: Deployment | null = null;
     clearUi();
     const stage = catalog().campaign.stage;
 
@@ -178,6 +187,70 @@ export class BriefingScene extends Phaser.Scene {
       Playtest.log('briefing', { missionId, choice: 'back', seconds: readFor() });
       this.scene.start(inCampaign ? 'Strategic' : 'Menu');
     };
+    const slots = squadSlots(content, missionId);
+    const def = content.campaigns[CAMPAIGN_ID];
+    const step = def?.recruits?.extraRoundsStep ?? 0;
+    const maxExtra = def?.recruits?.extraRoundsMax ?? 0;
+    /** Campaign roster: who goes in which squad, and the extra rounds each squad takes. */
+    const renderDeployment = () => {
+      const c = campaign;
+      const d = deployment;
+      if (!c || !d) return;
+      const wrap = q('.roster-wrap');
+      const squadOpts = (id: string) =>
+        [
+          ...mission.squads.map(
+            (sq) =>
+              `<option value="${sq.id}" ${d.squads[id] === sq.id ? 'selected' : ''}>${sq.displayName}</option>`,
+          ),
+          `<option value="" ${d.squads[id] ? '' : 'selected'}>${text('briefing.stayHome')}</option>`,
+        ].join('');
+      const rows = c.roster
+        .filter((r) => r.alive)
+        .map((r) => {
+          const t = content.survivors[r.templateId]!;
+          const w = content.weapons[t.weaponId];
+          const bits = [text('briefing.life', { hp: r.health, max: t.maxHealth })];
+          if (r.infection !== 'healthy')
+            bits.push(text('briefing.infection', { stage: stage[r.infection] }));
+          if (fullLoad(content, r.templateId) > 0)
+            bits.push(text('briefing.rounds', { n: r.ammo }));
+          const cls =
+            r.infection !== 'healthy' ? 'infected' : r.health < t.maxHealth * 0.6 ? 'hurt' : '';
+          return `<tr data-member="${r.id}"><td>${t.isLeader ? '★ ' : ''}${r.name}</td><td>${roleLabel(r.templateId, t.role)}</td><td>${weaponLabel(t.weaponId, w?.displayName ?? t.weaponId)}</td>
+            <td>${pips(t.courage)}</td><td>${pips(t.marksmanship)}</td><td>${pips(t.stealth)}</td>
+            <td class="state ${cls}" data-state="${r.id}">${bits.join(' · ')}</td>
+            <td><select data-assign="${r.id}" data-testid="assign-${r.id}">${squadOpts(r.id)}</select></td></tr>`;
+        })
+        .join('');
+      const counts = mission.squads.map((sq) => {
+        const n = c.roster.filter((r) => r.alive && d.squads[r.id] === sq.id).length;
+        const extra = d.extraRounds[sq.id] ?? 0;
+        const opts = Array.from(
+          { length: Math.floor(maxExtra / Math.max(1, step)) + 1 },
+          (_, i) => i * step,
+        )
+          .map((v) => `<option value="${v}" ${v === extra ? 'selected' : ''}>+${v}</option>`)
+          .join('');
+        return `<span style="color:${SQUAD_CSS[sq.id] ?? '#fff'}"><b data-testid="count-${sq.id}">${sq.displayName}: ${n}/${slots[sq.id]}</b></span>
+          ${step ? `<label class="small">${text('briefing.extraRounds')} <select data-extra="${sq.id}" data-testid="extra-${sq.id}">${opts}</select></label>` : ''}`;
+      });
+      const block = deploymentBlockReason(content, c, missionId, d);
+      const cost = deploymentCost(content, c, d);
+      wrap.innerHTML = `<summary>${text('briefing.deployTitle')}</summary>
+        <table class="roster deploy-table"><tr><th>${text('briefing.name')}</th><th>${text('briefing.role')}</th><th>${text('briefing.weapon')}</th><th>${text('briefing.courage')}</th><th>${text('briefing.aim')}</th><th>${text('briefing.stealth')}</th><th>${text('briefing.state')}</th><th>${text('briefing.squadCol')}</th></tr>${rows}</table>
+        <div class="deploy-summary">${counts.join('')}
+          <span class="small ${block ? 'warn-text' : ''}" data-testid="deploy-note">${block ? formatDeploymentBlock(block) : cost ? text('briefing.deployCost', { n: cost, stock: c.stock.ammo }) : ''}</span></div>`;
+      q<HTMLButtonElement>('[data-act=deploy]').disabled = !!block;
+    };
+    screen.addEventListener('change', (e) => {
+      const el = e.target as HTMLSelectElement;
+      if (!deployment) return;
+      if (el.dataset['assign']) deployment.squads[el.dataset['assign']] = el.value || null;
+      else if (el.dataset['extra']) deployment.extraRounds[el.dataset['extra']] = Number(el.value);
+      else return;
+      renderDeployment();
+    });
     if (inCampaign) {
       // campaign: the roster deploys as it came back from the last mission
       q('[data-act=seed]').hidden = true;
@@ -201,28 +274,24 @@ export class BriefingScene extends Phaser.Scene {
           ammo: c.stock.ammo,
           evacuated: c.evacuated,
         });
-        for (const r of c.roster) {
-          const cell = screen.querySelector<HTMLElement>(`[data-state="${r.templateId}"]`);
-          if (!cell) continue;
-          const t = content.survivors[r.templateId]!;
-          if (!r.alive) {
-            cell.textContent = text('briefing.dead');
-            cell.className = 'state dead';
-            cell.parentElement?.classList.add('fallen');
-            continue;
-          }
-          const bits = [text('briefing.life', { hp: r.health, max: t.maxHealth })];
-          if (r.infection !== 'healthy')
-            bits.push(text('briefing.infection', { stage: stage[r.infection] }));
-          if (content.weapons[t.weaponId]!.magazineCapacity > 0)
-            bits.push(text('briefing.rounds', { n: r.ammo }));
-          cell.textContent = bits.join(' · ');
-          cell.className = `state ${r.infection !== 'healthy' ? 'infected' : r.health < t.maxHealth * 0.6 ? 'hurt' : ''}`;
-        }
+        deployment = currentDeployment(c);
+        renderDeployment();
       });
     }
-    q('[data-act=deploy]').onclick = () => {
+    q('[data-act=deploy]').onclick = async () => {
       audio.uiClick();
+      if (inCampaign && campaign && deployment) {
+        const sent = deploy(content, campaign, missionId, deployment);
+        if (!sent) return;
+        campaign = sent;
+        Playtest.log('deploy', {
+          missionId,
+          squads: deployment.squads,
+          extraRounds: deployment.extraRounds,
+        });
+        // the rounds leave the stock before the mission starts, so a reload cannot spend them twice
+        await CampaignStore.save(sent);
+      }
       Playtest.log('briefing', { missionId, choice: 'deploy', seconds: readFor(), seed });
       this.scene.start('Tactical', {
         missionId,

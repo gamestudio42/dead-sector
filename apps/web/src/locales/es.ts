@@ -411,6 +411,17 @@ export const es: Catalog = {
     stealth: 'Sigilo',
     state: 'Estado',
     ready: 'listo',
+    deployTitle: 'Quién va',
+    squadCol: 'Equipo',
+    stayHome: 'Se queda en el refugio',
+    extraRounds: 'Balas extra por armado',
+    deployCost: 'Cuesta {n} balas del almacén ({stock} disponibles).',
+    deployBlocks: {
+      nobody: 'No hay nadie asignado.',
+      'squad-full': 'Un equipo supera sus plazas.',
+      rounds: 'Cantidad de balas no válida.',
+      'not-enough-ammo': 'No hay balas suficientes en el almacén.',
+    },
     seed: 'Semilla:',
     canonical: '(canónica)',
     variation: '(variación)',
@@ -503,6 +514,16 @@ export const es: Catalog = {
     unknownBody: 'Asegura un sector vecino para saber qué hay aquí.',
     shelterTag: 'Refugio',
     siegeTag: 'Sitiada',
+    recruit: 'Reclutar ＋',
+    recruitTip:
+      'Una persona del refugio toma las armas: una menos para evacuar, y sus balas salen del almacén.',
+    recruitBlocks: {
+      'campaign-over': 'La campaña terminó.',
+      'no-recruits': 'Esta campaña no tiene reclutas.',
+      nobody: 'No hay nadie en el refugio para reclutar.',
+      today: 'Ya se reclutó a alguien hoy.',
+      full: 'El equipo está completo.',
+    },
     siegeBanner:
       '¡Cerco! La horda rodea la escuela. Defiendan el refugio hoy o {n} personas morirán esta noche.',
     siegeNote: 'Terminar el día sin defender la escuela cuesta {n} personas.',
@@ -706,6 +727,7 @@ export const es: Catalog = {
     'bravo-scout': 'Exploradora',
     'bravo-mechanic': 'Mecánico',
     'bravo-volunteer': 'Voluntaria',
+    recruit: 'Recluta',
   },
   weapons: {
     pistol: 'Pistola',
@@ -882,6 +904,8 @@ export const es: Catalog = {
       noFood: 'Faltó comida en el refugio.',
       recovered: '{name} se recuperó (vida {before} → {after}).',
       ammoShort: 'La munición del almacén no alcanzó para rearmar a todos.',
+      recruited: '{name} tomó las armas y se unió al equipo.',
+      roundsReturned: '{count} balas extra volvieron al almacén.',
     },
     stage: {
       healthy: 'bien',

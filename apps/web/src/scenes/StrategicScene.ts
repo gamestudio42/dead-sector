@@ -5,6 +5,8 @@ import {
   newCampaign,
   operationBlockReason,
   operationMissionId,
+  recruit,
+  recruitBlockReason,
   reinforcementMultiplier,
   sectorStatus,
   treatInfection,
@@ -21,6 +23,7 @@ import {
   formatBlock,
   formatEnd,
   formatNotice,
+  formatRecruitBlock,
   missionTitle,
   roleLabel,
   sectorBlurb,
@@ -86,6 +89,14 @@ export class StrategicScene extends Phaser.Scene {
       return;
     }
     switch (t.dataset['act']) {
+      case 'recruit': {
+        const next = recruit(content, this.campaign);
+        if (next) {
+          Playtest.log('recruit', { name: next.roster.at(-1)?.name, ...campaignFields(next) });
+          void this.commit(next);
+        }
+        return;
+      }
       case 'operate':
         if (this.selected) this.operate(this.selected);
         return;
@@ -179,19 +190,28 @@ export class StrategicScene extends Phaser.Scene {
     const chip = (label: string, value: string, title: string, warn = false) =>
       `<span class="stock-chip ${warn ? 'warn' : ''}" title="${title}"><small>${label}</small><b>${value}</b></span>`;
 
+    const squadName = (id: string) =>
+      def.sectors
+        .map((s) => (s.missionId ? content.missions[s.missionId] : undefined))
+        .find(Boolean)
+        ?.squads.find((sq) => sq.id === id)?.displayName ?? id;
+    const recruitBlock = recruitBlockReason(content, c);
     const roster = c.roster
       .map((r) => {
         const t = content.survivors[r.templateId]!;
         const w = content.weapons[t.weaponId]!;
         if (!r.alive)
-          return `<tr class="fallen"><td>${t.name}</td><td>${roleLabel(r.templateId, t.role)}</td><td colspan="3" class="state dead">${text('strategic.dead')}</td></tr>`;
+          return `<tr class="fallen"><td>${r.name}</td><td>${roleLabel(r.templateId, t.role)}</td><td colspan="3" class="state dead">${text('strategic.dead')}</td></tr>`;
         const infected = r.infection !== 'healthy';
         const stage = catalog().campaign.stage[r.infection];
-        return `<tr><td>${t.isLeader ? '★ ' : ''}${t.name}</td><td>${roleLabel(r.templateId, t.role)}</td>
+        const squad = r.squadId
+          ? `<small class="squad-tag ${r.squadId}">${squadName(r.squadId)}</small>`
+          : `<small class="squad-tag home">${text('strategic.shelterTag')}</small>`;
+        return `<tr data-roster="${r.id}"><td>${t.isLeader ? '★ ' : ''}${r.name} ${squad}</td><td>${roleLabel(r.templateId, t.role)}</td>
           <td>${r.health}/${t.maxHealth}</td><td>${w.magazineCapacity > 0 ? r.ammo : '—'}</td>
           <td class="state ${infected ? 'infected' : ''}">${
             infected
-              ? `${stage} <button data-treat="${r.templateId}" data-testid="treat-${r.templateId}" ${c.stock.medicine > 0 ? '' : 'disabled'} title="${text('strategic.treatTip')}">${text('strategic.treat')}</button>`
+              ? `${stage} <button data-treat="${r.id}" data-testid="treat-${r.id}" ${c.stock.medicine > 0 ? '' : 'disabled'} title="${text('strategic.treatTip')}">${text('strategic.treat')}</button>`
               : text('strategic.fine')
           }</td></tr>`;
       })
@@ -233,7 +253,15 @@ export class StrategicScene extends Phaser.Scene {
           <div class="sector-side">${this.sectorPanel()}</div>
         </div>
         <div class="strategic-grid lower">
+          <div>
           <table class="roster"><tr><th>${text('strategic.team')}</th><th>${text('strategic.role')}</th><th>${text('strategic.health')}</th><th>${text('strategic.rounds')}</th><th>${text('strategic.state')}</th></tr>${roster}</table>
+          ${
+            def.recruits && c.status === 'active'
+              ? `<div class="row recruit-row"><button data-act="recruit" data-testid="btn-recruit" ${recruitBlock ? 'disabled' : ''} title="${text('strategic.recruitTip')}">${text('strategic.recruit')}</button>
+                 <span class="small" data-testid="recruit-note">${recruitBlock ? formatRecruitBlock(recruitBlock) : text('strategic.recruitTip')}</span></div>`
+              : ''
+          }
+          </div>
           <div class="interlude" data-testid="campaign-report">
             <h4>${text('strategic.report')}</h4>
             <ul>${c.lastReport.map((l) => `<li>${noticeIcon(l.kind, !this.freshNight && l.kind !== 'convoy')}${formatNotice(l)}</li>`).join('') || `<li>${text('strategic.nothing')}</li>`}</ul>

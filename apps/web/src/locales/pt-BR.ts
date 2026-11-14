@@ -409,6 +409,17 @@ export const ptBR: Catalog = {
     stealth: 'Furtividade',
     state: 'Estado',
     ready: 'pronto',
+    deployTitle: 'Quem vai',
+    squadCol: 'Equipe',
+    stayHome: 'Fica no abrigo',
+    extraRounds: 'Balas extras por armado',
+    deployCost: 'Custa {n} balas do estoque ({stock} disponíveis).',
+    deployBlocks: {
+      nobody: 'Ninguém foi escalado.',
+      'squad-full': 'Uma equipe passou do limite de vagas.',
+      rounds: 'Quantidade de balas inválida.',
+      'not-enough-ammo': 'Não há balas suficientes no estoque.',
+    },
     seed: 'Semente:',
     canonical: '(canônica)',
     variation: '(variação)',
@@ -500,6 +511,16 @@ export const ptBR: Catalog = {
     unknownBody: 'Assegure um setor vizinho para saber o que há aqui.',
     shelterTag: 'Abrigo',
     siegeTag: 'Sitiada',
+    recruit: 'Recrutar ＋',
+    recruitTip:
+      'Uma pessoa do abrigo pega em armas: uma a menos para evacuar, e suas balas saem do estoque.',
+    recruitBlocks: {
+      'campaign-over': 'A campanha acabou.',
+      'no-recruits': 'Esta campanha não tem recrutas.',
+      nobody: 'Não há ninguém no abrigo para recrutar.',
+      today: 'Já houve um recrutamento hoje.',
+      full: 'A equipe está completa.',
+    },
     siegeBanner:
       'Cerco! A horda cerca a escola. Defendam o abrigo hoje ou {n} pessoas morrem esta noite.',
     siegeNote: 'Encerrar o dia sem defender a escola custa {n} pessoas.',
@@ -699,6 +720,7 @@ export const ptBR: Catalog = {
     'bravo-scout': 'Batedora',
     'bravo-mechanic': 'Mecânico',
     'bravo-volunteer': 'Voluntária',
+    recruit: 'Recruta',
   },
   weapons: {
     pistol: 'Pistola',
@@ -875,6 +897,8 @@ export const ptBR: Catalog = {
       noFood: 'Faltou comida no abrigo.',
       recovered: '{name} se recuperou (vida {before} → {after}).',
       ammoShort: 'A munição do estoque não bastou para rearmar todo mundo.',
+      recruited: '{name} pegou em armas e entrou para a equipe.',
+      roundsReturned: '{count} balas extras voltaram ao estoque.',
     },
     stage: {
       healthy: 'bem',

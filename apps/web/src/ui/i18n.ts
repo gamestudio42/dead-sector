@@ -1,4 +1,10 @@
-import type { CampaignEnd, CampaignNotice, OperationBlock } from '@dead-sector/sim';
+import type {
+  CampaignEnd,
+  CampaignNotice,
+  DeploymentBlock,
+  OperationBlock,
+  RecruitBlock,
+} from '@dead-sector/sim';
 import { de } from '../locales/de';
 import { en, type Catalog } from '../locales/en';
 import { es } from '../locales/es';
@@ -324,6 +330,10 @@ export function formatNotice(notice: CampaignNotice): string {
       });
     case 'ammo-short':
       return line.ammoShort;
+    case 'recruited':
+      return fill(line.recruited, { name: notice.name });
+    case 'rounds-returned':
+      return fill(line.roundsReturned, { count: notice.count });
   }
 }
 
@@ -337,6 +347,14 @@ export function formatEnd(end: CampaignEnd | null): string {
 
 export function formatBlock(code: OperationBlock | null): string {
   return code ? catalog().campaign.blocks[code] : '';
+}
+
+export function formatRecruitBlock(code: RecruitBlock | null): string {
+  return code ? catalog().strategic.recruitBlocks[code] : '';
+}
+
+export function formatDeploymentBlock(code: DeploymentBlock | null): string {
+  return code ? catalog().briefing.deployBlocks[code] : '';
 }
 
 export const fmtTime = (seconds: number): string => {

@@ -413,6 +413,17 @@ export const fr: Catalog = {
     stealth: 'Discrétion',
     state: 'État',
     ready: 'prêt',
+    deployTitle: 'Qui part',
+    squadCol: 'Équipe',
+    stayHome: "Reste à l'abri",
+    extraRounds: 'Balles en plus par membre armé',
+    deployCost: 'Coûte {n} balles du stock ({stock} disponibles).',
+    deployBlocks: {
+      nobody: "Personne n'est affecté.",
+      'squad-full': 'Une équipe dépasse ses places.',
+      rounds: 'Nombre de balles invalide.',
+      'not-enough-ammo': 'Pas assez de balles dans le stock.',
+    },
     seed: 'Graine :',
     canonical: '(canonique)',
     variation: '(variante)',
@@ -505,6 +516,16 @@ export const fr: Catalog = {
     unknownBody: "Sécurisez un secteur voisin pour savoir ce qu'il y a ici.",
     shelterTag: 'Abri',
     siegeTag: 'Assiégée',
+    recruit: 'Recruter ＋',
+    recruitTip:
+      "Une personne de l'abri prend les armes : une de moins à évacuer, et ses balles sortent du stock.",
+    recruitBlocks: {
+      'campaign-over': 'La campagne est terminée.',
+      'no-recruits': "Cette campagne n'a pas de recrues.",
+      nobody: "Il n'y a personne à l'abri à recruter.",
+      today: "Quelqu'un a déjà été recruté aujourd'hui.",
+      full: "L'équipe est complète.",
+    },
     siegeBanner:
       "Siège ! La horde encercle l'école. Défendez l'abri aujourd'hui ou {n} personnes mourront cette nuit.",
     siegeNote: "Terminer la journée sans défendre l'école coûte {n} personnes.",
@@ -712,6 +733,7 @@ export const fr: Catalog = {
     'bravo-scout': 'Éclaireuse',
     'bravo-mechanic': 'Mécanicien',
     'bravo-volunteer': 'Volontaire',
+    recruit: 'Recrue',
   },
   weapons: {
     pistol: 'Pistolet',
@@ -889,6 +911,8 @@ export const fr: Catalog = {
       noFood: "L'abri n'a plus de nourriture.",
       recovered: "{name} s'est rétabli (vie {before} → {after}).",
       ammoShort: "Les munitions du stock n'ont pas suffi à réarmer tout le monde.",
+      recruited: "{name} a pris les armes et rejoint l'équipe.",
+      roundsReturned: '{count} balles en plus sont revenues au stock.',
     },
     stage: {
       healthy: 'bien',

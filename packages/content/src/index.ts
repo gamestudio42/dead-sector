@@ -186,6 +186,8 @@ export function validateContent(raw: RawContent): ContentBundle {
       issues.push(`campaign ${c.id} has no shelter sector ${c.shelterSectorId}`);
     if (!c.sectors.some((sec) => sec.missionId && sec.evacuates > 0))
       issues.push(`campaign ${c.id} has no sector that can evacuate people`);
+    if (c.recruits && !bundle.survivors[c.recruits.templateId])
+      issues.push(`campaign ${c.id} recruits use unknown survivor ${c.recruits.templateId}`);
     if (c.siege) {
       const siege = bundle.missions[c.siege.missionId];
       if (!siege)

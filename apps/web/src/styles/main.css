@@ -1536,6 +1536,45 @@ button.sector.besieged small {
     animation: none;
   }
 }
+.squad-tag {
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #000;
+  background: var(--muted);
+}
+.squad-tag.alfa {
+  background: #5aa9ff;
+}
+.squad-tag.bravo {
+  background: #ffad4d;
+}
+.recruit-row {
+  margin-top: 8px;
+  gap: 10px;
+  align-items: center;
+}
+.deploy-table select,
+.deploy-summary select {
+  font: inherit;
+  padding: 1px 4px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.deploy-table select:focus-visible,
+.deploy-summary select:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.deploy-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-top: 8px;
+}
 .siege-banner {
   margin-bottom: 12px;
   padding: 8px 14px;

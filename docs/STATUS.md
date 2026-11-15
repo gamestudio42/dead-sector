@@ -84,8 +84,8 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   one person a day as a fighter (ADR 0022). Every sector has an operation: Avenida Norte and Mercadão Leste are
   scavenging runs where each supply cache searched comes home as stock, and a sector's state makes its mission quiet
   or overrun (ADR 0023). Parts buy four shelter upgrades, and the campaign starts on easy, normal or hard (ADR 0024).
-  Stock and migration values are provisional: `pnpm economy` plays whole campaigns with a fixed policy and shows rounds
-  as the binding resource ([`testing/economy.md`](testing/economy.md)).
+  Stock and migration values are provisional: `pnpm economy` plays whole campaigns with two fixed policies (raids
+  only, and with scavenging runs) and shows rounds as the binding resource ([`testing/economy.md`](testing/economy.md)).
   When the shelter's infestation reaches 35% at night it is besieged: the next day's only operation is Cerco na Dom
   Bosco, and losing or skipping it costs people of the shelter (ADR 0021).
 

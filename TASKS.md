@@ -20,8 +20,8 @@
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
-- Art upgrade, next step: give the Blender characters sculpted heads and hands, cloth folds and a few faces; add
-  more walker variants (only 4 today), reusing `tools/sprites/bake_characters.py`.
+- Art, next step: a crawler infected type and more animation (a stagger when hit, a turn while idle), reusing
+  `tools/sprites/bake_characters.py`.
 
 ## BLOCKED
 
@@ -29,6 +29,9 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Character detail: heads with faces and hair styles, hands with fingers, cloth folds, collars, belts and cuffs;
+  outfits give eight walker looks instead of four; the bake copies template meshes and stays at about 75 s (ADR 0025).
 
 - Economy report plays a scavenging policy next to the raids-only one: the Comboio Parado run costs ~350 rounds and
   leaves the squads dry on day 1 (ADR 0024, update).

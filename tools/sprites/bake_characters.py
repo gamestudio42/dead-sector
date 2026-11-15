@@ -22,7 +22,7 @@ import tempfile
 
 import bpy
 import numpy as np
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LOOKS = os.path.join(ROOT, "apps/web/src/render/characterLooks.json")
@@ -146,12 +146,37 @@ def joint(name, loc, parent=None):
     return ob
 
 
-def _finish(ob, parent, mat, smooth, bevel):
+_templates = {}
+
+
+def _template(key, make, smooth):
+    """A unit primitive made once with bpy.ops and kept; parts are copies of its mesh data, which
+    is far cheaper than calling the operator for every part of every frame."""
+    if key not in _templates:
+        make()
+        ob = bpy.context.active_object
+        me = ob.data
+        me.name = "tpl_" + "_".join(map(str, key))
+        me.use_fake_user = True  # clear_character keeps it
+        if smooth:
+            for p in me.polygons:
+                p.use_smooth = True
+        bpy.data.objects.remove(ob, do_unlink=True)
+        _templates[key] = me
+    return _templates[key]
+
+
+def _part(tpl, scale, parent, mat, bevel=0, loc=(0, 0, 0), rot=None):
+    me = tpl.copy()
+    me.transform(Matrix.Diagonal((*scale, 1)))
+    ob = bpy.data.objects.new("part", me)
+    bpy.context.scene.collection.objects.link(ob)
     ob.parent = parent
-    ob.data.materials.append(mat)
-    if smooth:
-        for p in ob.data.polygons:
-            p.use_smooth = True
+    ob.location = loc
+    if rot is not None:
+        ob.rotation_mode = "QUATERNION"
+        ob.rotation_quaternion = rot
+    me.materials.append(mat)
     if bevel:
         mod = ob.modifiers.new("bevel", "BEVEL")
         mod.width = bevel
@@ -160,40 +185,124 @@ def _finish(ob, parent, mat, smooth, bevel):
 
 
 def box(parent, size, loc, mat, bevel=0.015, rot=None):
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
-    ob = bpy.context.active_object
-    ob.scale = size
-    bpy.ops.object.transform_apply(scale=True)
-    ob.location = loc
-    if rot is not None:
-        ob.rotation_mode = "QUATERNION"
-        ob.rotation_quaternion = rot
-    return _finish(ob, parent, mat, False, bevel)
+    tpl = _template(("cube",), lambda: bpy.ops.mesh.primitive_cube_add(size=1), False)
+    return _part(tpl, size, parent, mat, bevel, loc, rot)
 
 
 def ball(parent, radii, loc, mat, segments=18, rings=10):
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=segments, ring_count=rings, radius=1)
-    ob = bpy.context.active_object
-    ob.scale = radii
-    bpy.ops.object.transform_apply(scale=True)
-    ob.location = loc
-    return _finish(ob, parent, mat, True, 0)
+    tpl = _template(
+        ("uv", segments, rings),
+        lambda: bpy.ops.mesh.primitive_uv_sphere_add(segments=segments, ring_count=rings, radius=1),
+        True,
+    )
+    return _part(tpl, radii, parent, mat, 0, loc)
+
+
+def ring(parent, major, minor, loc, mat, rot=None, scale=(1, 1, 1)):
+    """A torus around z (collars, cuffs, belts seen from above)."""
+    tpl = _template(
+        ("torus", major, minor),
+        lambda: bpy.ops.mesh.primitive_torus_add(
+            major_radius=major, minor_radius=minor, major_segments=20, minor_segments=8
+        ),
+        True,
+    )
+    return _part(tpl, scale, parent, mat, 0, loc, rot)
 
 
 def rod(parent, radius, length, mat, loc=None, direction=DOWN, start=None):
     """A capsule-ish cylinder. By default it hangs from the parent's origin along -z."""
-    bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=radius, depth=length)
-    ob = bpy.context.active_object
-    ob.rotation_mode = "QUATERNION"
+    tpl = _template(
+        ("cyl",), lambda: bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=1, depth=1), True
+    )
     d = Vector(direction).normalized()
-    ob.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(d)
     if start is None:
         start = Vector((0, 0, 0))
-    ob.location = loc if loc is not None else Vector(start) + d * (length / 2)
-    _finish(ob, parent, mat, True, 0)
+    centre = loc if loc is not None else Vector(start) + d * (length / 2)
+    ob = _part(tpl, (radius, radius, length), parent, mat, 0, centre, Vector((0, 0, 1)).rotation_difference(d))
     # rounded ends hide the flat caps from above
     ball(parent, (radius, radius, radius), Vector(start) + d * length, mat, 10, 6)
     return ob
+
+
+# --------------------------------------------------------------------------- head and hands
+
+
+def seed_of(*parts):
+    """A stable seed from strings (Python's hash() changes between runs)."""
+    return int(hashlib.md5("|".join(map(str, parts)).encode()).hexdigest()[:8], 16)
+
+
+HEAD = (0.1, 0.09, 0.105)  # skull radii; the face looks along +x
+HAIR_CAP = (0.104, 0.097, 0.08)
+HAIR_AT = Vector((-0.025, 0, 0.045))
+
+
+def head_model(head, look, skin, infected):
+    """Skull, jaw, nose, ears and a face; hair on top unless a cap or helmet covers it."""
+    ball(head, HEAD, (-0.01, 0, 0.01), skin)
+    ball(head, (0.07, 0.072, 0.06), (0.035, 0, -0.05), skin, 14, 8)  # jaw and chin
+    ball(head, (0.024, 0.016, 0.03), (0.1, 0, -0.012), material(shade(look["skin"], 0.9), 0.6), 8, 6)
+    for side in (1, -1):
+        ball(head, (0.018, 0.012, 0.03), (-0.005, 0.092 * side, 0), skin, 8, 6)
+    hair_hex = look["hair"]
+    if infected:
+        socket = material("#2e2220", 0.7)
+        eye = material("#d9d26a", 0.3)
+        for side in (1, -1):
+            ball(head, (0.016, 0.022, 0.018), (0.082, 0.034 * side, 0.018), socket, 8, 6)
+            ball(head, (0.011, 0.011, 0.011), (0.092, 0.034 * side, 0.018), eye, 8, 4)
+        if not look.get("mouth"):
+            box(head, (0.012, 0.05, 0.014), (0.093, 0, -0.064), material("#3a1210", 0.5), 0.004)
+    else:
+        eye = material("#1a1412", 0.4)
+        brow = material(hair_hex, 0.8)
+        for side in (1, -1):
+            ball(head, (0.01, 0.012, 0.01), (0.09, 0.034 * side, 0.018), eye, 8, 4)
+            box(head, (0.016, 0.04, 0.01), (0.088, 0.036 * side, 0.042), brow, 0.004)
+        box(head, (0.01, 0.04, 0.008), (0.091, 0, -0.064), material(shade(look["skin"], 0.72), 0.6), 0.003)
+    hair_model(head, look, infected)
+
+
+def hair_model(head, look, infected):
+    style = look.get("hairStyle", "patchy" if infected else "short")
+    covered = look.get("headgear") in ("cap", "helmet")
+    hair = material(look["hair"], 0.85)
+    tuft = material(shade(look["hair"], 1.25), 0.85)
+    if covered or style == "bald":
+        if covered:  # the nape shows under the cap
+            ball(head, (0.05, 0.085, 0.05), (-0.075, 0, -0.025), hair, 12, 6)
+        return
+    if style == "buzz":
+        ball(head, (0.103, 0.095, 0.07), (-0.015, 0, 0.05), hair)
+        return
+    ball(head, HAIR_CAP, HAIR_AT, hair)
+    rng = np.random.default_rng(seed_of(look["hair"], style, look["skin"]))
+    count = 5 if style == "patchy" else 8
+    for _ in range(count):  # clumps break the smooth dome into hair from above
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.1, 0.8)
+        x = HAIR_AT.x + HAIR_CAP[0] * r * math.cos(a) * 0.95
+        y = HAIR_CAP[1] * r * math.sin(a) * 0.95
+        z = HAIR_AT.z + HAIR_CAP[2] * math.sqrt(1 - r * r) * 0.92
+        ball(head, (0.034, 0.028, 0.02), (x, y, z), tuft if rng.random() < 0.4 else hair, 10, 6)
+    if style == "patchy":
+        # torn scalp: a bare, bloody patch
+        ball(head, (0.04, 0.035, 0.02), (-0.02, rng.uniform(-0.04, 0.04), 0.115), material("#5a1f1a", 0.5), 10, 6)
+    elif style == "long":
+        ball(head, (0.06, 0.1, 0.13), (-0.085, 0, -0.07), hair, 14, 8)
+    elif style == "ponytail":
+        ball(head, (0.026, 0.026, 0.026), (-0.11, 0, 0.03), material("#222", 0.6), 8, 6)
+        rod(head, 0.024, 0.15, hair, start=(-0.115, 0, 0.03), direction=(-0.55, 0, -1))
+
+
+def hand_model(el, mat, infected, side):
+    """Palm, four fingers and a thumb at the end of the forearm (the elbow joint's -z)."""
+    ball(el, (0.028, 0.04, 0.045), (0, 0, -0.255), mat, 12, 8)
+    length = 0.055 if infected else 0.04
+    for y in (-0.025, -0.008, 0.009, 0.026):
+        rod(el, 0.0095, length, mat, start=(0.004, y, -0.282), direction=(0.25 if infected else 0.1, y * 0.6, -1))
+    rod(el, 0.011, 0.04, mat, start=(0.015, 0.03 * side, -0.245), direction=(0.35, 0.6 * side, -0.7))
 
 
 # --------------------------------------------------------------------------- the body
@@ -209,39 +318,85 @@ class Rig:
         self.bulk = bulk
         top = look["shirt"] if infected else look["jacket"]
         self.top = top
+        outfit = look.get("outfit", "tee" if infected else "jacket")
+        self.outfit = outfit
         cloth = material(top, 0.9)
         pants = material(look["pants"], 0.9)
         skin = material(look["skin"], 0.6)
-        hair = material(look["hair"], 0.8)
         boots = material("#17181a", 0.7)
-        sleeve = skin if infected else cloth
+        self.skin = skin
+        # what covers each part of the arm and leg
+        upper = skin if outfit == "tank" else cloth
+        sleeve = cloth if outfit in ("jacket", "hoodie", "office") else skin
+        legs = skin if outfit == "gown" else pants
+        shin = skin if outfit == "gown" else pants
+        hands = material("#1d1f22", 0.8) if look.get("gloves") else skin
 
         self.root = joint("root", (0, 0, 0))
         self.pelvis = joint("pelvis", (0, 0, 0.95), self.root)
         box(self.pelvis, (0.2, 0.32 * bulk, 0.18), (0, 0, 0), pants, 0.04)
+        if outfit != "gown":
+            # belt with a buckle, a band that shows between shirt and trousers
+            box(self.pelvis, (0.215, 0.335 * bulk, 0.045), (0, 0, 0.07), material("#1b1b1c", 0.5), 0.01)
+            box(self.pelvis, (0.02, 0.05, 0.04), (0.105, 0, 0.07), material("#8d8a80", 0.35, 0.8), 0.004)
 
         # legs
         self.hips = {}
         self.knees = {}
         for side in (1, -1):
             hip = joint(f"hip{side}", (0, 0.1 * side * bulk, -0.06), self.pelvis)
-            rod(hip, 0.068 * bulk, 0.45, pants)
+            rod(hip, 0.068 * bulk, 0.45, legs)
             knee = joint(f"knee{side}", (0, 0, -0.45), hip)
-            rod(knee, 0.055 * bulk, 0.4, pants)
+            rod(knee, 0.055 * bulk, 0.4, shin)
+            if legs is pants:
+                # a crease where the trousers bunch above the boot
+                ring(knee, 0.056 * bulk, 0.012, (0, 0, -0.33), material(shade(look["pants"], 0.8), 0.9))
             ankle = joint(f"ankle{side}", (0, 0, -0.42), knee)
             box(ankle, (0.24, 0.1, 0.08), (0.05, 0, -0.01), boots, 0.03)
+            box(ankle, (0.07, 0.106, 0.02), (0.14, 0, -0.045), material("#0d0d0e", 0.6), 0.008)  # sole toe
             self.hips[side] = hip
             self.knees[side] = knee
 
-        # torso
+        # torso: a box with folds, a yoke seam and a collar, so it reads as cloth from above
         self.spine = joint("spine", (0, 0, 0.07), self.pelvis)
-        box(self.spine, (0.24 * bulk, 0.42 * bulk, 0.5), (0, 0, 0.25), cloth, 0.08)
-        # a lighter fold on the upper back so the torso reads as cloth from above
-        box(self.spine, (0.12, 0.3 * bulk, 0.02), (-0.04, 0, 0.5), material(shade(top, 1.18), 0.9), 0.01)
+        length = 0.7 if outfit == "gown" else 0.5
+        box(self.spine, (0.24 * bulk, 0.42 * bulk, length), (0, 0, 0.5 - length / 2), cloth, 0.08)
+        hi = material(shade(top, 1.16), 0.9)
+        lo = material(shade(top, 0.78), 0.9)
+        box(self.spine, (0.12, 0.3 * bulk, 0.02), (-0.04, 0, 0.5), hi, 0.01)
+        box(self.spine, (0.015, 0.36 * bulk, 0.012), (0.035, 0, 0.503), lo, 0.004)  # yoke seam
+        rng = np.random.default_rng(seed_of(top, outfit))
+        for _ in range(3):  # diagonal folds across the shoulder blades
+            y = rng.uniform(-0.12, 0.12) * bulk
+            ang = rng.uniform(-0.6, 0.6)
+            box(self.spine, (0.1, 0.012, 0.01), (-0.07, y, 0.511), lo, 0.003, euler_q(z=ang))
+            box(self.spine, (0.1, 0.01, 0.01), (-0.07, y + 0.014, 0.512), hi, 0.003, euler_q(z=ang))
+        back = -0.12 * bulk  # the back face of the torso box
+        if outfit == "gown":
+            # the hospital gown is open at the back: a strip of skin down the spine and the ties;
+            # it shows on the corpse, which lies face down
+            box(self.spine, (0.06, 0.07, 0.02), (-0.09, 0, 0.505), skin, 0.01)
+            box(self.spine, (0.012, 0.08, 0.55), (back - 0.002, 0, 0.22), skin, 0.004)
+            for z in (0.4, 0.15):
+                box(self.spine, (0.016, 0.13, 0.016), (back - 0.006, 0, z), material(shade(top, 0.7), 0.9), 0.004)
+        elif outfit == "vest":
+            # a high-visibility vest over the shirt, with reflective stripes on top and around
+            vest = material("#d9c21c", 0.6)
+            stripe = material("#c7c9c4", 0.25, 0.4)
+            box(self.spine, (0.255 * bulk, 0.435 * bulk, 0.34), (0, 0, 0.335), vest, 0.06)
+            for x in (-0.07, 0.05):
+                box(self.spine, (0.03, 0.41 * bulk, 0.012), (x, 0, 0.51), stripe, 0.004)
+            box(self.spine, (0.262 * bulk, 0.442 * bulk, 0.03), (0, 0, 0.27), stripe, 0.01)
+        elif outfit == "hoodie":
+            ball(self.spine, (0.075, 0.14 * bulk, 0.05), (-0.09, 0, 0.53), lo, 14, 8)  # the hood, down
+        collar = shade(top, 0.86) if outfit != "office" else "#e9e6dc"
+        ring(self.spine, 0.07, 0.022, (0.03, 0, 0.5), material(collar, 0.85), scale=(1, 1.15, 1))
+        if outfit == "office":
+            box(self.spine, (0.08, 0.035, 0.012), (0.1, 0, 0.5), material("#5a1a20", 0.6), 0.004)  # tie
         self.neck = joint("neck", (0.02, 0, 0.5), self.spine)
         ball(self.neck, (0.05, 0.05, 0.06), (0, 0, 0.03), skin, 10, 6)
         self.head = joint("head", (0.01, 0, 0.1), self.neck)
-        ball(self.head, (0.105, 0.095, 0.115), (0, 0, 0), skin)
+        head_model(self.head, look, skin, infected)
 
         # arms
         self.shoulders = {}
@@ -251,11 +406,18 @@ class Rig:
         for side in (1, -1):
             pos = Vector((0, shoulder_y * side, 0.44))
             sh = joint(f"shoulder{side}", pos, self.spine)
-            ball(sh, (0.07 * bulk, 0.07 * bulk, 0.07 * bulk), (0, 0, 0), cloth)
-            rod(sh, 0.05 * bulk, 0.28, cloth)
+            ball(sh, (0.07 * bulk, 0.07 * bulk, 0.07 * bulk), (0, 0, 0), upper)
+            rod(sh, 0.05 * bulk, 0.28, upper)
+            if upper is cloth and sleeve is not cloth:
+                # short sleeve: a hem, torn on the infected
+                ring(sh, 0.054 * bulk, 0.012, (0, 0, -0.13), lo)
             el = joint(f"elbow{side}", (0, 0, -0.28), sh)
             rod(el, 0.044 * bulk, 0.22, sleeve)
-            ball(el, (0.05, 0.045, 0.05), (0, 0, -0.26), skin, 10, 6)
+            if sleeve is cloth:
+                ring(el, 0.046 * bulk, 0.012, (0, 0, -0.2), lo)  # cuff
+                if outfit == "jacket":
+                    ring(sh, 0.052 * bulk, 0.01, (0, 0, -0.27), lo)  # a crease at the elbow
+            hand_model(el, hands, infected, side)
             self.shoulders[side] = sh
             self.elbows[side] = el
             self.shoulder_pos[side] = pos
@@ -313,8 +475,11 @@ def survivor_gear(rig, look):
         capm = material(shade(look["jacket"], 0.75), 0.8)
         ball(head, (0.112, 0.102, 0.08), (-0.005, 0, 0.04), capm)
         box(head, (0.09, 0.15, 0.015), (0.1, 0, 0.035), capm, 0.006)
-    else:
-        ball(head, (0.1, 0.1, 0.09), (-0.035, 0, 0.035), material(look["hair"], 0.8))
+    if look.get("medic") or look["weapon"] in ("carbine", "shotgun"):
+        # straps of the bag or pouch over both shoulders
+        strap = material("#1f2124", 0.7)
+        for side in (1, -1):
+            box(spine, (0.24, 0.035, 0.014), (-0.03, 0.105 * side * rig.bulk, 0.513), strap, 0.005)
     if look.get("band"):
         band = material(look["band"], 0.5)
         for side in (1, -1):
@@ -397,21 +562,23 @@ def pose_survivor(rig, look, frame):
 
 def infected_gear(rig, look, seed):
     head = rig.head
-    hair = material(look["hair"], 0.85)
-    ball(head, (0.1, 0.095, 0.08), (-0.03, 0.01, 0.04), hair)
-    eye = material("#d9d26a", 0.3)
-    for side in (1, -1):
-        ball(head, (0.016, 0.016, 0.016), (0.095, 0.035 * side, 0.02), eye, 8, 4)
     if look.get("mouth"):
-        ball(head, (0.03, 0.045, 0.055), (0.1, 0, -0.045), material("#2a0806", 0.4), 10, 6)
-        ball(head, (0.016, 0.026, 0.032), (0.112, 0, -0.045), material("#6a1410", 0.4), 8, 4)
-    # torn, stained shirt: dark patches on the back and shoulders, placed from the seed
+        ball(head, (0.03, 0.045, 0.055), (0.108, 0, -0.045), material("#2a0806", 0.4), 10, 6)
+        ball(head, (0.016, 0.026, 0.032), (0.12, 0, -0.045), material("#6a1410", 0.4), 8, 4)
+    # torn, stained shirt: dark patches and holes showing skin, placed from the seed
     stain = material("#3d1d1a", 0.6)
     rng = np.random.default_rng(seed)
     for _ in range(4):
         x = rng.uniform(-0.1, 0.06)
         y = rng.uniform(-0.17, 0.17) * rig.bulk
-        box(rig.spine, (rng.uniform(0.05, 0.1), rng.uniform(0.05, 0.11), 0.015), (x, y, 0.5), stain, 0.01)
+        box(rig.spine, (rng.uniform(0.05, 0.1), rng.uniform(0.05, 0.11), 0.015), (x, y, 0.515), stain, 0.01)
+    for _ in range(2):
+        x = rng.uniform(-0.1, 0.02)
+        y = rng.uniform(-0.14, 0.14) * rig.bulk
+        box(rig.spine, (0.035, 0.05, 0.012), (x, y, 0.52), rig.skin, 0.008)
+    # a bite on one shoulder
+    side = 1 if rng.random() < 0.5 else -1
+    ball(rig.shoulders[side], (0.035, 0.03, 0.02), (0, 0, 0.06), material("#4a0f0c", 0.4), 10, 6)
 
 
 def pose_infected(rig, look, frame):

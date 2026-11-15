@@ -259,6 +259,7 @@ export const de: Catalog = {
     radioOn: 'FUNK AN',
   },
   menu: {
+    difficultyTitle: 'Schwierigkeit wählen',
     subtitle: 'Pausierbare Echtzeittaktik',
     campaign: 'Kampagne: {name}',
     campaignSub: 'Evakuiert den Unterschlupf in {days} Tagen · Verluste bleiben',
@@ -485,6 +486,19 @@ export const de: Catalog = {
     toShelter: 'Zurück zum Unterschlupf ▶',
   },
   strategic: {
+    upgrades: 'Ausbau des Schutzlagers',
+    build: 'Bauen ({cost})',
+    built: 'Gebaut',
+    costParts: '{n} Teile',
+    costFood: '{n} Essen',
+    costMedicine: '{n} Medizin',
+    costAmmo: '{n} Patronen',
+    upgradeBlocks: {
+      'campaign-over': 'Die Kampagne ist vorbei.',
+      unknown: 'Unbekannter Ausbau.',
+      built: 'Schon gebaut.',
+      cost: 'Das Lager deckt die Kosten nicht.',
+    },
     kicker: 'Kampagne · {name}',
     day: 'Tag {day} von {total}',
     evacuated: 'Evakuiert',
@@ -924,6 +938,23 @@ export const de: Catalog = {
     },
   },
   campaign: {
+    difficulties: {
+      facil: { name: 'Leicht', blurb: 'Mehr Vorräte, 14 Tage, langsamere Horden' },
+      normal: { name: 'Normal', blurb: 'Die Kampagne wie geplant: 12 Tage' },
+      dificil: {
+        name: 'Schwer',
+        blurb: 'Weniger Vorräte, 10 Tage, schnellere Horden und mehr Verstärkung',
+      },
+    },
+    upgrades: {
+      horta: { name: 'Gemüsebeet', blurb: '+2 Essen jede Nacht' },
+      enfermaria: { name: 'Krankenstation', blurb: 'Verletzte erholen sich nachts schneller' },
+      oficina: { name: 'Bretterwerkstatt', blurb: '+1 Bretterset pro Trupp bei jedem Einsatz' },
+      muro: {
+        name: 'Verstärkte Mauer',
+        blurb: 'die Belagerung kommt später und ein Durchbruch kostet 2 Menschen weniger',
+      },
+    },
     displayName: 'Setor Ferrugem',
     intro:
       'Der Unterschlupf in der Escola Dom Bosco hält nicht mehr lange. Evakuiert die Gruppe über die Gleise, bevor der Sektor fällt. Jeder Einsatz kostet einen Tag, Nahrung und Munition, und der Lärm, den ihr macht, lockt die Horden.',
@@ -982,6 +1013,8 @@ export const de: Catalog = {
       recruited: '{name} hat zu den Waffen gegriffen und ist dabei.',
       roundsReturned: '{count} Extra-Patronen gingen zurück ins Lager.',
       scavenged: '{count} Kiste(n) durchsucht: {bits}.',
+      built: '{upgrade} ist fertig.',
+      harvest: 'Das Gemüsebeet brachte {food} Essen.',
     },
     stage: {
       healthy: 'wohlauf',

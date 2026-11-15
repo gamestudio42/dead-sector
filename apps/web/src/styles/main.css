@@ -1555,6 +1555,47 @@ button.sector.besieged small {
   gap: 10px;
   align-items: center;
 }
+.upgrades h4 {
+  margin: 12px 0 4px;
+}
+.upgrades ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.upgrade {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 8px;
+  border: 1px solid rgba(201, 167, 74, 0.18);
+  border-radius: 4px;
+}
+.upgrade small {
+  color: var(--muted);
+}
+.upgrade.built {
+  border-color: rgba(127, 191, 106, 0.4);
+}
+.upgrade button {
+  white-space: nowrap;
+}
+.ok-text {
+  color: #9fe870;
+}
+.diff-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(201, 167, 74, 0.15);
+  color: var(--accent, #c9a74a);
+  vertical-align: middle;
+}
 .deploy-table select,
 .deploy-summary select {
   font: inherit;

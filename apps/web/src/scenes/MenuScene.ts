@@ -8,7 +8,7 @@ import { CampaignStore } from '../ui/CampaignStore';
 import { desktop } from '../ui/desktop';
 import { clearUi, uiRoot } from '../ui/dom';
 import { openOptions } from '../ui/OptionsPanel';
-import { catalog, missionTitle, text } from '../ui/i18n';
+import { catalog, difficultyBlurb, difficultyName, missionTitle, text } from '../ui/i18n';
 import { applyContrast, SaveStore } from '../ui/SaveStore';
 
 export const MISSION_ID = 'a-ultima-farmacia';
@@ -71,6 +71,15 @@ export class MenuScene extends Phaser.Scene {
         <div class="subtitle">${text('menu.subtitle')}</div>
         <nav class="menu-buttons">
           <button data-act="campaign" data-testid="btn-campaign"><b data-el="campaignLabel">${text('menu.campaign', { name: campName })}</b><small data-el="campaignSub">${text('menu.campaignSub', { days: campaign.victory.deadlineDays })}</small></button>
+          <div class="mission-pick" data-el="difficulty" data-testid="difficulty-pick" hidden>
+            <div class="small">${text('menu.difficultyTitle')}</div>
+            ${(campaign.difficulties.length ? campaign.difficulties.map((d) => d.id) : ['normal'])
+              .map(
+                (id) =>
+                  `<button data-act="start" data-diff="${id}" data-testid="diff-${id}"><b>${difficultyName(id)}</b><small>${difficultyBlurb(id)}</small></button>`,
+              )
+              .join('')}
+          </div>
           <button data-act="new" data-testid="btn-new-mission"><b>${text('menu.single')}</b><small>${text('menu.singleSub')}</small></button>
           <div class="mission-pick" data-el="pick" hidden>
             ${Object.values(content.missions)
@@ -122,12 +131,20 @@ export class MenuScene extends Phaser.Scene {
         return this.scene.start('Briefing', { missionId: t.dataset['mission'], campaign: false });
       switch (t.dataset['act']) {
         case 'campaign': {
-          const c = saved ?? newCampaign(content, CAMPAIGN_ID, Math.floor(Math.random() * 1e6));
-          void CampaignStore.save(c).then(() => this.scene.start('Strategic'));
+          if (saved) {
+            void CampaignStore.save(saved).then(() => this.scene.start('Strategic'));
+            return;
+          }
+          q('[data-el=difficulty]').hidden = !q('[data-el=difficulty]').hidden;
           return;
         }
-        case 'newCampaign': {
-          const c = newCampaign(content, CAMPAIGN_ID, Math.floor(Math.random() * 1e6));
+        case 'newCampaign':
+          q('[data-el=difficulty]').hidden = !q('[data-el=difficulty]').hidden;
+          return;
+        case 'start': {
+          const seed = Math.floor(Math.random() * 1e6);
+          const c = newCampaign(content, CAMPAIGN_ID, seed, t.dataset['diff'] ?? 'normal');
+          Playtest.log('campaignStart', { seed, difficulty: c.difficultyId });
           void CampaignStore.save(c).then(() => this.scene.start('Strategic'));
           return;
         }

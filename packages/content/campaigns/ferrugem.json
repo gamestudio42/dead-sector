@@ -62,6 +62,79 @@
       "Tiago Barros"
     ]
   },
+  "upgrades": [
+    {
+      "id": "horta",
+      "displayName": "Horta no pátio",
+      "cost": {
+        "parts": 3,
+        "food": 4
+      },
+      "effect": {
+        "kind": "garden",
+        "foodPerDay": 2
+      }
+    },
+    {
+      "id": "enfermaria",
+      "displayName": "Enfermaria",
+      "cost": {
+        "parts": 3,
+        "medicine": 1
+      },
+      "effect": {
+        "kind": "infirmary",
+        "healBonus": 0.15
+      }
+    },
+    {
+      "id": "oficina",
+      "displayName": "Oficina de tábuas",
+      "cost": {
+        "parts": 2
+      },
+      "effect": {
+        "kind": "workshop",
+        "barricadeKits": 1
+      }
+    },
+    {
+      "id": "muro",
+      "displayName": "Muro reforçado",
+      "cost": {
+        "parts": 4,
+        "ammo": 10
+      },
+      "effect": {
+        "kind": "walls",
+        "siegeThresholdBonus": 15,
+        "breachLossReduction": 2
+      }
+    }
+  ],
+  "difficulties": [
+    {
+      "id": "facil",
+      "stockMultiplier": 1.4,
+      "deadlineDays": 14,
+      "growthMultiplier": 0.5,
+      "reinforcementMultiplier": 0.8
+    },
+    {
+      "id": "normal",
+      "stockMultiplier": 1,
+      "deadlineDays": 12,
+      "growthMultiplier": 1,
+      "reinforcementMultiplier": 1
+    },
+    {
+      "id": "dificil",
+      "stockMultiplier": 0.75,
+      "deadlineDays": 10,
+      "growthMultiplier": 1.5,
+      "reinforcementMultiplier": 1.25
+    }
+  ],
   "sectors": [
     {
       "id": "abrigo",

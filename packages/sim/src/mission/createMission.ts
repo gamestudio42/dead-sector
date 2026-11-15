@@ -49,6 +49,8 @@ export interface MissionVariant {
   zombieMultiplier: number;
   /** Multiplies the time to the first horde. */
   hordeDelayMultiplier: number;
+  /** Extra plank kits for every squad (the shelter's workshop). */
+  barricadeKitBonus?: number;
 }
 
 export const STANDARD_VARIANT: MissionVariant = { zombieMultiplier: 1, hordeDelayMultiplier: 1 };
@@ -363,7 +365,7 @@ export function createMissionState(
       firePolicy: sq.firePolicy,
       moveMode: sq.moveMode,
       waypoints: [],
-      barricadeKits: sq.barricadeKits,
+      barricadeKits: sq.barricadeKits + (variant.barricadeKitBonus ?? 0),
       spawn: { ...sq.spawn },
     };
     deploying.forEach((memberId, i) => {

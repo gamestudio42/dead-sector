@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "e2e": "pnpm --filter @dead-sector/game e2e",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
-    "balance": "BALANCE_REPORT=1 vitest run packages/sim/test/balance.report.test.ts"
+    "balance": "BALANCE_REPORT=1 vitest run packages/sim/test/balance.report.test.ts",
+    "economy": "ECONOMY_REPORT=1 vitest run packages/sim/test/economy.report.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

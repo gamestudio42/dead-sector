@@ -372,6 +372,53 @@ export const campaignSchema = z.object({
       extraRoundsMax: z.number().int().nonnegative(),
     })
     .optional(),
+  /**
+   * Shelter upgrades bought with the stock (mostly parts), each once per campaign. Their effects
+   * last until the end of the campaign.
+   */
+  upgrades: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        displayName: z.string().min(1),
+        cost: z.object({
+          parts: z.number().int().nonnegative(),
+          food: z.number().int().nonnegative().default(0),
+          medicine: z.number().int().nonnegative().default(0),
+          ammo: z.number().int().nonnegative().default(0),
+        }),
+        effect: z.discriminatedUnion('kind', [
+          /** A vegetable patch in the yard: food every night. */
+          z.object({ kind: z.literal('garden'), foodPerDay: z.number().int().positive() }),
+          /** An infirmary: extra fraction of max health recovered each night. */
+          z.object({ kind: z.literal('infirmary'), healBonus: z.number().min(0).max(1) }),
+          /** A workshop: extra plank kits for every squad on every operation. */
+          z.object({ kind: z.literal('workshop'), barricadeKits: z.number().int().positive() }),
+          /** Reinforced walls: the siege comes later and a breach costs fewer people. */
+          z.object({
+            kind: z.literal('walls'),
+            siegeThresholdBonus: z.number().int().nonnegative(),
+            breachLossReduction: z.number().int().nonnegative(),
+          }),
+        ]),
+      }),
+    )
+    .default([]),
+  /** Campaign difficulties; the one named `normal` is the default. */
+  difficulties: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        /** Multiplies the starting stock (food, medicine, rounds, parts). */
+        stockMultiplier: z.number().positive(),
+        deadlineDays: z.number().int().positive(),
+        /** Multiplies the infected arriving in each sector every day. */
+        growthMultiplier: z.number().nonnegative(),
+        /** Multiplies every operation's reinforcement budget. */
+        reinforcementMultiplier: z.number().positive(),
+      }),
+    )
+    .default([]),
   sectors: z.array(sectorSchema).min(2),
 });
 

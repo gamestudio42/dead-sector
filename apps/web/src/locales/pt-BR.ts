@@ -258,6 +258,7 @@ export const ptBR: Catalog = {
     radioOn: 'RÁDIO ATIVO',
   },
   menu: {
+    difficultyTitle: 'Escolha a dificuldade',
     subtitle: 'Tática em tempo real pausável',
     campaign: 'Campanha: {name}',
     campaignSub: 'Evacue o abrigo em {days} dias · perdas permanentes',
@@ -482,6 +483,19 @@ export const ptBR: Catalog = {
     toShelter: 'Voltar ao abrigo ▶',
   },
   strategic: {
+    upgrades: 'Melhorias do abrigo',
+    build: 'Construir ({cost})',
+    built: 'Construída',
+    costParts: '{n} peças',
+    costFood: '{n} comida',
+    costMedicine: '{n} remédio',
+    costAmmo: '{n} balas',
+    upgradeBlocks: {
+      'campaign-over': 'A campanha terminou.',
+      unknown: 'Melhoria desconhecida.',
+      built: 'Já construída.',
+      cost: 'O estoque não cobre o custo.',
+    },
     kicker: 'Campanha · {name}',
     day: 'Dia {day} de {total}',
     evacuated: 'Evacuados',
@@ -915,6 +929,26 @@ export const ptBR: Catalog = {
     },
   },
   campaign: {
+    difficulties: {
+      facil: { name: 'Fácil', blurb: 'Mais estoque, 14 dias, hordas mais lentas' },
+      normal: { name: 'Normal', blurb: 'A campanha como foi pensada: 12 dias' },
+      dificil: {
+        name: 'Difícil',
+        blurb: 'Menos estoque, 10 dias, hordas mais rápidas e mais reforços',
+      },
+    },
+    upgrades: {
+      horta: { name: 'Horta no pátio', blurb: '+2 de comida por noite' },
+      enfermaria: { name: 'Enfermaria', blurb: 'feridos se recuperam mais rápido à noite' },
+      oficina: {
+        name: 'Oficina de tábuas',
+        blurb: '+1 kit de tábuas por esquadrão em cada operação',
+      },
+      muro: {
+        name: 'Muro reforçado',
+        blurb: 'o cerco demora mais e uma invasão custa 2 pessoas a menos',
+      },
+    },
     displayName: 'Setor Ferrugem',
     intro:
       'O abrigo na Escola Dom Bosco não aguenta muito tempo. Evacue o grupo pelos trilhos antes que o setor caia. Cada operação custa um dia, comida e munição, e o barulho que vocês fizerem atrai as hordas.',
@@ -973,6 +1007,8 @@ export const ptBR: Catalog = {
       recruited: '{name} pegou em armas e entrou para a equipe.',
       roundsReturned: '{count} balas extras voltaram ao estoque.',
       scavenged: '{count} carga(s) revirada(s): {bits}.',
+      built: '{upgrade} pronta.',
+      harvest: 'A horta deu {food} de comida.',
     },
     stage: {
       healthy: 'bem',

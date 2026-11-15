@@ -260,6 +260,7 @@ export const fr: Catalog = {
     radioOn: 'RADIO ACTIVE',
   },
   menu: {
+    difficultyTitle: 'Choisissez la difficulté',
     subtitle: 'Tactique en temps réel, avec pause',
     campaign: 'Campagne : {name}',
     campaignSub: "Évacuez l'abri en {days} jours · les pertes sont définitives",
@@ -486,6 +487,19 @@ export const fr: Catalog = {
     toShelter: "Retour à l'abri ▶",
   },
   strategic: {
+    upgrades: "Améliorations de l'abri",
+    build: 'Construire ({cost})',
+    built: 'Construite',
+    costParts: '{n} pièces',
+    costFood: '{n} vivres',
+    costMedicine: '{n} remède',
+    costAmmo: '{n} balles',
+    upgradeBlocks: {
+      'campaign-over': 'La campagne est terminée.',
+      unknown: 'Amélioration inconnue.',
+      built: 'Déjà construite.',
+      cost: 'Le stock ne couvre pas le coût.',
+    },
     kicker: 'Campagne · {name}',
     day: 'Jour {day} sur {total}',
     evacuated: 'Évacués',
@@ -929,6 +943,26 @@ export const fr: Catalog = {
     },
   },
   campaign: {
+    difficulties: {
+      facil: { name: 'Facile', blurb: 'Plus de stock, 14 jours, des hordes plus lentes' },
+      normal: { name: 'Normal', blurb: 'La campagne telle que prévue : 12 jours' },
+      dificil: {
+        name: 'Difficile',
+        blurb: 'Moins de stock, 10 jours, des hordes plus rapides et plus de renforts',
+      },
+    },
+    upgrades: {
+      horta: { name: 'Potager', blurb: '+2 vivres chaque nuit' },
+      enfermaria: { name: 'Infirmerie', blurb: 'les blessés se remettent plus vite la nuit' },
+      oficina: {
+        name: 'Atelier de planches',
+        blurb: '+1 kit de planches par escouade à chaque opération',
+      },
+      muro: {
+        name: 'Mur renforcé',
+        blurb: 'le siège arrive plus tard et une brèche coûte 2 personnes de moins',
+      },
+    },
     displayName: 'Setor Ferrugem',
     intro:
       "L'abri de l'Escola Dom Bosco ne tiendra pas longtemps. Évacuez le groupe par les voies avant que le secteur tombe. Chaque opération coûte un jour, de la nourriture et des munitions, et le bruit que vous faites attire les hordes.",
@@ -987,6 +1021,8 @@ export const fr: Catalog = {
       recruited: "{name} a pris les armes et rejoint l'équipe.",
       roundsReturned: '{count} balles en plus sont revenues au stock.',
       scavenged: '{count} caisse(s) fouillée(s) : {bits}.',
+      built: '{upgrade} est prête.',
+      harvest: 'Le potager a donné {food} vivres.',
     },
     stage: {
       healthy: 'bien',

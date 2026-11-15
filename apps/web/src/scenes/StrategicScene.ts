@@ -7,8 +7,11 @@ import {
   operationMissionId,
   recruit,
   recruitBlockReason,
-  reinforcementMultiplier,
+  buildUpgrade,
+  campaignDeadline,
+  operationReinforcements,
   operationVariant,
+  upgradeBlockReason,
   sectorStatus,
   treatInfection,
   type CampaignState,
@@ -25,10 +28,14 @@ import {
   formatEnd,
   formatNotice,
   formatRecruitBlock,
+  formatUpgradeBlock,
+  difficultyName,
   missionTitle,
   roleLabel,
   sectorBlurb,
   text,
+  upgradeBlurb,
+  upgradeName,
 } from '../ui/i18n';
 import { CAMPAIGN_ID, MISSION_ID } from './MenuScene';
 
@@ -74,7 +81,7 @@ export class StrategicScene extends Phaser.Scene {
 
   private onClick(e: Event): void {
     const t = (e.target as HTMLElement).closest<HTMLElement>(
-      '[data-sector],[data-act],[data-treat]',
+      '[data-sector],[data-act],[data-treat],[data-build]',
     );
     if (!t) return;
     AudioEngine.get().uiClick();
@@ -82,6 +89,14 @@ export class StrategicScene extends Phaser.Scene {
     if (t.dataset['sector']) {
       this.selected = t.dataset['sector'];
       this.render();
+      return;
+    }
+    if (t.dataset['build']) {
+      const next = buildUpgrade(content, this.campaign, t.dataset['build']);
+      if (next) {
+        Playtest.log('build', { upgrade: t.dataset['build'], ...campaignFields(next) });
+        void this.commit(next);
+      }
       return;
     }
     if (t.dataset['treat']) {
@@ -117,7 +132,7 @@ export class StrategicScene extends Phaser.Scene {
         this.selected = null;
         const seed = Math.floor(Math.random() * 1_000_000);
         Playtest.log('campaignRestart', { ...campaignFields(this.campaign), seed });
-        void this.commit(newCampaign(content, CAMPAIGN_ID, seed));
+        void this.commit(newCampaign(content, CAMPAIGN_ID, seed, this.campaign.difficultyId));
         return;
       }
     }
@@ -143,12 +158,12 @@ export class StrategicScene extends Phaser.Scene {
   private showDayTurn(): void {
     const map = this.screen.querySelector('[data-testid=sector-map]');
     if (!map) return;
-    const def = loadContent().campaigns[CAMPAIGN_ID]!;
-    const day = Math.min(this.campaign.day, def.victory.deadlineDays);
+    const deadline = campaignDeadline(loadContent(), this.campaign);
+    const day = Math.min(this.campaign.day, deadline);
     const turn = document.createElement('div');
     turn.className = 'day-turn';
     turn.dataset['testid'] = 'day-turn';
-    turn.innerHTML = `${fxIcon('day_turn', { size: 2 })}<b>${text('strategic.day', { day, total: def.victory.deadlineDays })}</b>`;
+    turn.innerHTML = `${fxIcon('day_turn', { size: 2 })}<b>${text('strategic.day', { day, total: deadline })}</b>`;
     map.appendChild(turn);
     window.setTimeout(() => turn.remove(), 1900);
     this.freshNight = false;
@@ -161,7 +176,16 @@ export class StrategicScene extends Phaser.Scene {
     const fighters = c.roster.filter((r) => r.alive).length;
     const foodNeed = Math.ceil((c.population + fighters) / def.peoplePerFood);
     const byId = new Map(def.sectors.map((s) => [s.id, s]));
-    const siegeLoss = Math.min(c.population, def.siege?.breachLoss ?? 0);
+    const walls = def.upgrades.find((u) => u.effect.kind === 'walls' && c.upgrades.includes(u.id));
+    const siegeLoss = Math.min(
+      c.population,
+      Math.max(
+        0,
+        (def.siege?.breachLoss ?? 0) -
+          (walls?.effect.kind === 'walls' ? walls.effect.breachLossReduction : 0),
+      ),
+    );
+    const deadline = campaignDeadline(content, c);
 
     const edges = def.sectors
       .flatMap((s) =>
@@ -222,8 +246,8 @@ export class StrategicScene extends Phaser.Scene {
       <div class="card panel strategic-card" data-testid="strategic">
         <div class="strategic-head">
           <div>
-            <div class="subtitle">${text('strategic.kicker', { name: catalog().campaign.displayName })}</div>
-            <h2 data-testid="campaign-day">${text('strategic.day', { day: Math.min(c.day, def.victory.deadlineDays), total: def.victory.deadlineDays })}</h2>
+            <div class="subtitle">${text('strategic.kicker', { name: catalog().campaign.displayName })} <span class="diff-tag" data-testid="campaign-difficulty">${difficultyName(c.difficultyId)}</span></div>
+            <h2 data-testid="campaign-day">${text('strategic.day', { day: Math.min(c.day, deadline), total: deadline })}</h2>
           </div>
           <div class="stock-chips">
             ${chip(text('strategic.evacuated'), `<span data-testid="evacuated">${c.evacuated}</span>/${def.victory.evacuateGoal}`, text('strategic.evacuatedTip'))}
@@ -262,6 +286,7 @@ export class StrategicScene extends Phaser.Scene {
                  <span class="small" data-testid="recruit-note">${recruitBlock ? formatRecruitBlock(recruitBlock) : text('strategic.recruitTip')}</span></div>`
               : ''
           }
+          ${def.upgrades.length ? this.upgradesPanel() : ''}
           </div>
           <div class="interlude" data-testid="campaign-report">
             <h4>${text('strategic.report')}</h4>
@@ -271,12 +296,44 @@ export class StrategicScene extends Phaser.Scene {
       </div>`;
   }
 
+  /** Shelter upgrades: what each does, what it costs, and a button while it can be built. */
+  private upgradesPanel(): string {
+    const content = loadContent();
+    const def = content.campaigns[CAMPAIGN_ID]!;
+    const c = this.campaign;
+    const items = def.upgrades
+      .map((u) => {
+        const block = upgradeBlockReason(content, c, u.id);
+        const cost = [
+          u.cost.parts ? text('strategic.costParts', { n: u.cost.parts }) : '',
+          u.cost.food ? text('strategic.costFood', { n: u.cost.food }) : '',
+          u.cost.medicine ? text('strategic.costMedicine', { n: u.cost.medicine }) : '',
+          u.cost.ammo ? text('strategic.costAmmo', { n: u.cost.ammo }) : '',
+        ]
+          .filter(Boolean)
+          .join(', ');
+        const built = block === 'built';
+        return `<li class="upgrade ${built ? 'built' : ''}" data-testid="upgrade-${u.id}">
+          <div><b>${upgradeName(u.id, u.displayName)}</b> <small>${upgradeBlurb(u.id)}</small></div>
+          ${
+            built
+              ? `<span class="small ok-text">${text('strategic.built')}</span>`
+              : c.status === 'active'
+                ? `<button data-build="${u.id}" data-testid="build-${u.id}" ${block ? 'disabled' : ''} title="${block ? formatUpgradeBlock(block) : ''}">${text('strategic.build', { cost })}</button>`
+                : ''
+          }
+        </li>`;
+      })
+      .join('');
+    return `<div class="upgrades" data-testid="upgrades"><h4>${text('strategic.upgrades')}</h4><ul>${items}</ul></div>`;
+  }
+
   private sectorPanel(): string {
     const content = loadContent();
     const def = content.campaigns[CAMPAIGN_ID]!;
     const c = this.campaign;
     if (!this.selected)
-      return `<p class="briefing">${catalog().campaign.intro}</p><p class="small">${text('strategic.goal', { goal: def.victory.evacuateGoal, day: def.victory.deadlineDays })}</p>`;
+      return `<p class="briefing">${catalog().campaign.intro}</p><p class="small">${text('strategic.goal', { goal: def.victory.evacuateGoal, day: campaignDeadline(content, c) })}</p>`;
     const sec = def.sectors.find((s) => s.id === this.selected)!;
     const state = c.sectors[sec.id]!;
     const status = sectorStatus(def, c, sec.id);
@@ -308,7 +365,7 @@ export class StrategicScene extends Phaser.Scene {
                ${siege ? `<li class="warn-text">${text('strategic.siegePanel', { n: Math.min(c.population, def.siege?.breachLoss ?? 0) })}</li>` : ''}
                ${reward.length ? `<li>${text('strategic.reward', { looted: state.looted ? text('strategic.looted') : '', bits: reward.join(', ') })}</li>` : ''}
                ${sec.evacuates ? `<li>${text('strategic.evac', { n: sec.evacuates })}</li>` : ''}
-               <li>${text('strategic.reinforcements', { n: reinforcementMultiplier(state.infestation).toFixed(1).replace('.', ',') })}</li>
+               <li>${text('strategic.reinforcements', { n: operationReinforcements(content, c, sec.id).toFixed(1).replace('.', ',') })}</li>
                ${variant !== 'standard' ? `<li class="${variant === 'overrun' ? 'warn-text' : ''}" data-testid="sector-variant">${text(`strategic.variant.${variant}`)}</li>` : ''}
                ${mission.objectives.scavenge ? `<li>${text('strategic.scavenge', { n: mission.objectives.scavenge.caches.length, required: mission.objectives.scavenge.required })}</li>` : ''}
                <li>${text('strategic.cost')}</li>

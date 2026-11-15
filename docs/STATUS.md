@@ -110,7 +110,9 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   infected type from primitives on a joint rig and renders it from straight above. Each sheet has 10 frames at
   128 px: the walk cycle, the attack and the corpse. Arms reach the weapon by two-bone IK. Every sheet gets a dark
   outline, and the bake checks coverage and edge clipping. Colours and gear live in
-  `apps/web/src/render/characterLooks.json`, which the bake and the code-drawn fallback both read.
+  `apps/web/src/render/characterLooks.json`, which the bake and the code-drawn fallback both read. Heads have faces
+  and hair styles, hands have fingers, and the clothes have folds, collars, belts and cuffs. Outfits (tee, tank,
+  hoodie, office, vest, hospital gown) give eight walker looks (ADR 0025).
 - **Playtest kit**: opt-in local playtest log (Opções → Playtest or `?playtest=1`) that records sessions,
   menu and briefing choices, mission starts, objectives, deaths, bites, panics, blocked orders, alarm and hordes,
   30-second samples (FPS, squad, ammo, stress), how each mission ended or was left (menu, restart, load, closed tab),
@@ -120,7 +122,7 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **213/213** ✓ (plus the opt-in balance and economy reports).
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **217/217** ✓ (plus the opt-in balance and economy reports).
 - `pnpm e2e`: **22/22** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, every mission's map and texts, a scavenging run, the campaign flow with carry-over, the campaign siege, campaign deployment and recruits, campaign difficulty and upgrades, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite
@@ -141,8 +143,8 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 ## Known issues and limitations
 
 - Art and audio are **original**. Terrain is painted in code and sound is synthesized. Characters are 3D models
-  rendered top-down in Blender (ADR 0018). They are built from primitives, with no textures or faces, so a sculpted
-  or hand-painted set would still raise fidelity. The music is synthesized (ADR 0019), with simple timbres and a mix balanced by measurement only.
+  rendered top-down in Blender (ADR 0018). They are built from primitives with modelled faces, hands and cloth folds
+  (ADR 0025) but no textures, so a sculpted or hand-painted set would still raise fidelity. The music is synthesized (ADR 0019), with simple timbres and a mix balanced by measurement only.
 - Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
 - Route map and timeline are not saved: a mission continued from a quicksave shows only what happened after loading.
 - Campaign balance is verified with scripted routes on canonical seeds; with heavy early losses the later missions get

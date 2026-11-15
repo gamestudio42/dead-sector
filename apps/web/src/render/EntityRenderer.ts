@@ -16,6 +16,7 @@ import { CELL, COLORS, DEPTH, SQUAD_COLORS } from './constants';
 import {
   ATTACK_FRAME,
   CORPSE_FRAME,
+  HIT_FRAME,
   spriteScale,
   survivorTextureKey,
   WALK_FRAMES,
@@ -64,6 +65,8 @@ export class EntityRenderer {
   private views = new Map<string, ActorView>();
   private attackUntil = new Map<string, number>();
   private hurtUntil = new Map<string, number>();
+  /** Survivors flinch for a moment when hurt (infected show the simulation's own stagger). */
+  private flinchUntil = new Map<string, number>();
   private lastTime = 0;
 
   constructor(
@@ -84,6 +87,7 @@ export class EntityRenderer {
         this.attackUntil.set(p['attackerId'] as string, now + 220);
       else if (e.type === 'ACTOR_INJURED') {
         this.hurtUntil.set(p['actorId'] as string, now + 160);
+        this.flinchUntil.set(p['actorId'] as string, now + 220);
         if (p['sourceId']) this.attackUntil.set(p['sourceId'] as string, now + 260);
       }
     }
@@ -150,6 +154,7 @@ export class EntityRenderer {
     now: number,
     dt: number,
     deathSeen: boolean,
+    staggered = false,
   ): void {
     const x = p.x * CELL;
     const y = p.y * CELL;
@@ -198,7 +203,14 @@ export class EntityRenderer {
     v.angle = lerpAngle(v.angle, facing, Math.min(1, dt * 12));
     v.alpha += (targetAlpha - v.alpha) * Math.min(1, dt * 7);
     const attacking = (this.attackUntil.get(id) ?? 0) > now;
-    const frame = attacking ? ATTACK_FRAME : moved > 0.0005 ? Math.floor(v.anim) : 0;
+    const hit = staggered || (v.survivor && (this.flinchUntil.get(id) ?? 0) > now);
+    const frame = hit
+      ? HIT_FRAME
+      : attacking
+        ? ATTACK_FRAME
+        : moved > 0.0005
+          ? Math.floor(v.anim)
+          : 0;
     const breathe = 1 + Math.sin(now / 650 + v.phase) * (moved > 0.0005 ? 0 : 0.025);
     v.sprite
       .setFrame(frame)
@@ -351,7 +363,18 @@ export class EntityRenderer {
         continue;
       }
       const target = visible.has(z.id) ? 1 : showAllZombies ? 0.45 : 0;
-      this.animate(v, z.id, p, z.facing, true, target, timeMs, dt, false);
+      this.animate(
+        v,
+        z.id,
+        p,
+        z.facing,
+        true,
+        target,
+        timeMs,
+        dt,
+        false,
+        state.tick < z.staggerUntil,
+      );
       if (target > 0 && (z.ai.state === 'pursue' || z.ai.state === 'attack')) {
         const x = p.x * CELL;
         const y = p.y * CELL;

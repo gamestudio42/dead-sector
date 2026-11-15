@@ -105,8 +105,8 @@
       }
     },
     {
-      "typeId": "walker",
-      "count": 2,
+      "typeId": "crawler",
+      "count": 1,
       "rect": {
         "x0": 3,
         "y0": 30,

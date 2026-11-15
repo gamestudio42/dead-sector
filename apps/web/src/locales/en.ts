@@ -93,6 +93,7 @@ export const en = {
       runner: 'Runner',
       heavy: 'Brute',
       screamer: 'Screamer',
+      crawler: 'Crawler',
     },
     alarm: ['Calm', 'Uneasy', 'Alert', 'Hunt'],
     spawner: {
@@ -644,6 +645,7 @@ export const en = {
       runner: ['Runner!', 'A fast one coming!', 'That one runs!'],
       heavy: ['That one is huge!', 'Brute! Aim for the head!', 'This will take a lot of rounds…'],
       screamer: ['Screamer! Drop it before it cries!', 'That one is going to scream!'],
+      crawler: ['On the ground! Crawler!', 'Watch your feet!', 'One is crawling at us!'],
     },
     noAmmo: ["I'm out of ammo!", "Ammo's gone!", 'Dry! No rounds!'],
     bitten: ['It bit me!', 'Aaah! Bite!', 'It got me!'],

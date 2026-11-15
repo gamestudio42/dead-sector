@@ -95,6 +95,7 @@ export const de: Catalog = {
       runner: 'Läufer',
       heavy: 'Koloss',
       screamer: 'Schreier',
+      crawler: 'Kriecher',
     },
     alarm: ['Ruhig', 'Unruhig', 'Alarm', 'Jagd'],
     spawner: {
@@ -650,6 +651,7 @@ export const de: Catalog = {
       runner: ['Läufer!', 'Ein schneller kommt!', 'Der rennt!'],
       heavy: ['Der ist riesig!', 'Koloss! Zielt auf den Kopf!', 'Das braucht viele Patronen…'],
       screamer: ['Schreier! Runter mit ihm, bevor er schreit!', 'Der da wird schreien!'],
+      crawler: ['Am Boden! Kriecher!', 'Pass auf deine Füße auf!', 'Da kriecht einer auf uns zu!'],
     },
     noAmmo: ['Ich hab keine Munition!', 'Munition alle!', 'Leer! Keine Patrone!'],
     bitten: ['Er hat mich gebissen!', 'Aaah! Biss!', 'Er hat mich!'],

@@ -95,6 +95,7 @@ export const es: Catalog = {
       runner: 'Corredor',
       heavy: 'Bruto',
       screamer: 'Gritón',
+      crawler: 'Reptante',
     },
     alarm: ['Calma', 'Inquietud', 'Alerta', 'Cacería'],
     spawner: {
@@ -648,6 +649,7 @@ export const es: Catalog = {
       runner: ['¡Corredor!', '¡Viene uno rápido!', '¡Ese corre!'],
       heavy: ['¡Ese es enorme!', '¡Bruto! Apunten a la cabeza.', 'Va a hacer falta mucha bala…'],
       screamer: ['¡Gritón! Derríbenlo antes de que grite.', '¡Ese va a gritar!'],
+      crawler: ['¡En el suelo! ¡Reptante!', '¡Cuidado con los pies!', '¡Uno viene arrastrándose!'],
     },
     noAmmo: ['¡Me quedé sin munición!', '¡Se acabó la munición!', '¡Seco! ¡Sin balas!'],
     bitten: ['¡Me mordió!', '¡Aaah! ¡Mordisco!', '¡Me atrapó!'],

@@ -95,6 +95,7 @@ export const ptBR: Catalog = {
       runner: 'Corredor',
       heavy: 'Brutamontes',
       screamer: 'Gritador',
+      crawler: 'Rastejante',
     },
     alarm: ['Calmo', 'Inquieto', 'Alerta', 'Caçada'],
     spawner: {
@@ -645,6 +646,7 @@ export const ptBR: Catalog = {
       runner: ['Corredor!', 'Um rápido vindo!', 'Esse aí corre!'],
       heavy: ['Esse é grande!', 'Brutamontes! Mirem na cabeça!', 'Vai precisar de muita bala…'],
       screamer: ['Gritador! Derrubem antes que berre!', 'Aquele ali vai gritar!'],
+      crawler: ['No chão! Rastejante!', 'Cuidado com os pés!', 'Tem um se arrastando!'],
     },
     noAmmo: ['Estou sem munição!', 'Acabou a munição!', 'Seco! Sem bala!'],
     bitten: ['Ele me mordeu!', 'Aaah! Mordida!', 'Me pegou!'],

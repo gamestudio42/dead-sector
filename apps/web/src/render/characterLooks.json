@@ -209,5 +209,16 @@
     "bulk": 0.82,
     "mouth": true,
     "outfit": "gown"
+  },
+  "crawler": {
+    "shirt": "#4f5a4e",
+    "pants": "#33302a",
+    "skin": "#8e9879",
+    "hair": "#2d241c",
+    "lean": 0,
+    "arms": 0,
+    "outfit": "tee",
+    "hairStyle": "long",
+    "legless": true
   }
 }

@@ -12,10 +12,11 @@ import { CELL } from './constants';
  */
 export const SPRITE_PX = 32;
 export const WALK_FRAMES = 8;
-/** Frames per sheet: 0..7 walk cycle, 8 attack/recoil, 9 corpse. */
+/** Frames per sheet: 0..7 walk cycle, 8 attack/recoil, 9 corpse, 10 hit (flinch or stagger). */
 export const ATTACK_FRAME = 8;
 export const CORPSE_FRAME = 9;
-const FRAMES = 10;
+export const HIT_FRAME = 10;
+const FRAMES = 11;
 
 export interface SurvivorLook {
   jacket: string;
@@ -40,6 +41,8 @@ export interface ZombieLook {
   bulk?: number;
   /** Gaping mouth (screamer). */
   mouth?: boolean;
+  /** Lost its legs: drags itself face down (crawler). */
+  legless?: boolean;
 }
 
 type Ctx = CanvasRenderingContext2D;
@@ -121,7 +124,9 @@ function drawSurvivor(c: Ctx, look: SurvivorLook, frame: number): void {
   // upper body counter-rotates with the stride
   const twist = walking
     ? Math.sin((frame / WALK_FRAMES) * Math.PI * 2) * (look.weapon === 'none' ? 0.18 : 0.12)
-    : 0;
+    : frame === HIT_FRAME
+      ? 0.45
+      : 0;
   c.save();
   c.translate(cx, cy);
   c.rotate(twist);
@@ -225,6 +230,20 @@ function drawZombie(c: Ctx, look: ZombieLook, frame: number): void {
     drawCorpse(c, look.shirt, look.pants, look.skin, look.hair, true);
     return;
   }
+  if (look.legless) {
+    drawCrawler(c, look, frame);
+    return;
+  }
+  if (frame === HIT_FRAME) {
+    // staggered: knocked back and twisted, so the body reads differently for a moment
+    c.save();
+    c.translate(cx, cy);
+    c.rotate(-0.4);
+    c.translate(-cx - 2, -cy);
+    drawZombie(c, { ...look, arms: look.arms - 5 }, 0);
+    c.restore();
+    return;
+  }
   const walking = frame < WALK_FRAMES;
   const [fl, fr] = walking ? stride(frame, 3.8 + look.lean) : [0.5, -0.5];
   const sway = walking ? Math.sin((frame / WALK_FRAMES) * Math.PI * 2) * 1.2 : 0;
@@ -271,6 +290,37 @@ function drawZombie(c: Ctx, look: ZombieLook, frame: number): void {
     ellipse(c, cx + 5.4 + look.lean, cy + sway * 0.3, 1.5, 1.9, '#2a0806');
     ellipse(c, cx + 5.6 + look.lean, cy + sway * 0.3, 0.8, 1.1, '#6a1410');
   }
+}
+
+/** Face down, legs gone, dragging itself on its hands (the arms swap on each half cycle). */
+function drawCrawler(c: Ctx, look: ZombieLook, frame: number): void {
+  const cx = 14;
+  const cy = 16;
+  const s = frame < WALK_FRAMES ? Math.sin((frame / WALK_FRAMES) * Math.PI * 2) : 0;
+  const lunge = frame === ATTACK_FRAME ? 3 : frame === HIT_FRAME ? -3 : 0;
+  limb(c, cx - 4, cy - 2.5, cx - 9, cy - 3, 2.6, look.pants);
+  limb(c, cx - 4, cy + 2.5, cx - 8, cy + 3, 2.6, look.pants);
+  for (const side of [-1, 1]) {
+    const t = s * side;
+    const hx = cx + 6 + 4 * t + lunge;
+    const hy = cy + side * (frame === HIT_FRAME ? 10 : 7 - 2 * t);
+    limb(c, cx + 2, cy + side * 4.5, hx, hy, 2.2, look.skin);
+  }
+  c.beginPath();
+  c.ellipse(cx, cy, 6.5, 4.8, 0, 0, Math.PI * 2);
+  c.fillStyle = look.shirt;
+  c.fill();
+  stroke(c, '#0b0c0e', 1.2);
+  ellipse(c, cx - 1, cy + 1.5, 1.6, 1.2, '#3d1d1a');
+  c.beginPath();
+  c.arc(cx + 7 + lunge * 0.5, cy, 3.3, 0, Math.PI * 2);
+  c.fillStyle = look.skin;
+  c.fill();
+  stroke(c, '#0b0c0e', 1);
+  c.beginPath();
+  c.arc(cx + 6.6 + lunge * 0.5, cy, 3.1, Math.PI * 0.5, Math.PI * 1.5);
+  c.fillStyle = look.hair;
+  c.fill();
 }
 
 /** Body lying on the ground, limbs sprawled. */
@@ -416,6 +466,7 @@ export function survivorTextureKey(templateId: string, civilian: boolean): strin
 
 const HEAVY_LOOK: ZombieLook = looks.heavy;
 const SCREAMER_LOOK: ZombieLook = looks.screamer;
+const CRAWLER_LOOK: ZombieLook = looks.crawler;
 
 /** Display scale per infected type relative to a survivor (heavy ones tower over people). */
 export const ZOMBIE_SCALE: Record<string, number> = { heavy: 1.35, screamer: 0.95 };
@@ -424,6 +475,7 @@ export function zombieTextureKey(typeId: string, id: string): string {
   if (typeId === 'runner') return 'zb-runner';
   if (typeId === 'heavy') return 'zb-heavy';
   if (typeId === 'screamer') return 'zb-screamer';
+  if (typeId === 'crawler') return 'zb-crawler';
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return `zb-walker-${Math.abs(h) % ZOMBIE_LOOKS.length}`;
@@ -467,6 +519,7 @@ export function buildSpriteTextures(
   makeSheet(scene, 'zb-runner', (c, f) => drawZombie(c, RUNNER_LOOK, f));
   makeSheet(scene, 'zb-heavy', (c, f) => drawZombie(c, HEAVY_LOOK, f));
   makeSheet(scene, 'zb-screamer', (c, f) => drawZombie(c, SCREAMER_LOOK, f));
+  makeSheet(scene, 'zb-crawler', (c, f) => drawZombie(c, CRAWLER_LOOK, f));
 
   makeRadial(scene, 'fx-light', 128, [
     [0, 'rgba(255,255,255,1)'],

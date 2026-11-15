@@ -187,6 +187,21 @@ describe('heavy and screamer infected', () => {
     expect(heavy.doorDamage).toBeGreaterThan(walker.doorDamage * 2);
     expect(heavy.maxHealth).toBeGreaterThan(walker.maxHealth * 2);
   });
+
+  it('a crawler is only noticed up close, where a walker is seen from afar', () => {
+    const sim = testSim({ rows: field(40, 12), alfaSpawn: { x: 4.5, y: 5.5 } });
+    keepOnly(sim, ['alfa-leader']);
+    const leader = survivor(sim, 'alfa-leader');
+    leader.facing = 0;
+    const walker = addZombie(sim, 12.5, 4.5);
+    const crawler = addZombie(sim, 12.5, 6.5, { typeId: 'crawler' });
+    sim.step();
+    expect(leader.seenZombieIds).toContain(walker.id);
+    expect(leader.seenZombieIds).not.toContain(crawler.id);
+    crawler.position = { x: 7.5, y: 5.5 };
+    sim.step();
+    expect(leader.seenZombieIds).toContain(crawler.id);
+  });
 });
 
 describe('alarm and hordes', () => {

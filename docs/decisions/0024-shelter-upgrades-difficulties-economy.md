@@ -66,3 +66,15 @@ where to look, not how a person fares:
 
 These findings go to TASKS as the next tuning step. Rebalance the rounds (cheaper routes or more ammo in rewards) and
 check against the playtest first: a person sneaks more than the scripted routes do.
+
+## Update: the scavenging policy
+
+The report now plays two policies side by side. **raids** is the policy above and never plays a scavenging run.
+**scavenger** counts the richest caches a scavenging run's radio needs as part of the sector's worth, so it opens with
+Comboio Parado, the Avenida Norte run next to the shelter. The run is always won, but its returnFire route fires about
+350 rounds on the overrun avenue and brings back about 35 (reward and caches). The squads are left dry on day 1, and the
+policy evacuates almost nobody and loses every campaign on the deadline. Feira Fantasma stays out of reach: Mercadão
+Leste only borders sectors that the policy never secures.
+
+So a scavenging run costs far more rounds than it returns, which makes the round economy the first thing to tune. A
+quieter route through the caches, or loot that pays back the fight, should come out of the playtest.

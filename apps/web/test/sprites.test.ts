@@ -17,15 +17,15 @@ describe('baked character sheets', () => {
       'zb-runner',
       'zb-heavy',
       'zb-screamer',
-      'zb-crawler',
+      ...looks.crawlers.map((_, i) => `zb-crawler-${i}`),
     ].sort();
     expect(Object.keys(manifest.sheets).sort()).toEqual(expected);
     for (const s of survivors) expect(looks.survivors).toHaveProperty(s.id);
   });
 
   it('keeps the frame layout the renderer expects', () => {
-    // 0..7 walk, 8 attack, 9 corpse, 10 hit; a frame spans two cells
-    expect(manifest.frames).toBe(11);
+    // 0..7 walk, 8 attack, 9 corpse, 10 hit, 11-12 idle look, 13 reload; a frame spans two cells
+    expect(manifest.frames).toBe(14);
     expect(manifest.frameSize / manifest.pxPerCell).toBe(2);
   });
 

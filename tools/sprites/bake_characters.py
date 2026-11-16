@@ -6,7 +6,8 @@ Every character is built from primitives on a small joint hierarchy, posed per f
 straight down with an orthographic camera. Each sheet is a horizontal strip in the layout the game
 already uses (apps/web/src/render/SpriteFactory.ts): frames 0-7 walk cycle (frame 0 doubles as the
 idle pose), 8 attack, 9 corpse, 10 hit (the flinch of a survivor, the stagger of an
-infected). Characters face +x; the game rotates the sprite by the actor's
+infected), 11 and 12 the idle pose looking left and right, 13 reload (survivors; the infected
+repeat their idle pose). Characters face +x; the game rotates the sprite by the actor's
 facing, so the light comes from straight above and never bakes a direction into the art.
 
 Inputs: apps/web/src/render/characterLooks.json (colours and gear, shared with the code-drawn
@@ -37,7 +38,21 @@ WALK_FRAMES = 8
 ATTACK_FRAME = 8
 CORPSE_FRAME = 9
 HIT_FRAME = 10
-FRAMES = 11
+LOOK_LEFT_FRAME = 11
+LOOK_RIGHT_FRAME = 12
+RELOAD_FRAME = 13
+FRAMES = 14
+
+
+def idle_variant(frame):
+    """(base frame, look) for the idle variants: look is +1 left, -1 right, 0 straight."""
+    if frame == LOOK_LEFT_FRAME:
+        return 0, 1
+    if frame == LOOK_RIGHT_FRAME:
+        return 0, -1
+    if frame == RELOAD_FRAME:
+        return 0, 0
+    return frame, 0
 OUTLINE = (0.043, 0.047, 0.055)  # #0b0c0e, the outline colour of the old sprites
 DOWN = Vector((0, 0, -1))
 
@@ -526,8 +541,16 @@ def weapon_model(rig, kind, recoil):
         box(sp, (0.17, 0.065, 0.065), (0.48 + r, -0.03, 0.43), wood, 0.015)
 
 
+def reload_hand(rig, target):
+    """The support hand off the gun, low by the chest, holding a fresh magazine or shells."""
+    hand = rig.arm_to(1, target, (-0.4, 1, -0.3))
+    box(rig.spine, (0.05, 0.035, 0.11), (hand.x + 0.02, hand.y - 0.02, hand.z + 0.03), material("#16181b", 0.45, 0.6), 0.006)
+
+
 def pose_survivor(rig, look, frame):
     kind = look["weapon"]
+    reload = frame == RELOAD_FRAME and kind in ("pistol", "carbine", "shotgun")
+    frame, turn = idle_variant(frame)
     walking = frame < WALK_FRAMES
     ph = frame / WALK_FRAMES * 2 * math.pi
     s = math.sin(ph) if walking else 0.0
@@ -549,17 +572,29 @@ def pose_survivor(rig, look, frame):
         rig.leg(-1, 0.1, 0.15, 0.1)
         rig.spine.rotation_quaternion = euler_q(y=-0.2, z=0.38)
         rig.head.rotation_quaternion = euler_q(y=0.25, z=0.45)
+    elif reload:
+        # the gun comes in to the chest and the eyes go down to it
+        recoil = 0.16
+        rig.spine.rotation_quaternion = euler_q(y=0.12, z=-0.12)
+        rig.head.rotation_quaternion = euler_q(y=0.45, z=-0.15)
     else:
-        rig.spine.rotation_quaternion = euler_q(y=0.06, z=s * (0.06 if kind != "none" else 0.14))
-        rig.head.rotation_quaternion = euler_q(z=-s * 0.05)
+        # idle look-around: the head turns well, the shoulders follow a little (and the gun with them)
+        rig.spine.rotation_quaternion = euler_q(y=0.06, z=s * (0.06 if kind != "none" else 0.14) + 0.16 * turn)
+        rig.head.rotation_quaternion = euler_q(z=-s * 0.05 + 0.75 * turn)
 
     if kind == "pistol":
         rig.arm_to(-1, (0.5 - recoil, -0.03, 0.43), (-0.3, -1, -0.6))
-        rig.arm_to(1, (0.48 - recoil, 0.03, 0.41), (-0.3, 1, -0.6))
+        if reload:
+            reload_hand(rig, (0.2, 0.12, 0.3))
+        else:
+            rig.arm_to(1, (0.48 - recoil, 0.03, 0.41), (-0.3, 1, -0.6))
         weapon_model(rig, kind, recoil)
     elif kind in ("carbine", "shotgun"):
         rig.arm_to(-1, (0.2 - recoil, -0.07, 0.42), (-0.4, -1, -0.5))
-        rig.arm_to(1, (0.46 - recoil, 0.0, 0.42), (-0.2, 1, -0.7))
+        if reload:
+            reload_hand(rig, (0.24, 0.1, 0.3) if kind == "carbine" else (0.3, 0.08, 0.36))
+        else:
+            rig.arm_to(1, (0.46 - recoil, 0.0, 0.42), (-0.2, 1, -0.7))
         weapon_model(rig, kind, recoil)
     elif kind == "melee":
         if attack:
@@ -606,6 +641,7 @@ def pose_infected(rig, look, frame):
     if frame == HIT_FRAME:
         pose_stagger(rig, look)
         return
+    frame, turn = idle_variant(frame)
     walking = frame < WALK_FRAMES
     attack = frame == ATTACK_FRAME
     ph = frame / WALK_FRAMES * 2 * math.pi
@@ -622,10 +658,13 @@ def pose_infected(rig, look, frame):
         rig.leg(-1, -0.25, 0.3, 0.07)
     pitch = 0.32 + 0.1 * lean + (0.25 if attack else 0)
     rig.spine.rotation_quaternion = euler_q(x=s * 0.09, y=pitch, z=s * 0.08)
+    if turn:
+        # idle: the head lolls over to one side and the shoulders sway after it
+        rig.spine.rotation_quaternion = euler_q(x=0.1 * turn, y=pitch, z=0.18 * turn)
     if look.get("mouth"):
-        rig.head.rotation_quaternion = euler_q(y=-0.85 - pitch * 0.4, x=0.15)
+        rig.head.rotation_quaternion = euler_q(y=-0.85 - pitch * 0.4, x=0.15 + 0.35 * turn, z=0.4 * turn)
     else:
-        rig.head.rotation_quaternion = euler_q(y=-pitch * 0.6, x=0.12 + s * 0.05)
+        rig.head.rotation_quaternion = euler_q(y=-pitch * 0.6, x=0.12 + s * 0.05 + 0.45 * turn, z=0.45 * turn)
     reach = 0.5 + 0.035 * arms + (0.15 if attack else 0)
     sway = 0.06 * s
     rig.arm_to(1, (reach + sway, 0.17 * rig.bulk, 0.4), (-0.3, 1, -0.5))
@@ -648,6 +687,7 @@ def pose_stagger(rig, look):
 def pose_crawler(rig, look, frame):
     """Face down on the ground, dragging itself on its hands: one arm reaches ahead and plants
     while the other pulls the body forward, then they swap. The legs are stumps that trail."""
+    frame, turn = idle_variant(frame)
     walking = frame < WALK_FRAMES
     ph = frame / WALK_FRAMES * 2 * math.pi
     s = math.sin(ph) if walking else 0.0
@@ -664,8 +704,10 @@ def pose_crawler(rig, look, frame):
         lift, yaw = -0.35, -0.25  # thrown back: the chest comes off the ground
     elif attack:
         lift = -0.18  # rears up to bite
-    rig.spine.rotation_quaternion = euler_q(x=yaw, y=lift)
-    rig.head.rotation_quaternion = euler_q(y=-0.75 + (0.45 if hit else 0) - (0.2 if attack else 0), x=0.1 * s)
+    rig.spine.rotation_quaternion = euler_q(x=yaw + 0.08 * turn, y=lift - 0.08 * abs(turn))
+    rig.head.rotation_quaternion = euler_q(
+        y=-0.75 + (0.45 if hit else 0) - (0.2 if attack else 0), x=0.1 * s + 0.7 * turn
+    )
     for side in (1, -1):
         rig.leg(side, 0.05 * s * side, 0, 0.12 + 0.05 * side * s)
     b = rig.bulk
@@ -808,7 +850,7 @@ def main():
         jobs.append((key, build, lambda rig, f, look=look: pose_survivor(rig, look, f)))
     infected = [(f"zb-walker-{i}", l) for i, l in enumerate(looks["walkers"])]
     infected += [("zb-runner", looks["runner"]), ("zb-heavy", looks["heavy"]), ("zb-screamer", looks["screamer"])]
-    infected += [("zb-crawler", looks["crawler"])]
+    infected += [(f"zb-crawler-{i}", l) for i, l in enumerate(looks["crawlers"])]
     for n, (key, look) in enumerate(infected):
 
         def build(look=look, n=n):

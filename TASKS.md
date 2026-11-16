@@ -20,8 +20,8 @@
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
-- Art, next step: more animation (a turn or look-around while idle, a reload) and a second crawler look, reusing
-  `tools/sprites/bake_characters.py`.
+- Art, next step: textures or a sculpted pass on the models (heads and clothes), or regenerate the trailer and the
+  store cover with the new characters (`node tools/promo/trailer.mjs`).
 
 ## BLOCKED
 
@@ -29,6 +29,10 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Idle look-around and a reload pose: sheets grow to 14 frames. Actors that stand still for 2 s glance left and right
+  (not infected closing in), and a survivor changing magazines shows the reload pose. A second crawler look (ADR
+  0027).
 
 - Crawler infected (Rastejante): drags itself face down on its hands, 45 HP, 0.5 m/s, bites often, and survivors
   only notice it within 5 m; it appears in Plantão Noturno, Comboio Parado, Feira Fantasma and Sinal Fraco. Every

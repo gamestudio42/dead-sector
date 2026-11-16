@@ -210,15 +210,28 @@
     "mouth": true,
     "outfit": "gown"
   },
-  "crawler": {
-    "shirt": "#4f5a4e",
-    "pants": "#33302a",
-    "skin": "#8e9879",
-    "hair": "#2d241c",
-    "lean": 0,
-    "arms": 0,
-    "outfit": "tee",
-    "hairStyle": "long",
-    "legless": true
-  }
+  "crawlers": [
+    {
+      "shirt": "#4f5a4e",
+      "pants": "#33302a",
+      "skin": "#8e9879",
+      "hair": "#2d241c",
+      "lean": 0,
+      "arms": 0,
+      "outfit": "tee",
+      "hairStyle": "long",
+      "legless": true
+    },
+    {
+      "shirt": "#7a6a4c",
+      "pants": "#2b3a52",
+      "skin": "#9aa489",
+      "hair": "#5b4632",
+      "lean": 0,
+      "arms": 0,
+      "outfit": "office",
+      "hairStyle": "buzz",
+      "legless": true
+    }
+  ]
 }

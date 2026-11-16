@@ -17,6 +17,9 @@ import {
   ATTACK_FRAME,
   CORPSE_FRAME,
   HIT_FRAME,
+  LOOK_LEFT_FRAME,
+  LOOK_RIGHT_FRAME,
+  RELOAD_FRAME,
   spriteScale,
   survivorTextureKey,
   WALK_FRAMES,
@@ -44,6 +47,29 @@ interface ActorView {
   scale: number;
   /** Sheet scale: baked and code-drawn sheets have different frame sizes. */
   base: number;
+  /** Seconds the actor has stood still. */
+  still: number;
+}
+
+/** Poses that come from the actor's state rather than its movement. */
+interface PoseState {
+  /** Infected: the simulation is staggering it. */
+  staggered?: boolean;
+  /** Survivor: a magazine change is under way. */
+  reloading?: boolean;
+  /** Whether it may look around while it stands still (not an infected closing in). */
+  idleLook?: boolean;
+}
+
+/** Seconds of standing still before an actor starts looking around. */
+const IDLE_LOOK_AFTER = 2;
+
+/** The idle look-around: mostly straight ahead, then a glance left and one right, per actor phase. */
+function idleFrame(now: number, phase: number): number {
+  const t = (now / 1000 + phase * 2.3) % 7;
+  if (t >= 4 && t < 5.2) return LOOK_LEFT_FRAME;
+  if (t >= 5.6 && t < 6.8) return LOOK_RIGHT_FRAME;
+  return 0;
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
@@ -137,6 +163,7 @@ export class EntityRenderer {
         survivor,
         scale,
         base: spriteScale(texture),
+        still: 0,
       };
       this.views.set(id, v);
     }
@@ -154,7 +181,7 @@ export class EntityRenderer {
     now: number,
     dt: number,
     deathSeen: boolean,
-    staggered = false,
+    pose: PoseState = {},
   ): void {
     const x = p.x * CELL;
     const y = p.y * CELL;
@@ -203,14 +230,15 @@ export class EntityRenderer {
     v.angle = lerpAngle(v.angle, facing, Math.min(1, dt * 12));
     v.alpha += (targetAlpha - v.alpha) * Math.min(1, dt * 7);
     const attacking = (this.attackUntil.get(id) ?? 0) > now;
-    const hit = staggered || (v.survivor && (this.flinchUntil.get(id) ?? 0) > now);
-    const frame = hit
-      ? HIT_FRAME
-      : attacking
-        ? ATTACK_FRAME
-        : moved > 0.0005
-          ? Math.floor(v.anim)
-          : 0;
+    const moving = moved > 0.0005;
+    v.still = moving ? 0 : v.still + dt;
+    const hit = pose.staggered || (v.survivor && (this.flinchUntil.get(id) ?? 0) > now);
+    let frame = 0;
+    if (hit) frame = HIT_FRAME;
+    else if (attacking) frame = ATTACK_FRAME;
+    else if (moving) frame = Math.floor(v.anim);
+    else if (pose.reloading) frame = RELOAD_FRAME;
+    else if (pose.idleLook && v.still > IDLE_LOOK_AFTER) frame = idleFrame(now, v.phase);
     const breathe = 1 + Math.sin(now / 650 + v.phase) * (moved > 0.0005 ? 0 : 0.025);
     v.sprite
       .setFrame(frame)
@@ -363,18 +391,10 @@ export class EntityRenderer {
         continue;
       }
       const target = visible.has(z.id) ? 1 : showAllZombies ? 0.45 : 0;
-      this.animate(
-        v,
-        z.id,
-        p,
-        z.facing,
-        true,
-        target,
-        timeMs,
-        dt,
-        false,
-        state.tick < z.staggerUntil,
-      );
+      this.animate(v, z.id, p, z.facing, true, target, timeMs, dt, false, {
+        staggered: state.tick < z.staggerUntil,
+        idleLook: z.ai.state !== 'pursue' && z.ai.state !== 'attack',
+      });
       if (target > 0 && (z.ai.state === 'pursue' || z.ai.state === 'attack')) {
         const x = p.x * CELL;
         const y = p.y * CELL;
@@ -398,7 +418,10 @@ export class EntityRenderer {
       }
       let target = 1;
       if (s.isObjectiveCivilian && !s.rescued && s.alive && fogAt(s.position) !== 2) target = 0;
-      this.animate(v, s.id, p, s.facing, s.alive, target, timeMs, dt, true);
+      this.animate(v, s.id, p, s.facing, s.alive, target, timeMs, dt, true, {
+        reloading: s.weapon.reloadRemaining > 0,
+        idleLook: !s.panicked,
+      });
       if (!s.alive || target === 0) continue;
       this.drawSurvivorOverlay(
         g,

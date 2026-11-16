@@ -87,6 +87,8 @@ export function updatePerception(world: World, state: GameState, ctx: TickContex
       for (const i of cells) fog[i] = 2;
     }
     for (const z of ctx.zombieHash.query(eye, range)) {
+      const spot = world.content.zombieTypes[z.typeId]?.spotRangeMeters;
+      if (spot !== undefined && dist(eye, z.position) > spot) continue;
       if (survivorCanSee(world, state, s, z.position, opaque)) {
         s.seenZombieIds.push(z.id);
         if (isSquadMember(s)) squadSeen.add(z.id);

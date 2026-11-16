@@ -75,7 +75,7 @@
       }
     },
     {
-      "typeId": "walker",
+      "typeId": "crawler",
       "count": 1,
       "rect": {
         "x0": 47,

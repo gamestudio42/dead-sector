@@ -66,6 +66,8 @@ export const zombieTypeSchema = z.object({
   /** Loud shriek on first sight of a survivor (screamer); 0 = never screams. */
   screamIntensity: z.number().min(0).max(100).default(0),
   screamCooldownSeconds: z.number().positive().default(15),
+  /** Survivors only notice it within this distance (a crawler moves low, under cars and debris). */
+  spotRangeMeters: z.number().positive().optional(),
 });
 
 const stat = z.number().min(0).max(100);

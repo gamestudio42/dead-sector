@@ -5,7 +5,8 @@
 Every character is built from primitives on a small joint hierarchy, posed per frame and rendered
 straight down with an orthographic camera. Each sheet is a horizontal strip in the layout the game
 already uses (apps/web/src/render/SpriteFactory.ts): frames 0-7 walk cycle (frame 0 doubles as the
-idle pose), 8 attack, 9 corpse. Characters face +x; the game rotates the sprite by the actor's
+idle pose), 8 attack, 9 corpse, 10 hit (the flinch of a survivor, the stagger of an
+infected). Characters face +x; the game rotates the sprite by the actor's
 facing, so the light comes from straight above and never bakes a direction into the art.
 
 Inputs: apps/web/src/render/characterLooks.json (colours and gear, shared with the code-drawn
@@ -35,7 +36,8 @@ CELL_M = 0.95  # metres per map cell: a 0.45 m shoulder fills half a cell, as be
 WALK_FRAMES = 8
 ATTACK_FRAME = 8
 CORPSE_FRAME = 9
-FRAMES = 10
+HIT_FRAME = 10
+FRAMES = 11
 OUTLINE = (0.043, 0.047, 0.055)  # #0b0c0e, the outline colour of the old sprites
 DOWN = Vector((0, 0, -1))
 
@@ -343,10 +345,20 @@ class Rig:
         # legs
         self.hips = {}
         self.knees = {}
+        legless = look.get("legless", False)
         for side in (1, -1):
             hip = joint(f"hip{side}", (0, 0.1 * side * bulk, -0.06), self.pelvis)
-            rod(hip, 0.068 * bulk, 0.45, legs)
             knee = joint(f"knee{side}", (0, 0, -0.45), hip)
+            self.hips[side] = hip
+            self.knees[side] = knee
+            if legless:
+                # torn off above the knee: a short thigh, a ragged hem and a raw end
+                stump = 0.3 if side == 1 else 0.22
+                rod(hip, 0.068 * bulk, stump, legs)
+                ring(hip, 0.066 * bulk, 0.016, (0, 0, -stump + 0.02), material(shade(look["pants"], 0.7), 0.9))
+                ball(hip, (0.06, 0.06, 0.03), (0, 0, -stump), material("#5a1410", 0.45), 12, 6)
+                continue
+            rod(hip, 0.068 * bulk, 0.45, legs)
             rod(knee, 0.055 * bulk, 0.4, shin)
             if legs is pants:
                 # a crease where the trousers bunch above the boot
@@ -354,8 +366,6 @@ class Rig:
             ankle = joint(f"ankle{side}", (0, 0, -0.42), knee)
             box(ankle, (0.24, 0.1, 0.08), (0.05, 0, -0.01), boots, 0.03)
             box(ankle, (0.07, 0.106, 0.02), (0.14, 0, -0.045), material("#0d0d0e", 0.6), 0.008)  # sole toe
-            self.hips[side] = hip
-            self.knees[side] = knee
 
         # torso: a box with folds, a yoke seam and a collar, so it reads as cloth from above
         self.spine = joint("spine", (0, 0, 0.07), self.pelvis)
@@ -531,9 +541,17 @@ def pose_survivor(rig, look, frame):
         rig.leg(1, 0.18, 0.12, 0.06)
         rig.leg(-1, -0.18, 0.2, 0.06)
     attack = frame == ATTACK_FRAME
+    hit = frame == HIT_FRAME
     recoil = 0.05 if attack else 0.0
-    rig.spine.rotation_quaternion = euler_q(y=0.06, z=s * (0.06 if kind != "none" else 0.14))
-    rig.head.rotation_quaternion = euler_q(z=-s * 0.05)
+    if hit:
+        # a flinch: the torso twists away and leans back, the head turns aside
+        rig.leg(1, -0.2, 0.25, 0.08)
+        rig.leg(-1, 0.1, 0.15, 0.1)
+        rig.spine.rotation_quaternion = euler_q(y=-0.2, z=0.38)
+        rig.head.rotation_quaternion = euler_q(y=0.25, z=0.45)
+    else:
+        rig.spine.rotation_quaternion = euler_q(y=0.06, z=s * (0.06 if kind != "none" else 0.14))
+        rig.head.rotation_quaternion = euler_q(z=-s * 0.05)
 
     if kind == "pistol":
         rig.arm_to(-1, (0.5 - recoil, -0.03, 0.43), (-0.3, -1, -0.6))
@@ -552,6 +570,9 @@ def pose_survivor(rig, look, frame):
             d = Vector((0.75, -0.15, 0.6)).normalized()
         rod(rig.spine, 0.022, 0.62, material("#6d4a2c", 0.75), start=hand, direction=d)
         rig.arm_swing(1, -s * 0.45 if not attack else -0.6, 0.35)
+    elif hit:
+        rig.arm_to(1, (0.22, 0.34, 0.6), (-0.3, 1, -0.2))
+        rig.arm_to(-1, (0.3, -0.2, 0.62), (-0.3, -1, -0.2))
     else:
         rig.arm_swing(1, -s * 0.5, 0.25)
         rig.arm_swing(-1, s * 0.5, 0.25)
@@ -582,6 +603,9 @@ def infected_gear(rig, look, seed):
 
 
 def pose_infected(rig, look, frame):
+    if frame == HIT_FRAME:
+        pose_stagger(rig, look)
+        return
     walking = frame < WALK_FRAMES
     attack = frame == ATTACK_FRAME
     ph = frame / WALK_FRAMES * 2 * math.pi
@@ -606,6 +630,58 @@ def pose_infected(rig, look, frame):
     sway = 0.06 * s
     rig.arm_to(1, (reach + sway, 0.17 * rig.bulk, 0.4), (-0.3, 1, -0.5))
     rig.arm_to(-1, (reach - 0.05 - sway, -0.16 * rig.bulk, 0.38), (-0.3, -1, -0.5))
+
+
+def pose_stagger(rig, look):
+    """Knocked back by a hit: the torso rocks back and twists, the head snaps back, the arms fly
+    out and the feet step back to catch the weight."""
+    rig.pelvis.location.z = 0.92
+    rig.leg(1, -0.35, 0.35, 0.1)
+    rig.leg(-1, 0.15, 0.2, 0.12)
+    rig.spine.rotation_quaternion = euler_q(x=0.12, y=-0.28, z=-0.3)
+    rig.head.rotation_quaternion = euler_q(y=0.55, x=-0.2)
+    b = rig.bulk
+    rig.arm_to(1, (0.12, 0.45 * b, 0.62), (-0.2, 1, 0.3))
+    rig.arm_to(-1, (-0.05, -0.42 * b, 0.55), (-0.2, -1, 0.3))
+
+
+def pose_crawler(rig, look, frame):
+    """Face down on the ground, dragging itself on its hands: one arm reaches ahead and plants
+    while the other pulls the body forward, then they swap. The legs are stumps that trail."""
+    walking = frame < WALK_FRAMES
+    ph = frame / WALK_FRAMES * 2 * math.pi
+    s = math.sin(ph) if walking else 0.0
+    # lay the rig down: its up axis (z) becomes forward (+x) and its front faces the ground;
+    # in spine space +z is now forward along the ground and +x points down into it
+    rig.root.rotation_quaternion = euler_q(y=math.pi / 2)
+    surge = 0.03 * math.cos(ph) if walking else 0.0
+    rig.root.location = (-1.17 + surge, 0, 0.14)
+    attack = frame == ATTACK_FRAME
+    hit = frame == HIT_FRAME
+    yaw = 0.1 * s  # the shoulders swing toward the reaching arm
+    lift = 0.0
+    if hit:
+        lift, yaw = -0.35, -0.25  # thrown back: the chest comes off the ground
+    elif attack:
+        lift = -0.18  # rears up to bite
+    rig.spine.rotation_quaternion = euler_q(x=yaw, y=lift)
+    rig.head.rotation_quaternion = euler_q(y=-0.75 + (0.45 if hit else 0) - (0.2 if attack else 0), x=0.1 * s)
+    for side in (1, -1):
+        rig.leg(side, 0.05 * s * side, 0, 0.12 + 0.05 * side * s)
+    b = rig.bulk
+    if hit:
+        rig.arm_to(1, (-0.05, 0.42 * b, 0.6), (0, 1, 0.3))
+        rig.arm_to(-1, (0.0, -0.4 * b, 0.52), (0, -1, 0.3))
+        return
+    if attack:
+        rig.arm_to(1, (0.1, 0.2 * b, 0.92), (-0.6, 1, 0))
+        rig.arm_to(-1, (0.12, -0.18 * b, 0.9), (-0.6, -1, 0))
+        return
+    for side in (1, -1):
+        t = s * side  # +1: this arm is fully reached out ahead; -1: pulled back beside the chest
+        z = 0.62 + 0.26 * t
+        y = (0.25 + 0.06 * (1 - t)) * side * b
+        rig.arm_to(side, (0.13, y, z), (-0.8, side, 0.2))
 
 
 # --------------------------------------------------------------------------- corpse
@@ -732,6 +808,7 @@ def main():
         jobs.append((key, build, lambda rig, f, look=look: pose_survivor(rig, look, f)))
     infected = [(f"zb-walker-{i}", l) for i, l in enumerate(looks["walkers"])]
     infected += [("zb-runner", looks["runner"]), ("zb-heavy", looks["heavy"]), ("zb-screamer", looks["screamer"])]
+    infected += [("zb-crawler", looks["crawler"])]
     for n, (key, look) in enumerate(infected):
 
         def build(look=look, n=n):
@@ -739,7 +816,8 @@ def main():
             infected_gear(rig, look, 1000 + n)
             return rig
 
-        jobs.append((key, build, lambda rig, f, look=look: pose_infected(rig, look, f)))
+        pose = pose_crawler if look.get("legless") else pose_infected
+        jobs.append((key, build, lambda rig, f, look=look, pose=pose: pose(rig, look, f)))
 
     manifest_path = os.path.join(OUT, "manifest.json")
     manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {"sheets": {}}

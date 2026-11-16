@@ -8,8 +8,8 @@ it is used to catch missions that are unwinnable or trivial, not as a difficulty
 | ------------------ | ------------ | ----- | ------------------ | -------------- | --------------- |
 | A Última Farmácia  | furtiva      | 7/10  | 0.4                | 305 s          | civilianDied ×3 |
 | A Última Farmácia  | combate      | 7/10  | 2.3                | 160 s          | civilianDied ×3 |
-| Sinal Fraco        | roteiro      | 8/10  | 0.4                | 131 s          | civilianDied ×2 |
-| Plantão Noturno    | roteiro      | 10/10 | 0.8                | 141 s          | —               |
+| Sinal Fraco        | roteiro      | 9/10  | 0.1                | 136 s          | civilianDied ×1 |
+| Plantão Noturno    | roteiro      | 8/10  | 0.6                | 141 s          | civilianDied ×2 |
 | Cerco na Dom Bosco | saguão       | 10/10 | 0.6                | 364 s          | —               |
-| Comboio Parado     | avenida      | 10/10 | 1.0                | 152 s          | —               |
-| Feira Fantasma     | bancas oeste | 10/10 | 0.3                | 173 s          | —               |
+| Comboio Parado     | avenida      | 10/10 | 0.2                | 155 s          | —               |
+| Feira Fantasma     | bancas oeste | 10/10 | 0.2                | 172 s          | —               |

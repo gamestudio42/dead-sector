@@ -77,5 +77,25 @@
     "spawnWeight": 0,
     "screamIntensity": 95,
     "screamCooldownSeconds": 14
+  },
+  {
+    "id": "crawler",
+    "displayName": "Rastejante",
+    "maxHealth": 45,
+    "moveSpeedMetersPerSecond": 0.5,
+    "wanderSpeedFactor": 0.6,
+    "visionRangeMeters": 8,
+    "visionFovDegrees": 120,
+    "closeAwarenessMeters": 2,
+    "hearingThreshold": 14,
+    "attackRangeMeters": 0.8,
+    "attackCooldownSeconds": 1.6,
+    "attackDamage": 10,
+    "attackHitChance": 0.75,
+    "biteChanceOnHit": 0.45,
+    "doorDamage": 3,
+    "searchSeconds": 20,
+    "spawnWeight": 0,
+    "spotRangeMeters": 5
   }
 ]

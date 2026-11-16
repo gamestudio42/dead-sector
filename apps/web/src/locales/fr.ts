@@ -95,6 +95,7 @@ export const fr: Catalog = {
       runner: 'Coureur',
       heavy: 'Brute',
       screamer: 'Hurleur',
+      crawler: 'Rampant',
     },
     alarm: ['Calme', 'Inquiet', 'Alerte', 'Chasse'],
     spawner: {
@@ -654,6 +655,11 @@ export const fr: Catalog = {
         'Il va falloir beaucoup de balles…',
       ],
       screamer: ["Hurleur ! Abattez-le avant qu'il crie !", 'Celui-là va crier !'],
+      crawler: [
+        'Au sol ! Un rampant !',
+        'Attention aux pieds !',
+        'Il y en a un qui rampe vers nous !',
+      ],
     },
     noAmmo: ["Je n'ai plus de munitions !", 'Plus de munitions !', 'À sec ! Plus de balles !'],
     bitten: ["Il m'a mordu !", 'Aaah ! Morsure !', "Il m'a eu !"],

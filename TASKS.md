@@ -11,7 +11,7 @@
 ## NEXT
 
 - Economy tuning from `docs/testing/economy.md` (ADR 0024): rounds are the binding resource (the Sinal Fraco route
-  fires ~230 rounds, the starting stock is 140, and the Comboio Parado scavenging run fires ~350 to bring back ~35),
+  fires ~210 rounds, the starting stock is 140, and the Comboio Parado scavenging run fires ~310 to bring back ~35),
   food is loose, and difficulty barely moves the policy's win rate. Check against playtest round 1 before changing
   values.
 - Publish the trailer (`node tools/promo/trailer.mjs`, ~30 s, 1080p, silent) on the studio's video channel and in the
@@ -20,7 +20,7 @@
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
-- Art, next step: a crawler infected type and more animation (a stagger when hit, a turn while idle), reusing
+- Art, next step: more animation (a turn or look-around while idle, a reload) and a second crawler look, reusing
   `tools/sprites/bake_characters.py`.
 
 ## BLOCKED
@@ -29,6 +29,11 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Crawler infected (Rastejante): drags itself face down on its hands, 45 HP, 0.5 m/s, bites often, and survivors
+  only notice it within 5 m; it appears in Plantão Noturno, Comboio Parado, Feira Fantasma and Sinal Fraco. Every
+  character sheet gains a hit frame: survivors flinch when hurt and infected stagger while the simulation staggers
+  them (ADR 0026).
 
 - Character detail: heads with faces and hair styles, hands with fingers, cloth folds, collars, belts and cuffs;
   outfits give eight walker looks instead of four; the bake copies template meshes and stays at about 75 s (ADR 0025).

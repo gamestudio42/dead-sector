@@ -11,11 +11,12 @@
         0.102,
         0.094,
         0.111,
-        0.234
+        0.234,
+        0.094
       ],
       "borderAlpha": 0.0,
-      "sha256": "d96f43aa38b75436f22242b1c7f0cd39664df24b28c312d360ca2d2503484563",
-      "bytes": 50114
+      "sha256": "80f3e65e9f5632f337307b791c9416e0f0dcfc8f23aa1ce500221dfa56129e7c",
+      "bytes": 55453
     },
     "sv-alfa-leader": {
       "coverage": [
@@ -28,11 +29,12 @@
         0.104,
         0.099,
         0.1,
-        0.233
+        0.233,
+        0.095
       ],
       "borderAlpha": 0.0,
-      "sha256": "da64c635b8e3527d863eb1af4bcc225df6885eb53144b2a8869ff0a04282dead",
-      "bytes": 47539
+      "sha256": "f1bf7cef05669372a53783a5c8b87fc1ee7d54f0c7cd75890850ac315f67b3e5",
+      "bytes": 52580
     },
     "sv-alfa-marksman": {
       "coverage": [
@@ -45,11 +47,12 @@
         0.111,
         0.105,
         0.101,
-        0.233
+        0.233,
+        0.103
       ],
       "borderAlpha": 0.0,
-      "sha256": "5b398816302d5def99738d401dbe5b7b9c78a57acc142f3efad4927061e407bc",
-      "bytes": 48648
+      "sha256": "af53f929d9c8c9bc328ffb00da621d428ecd4541fc412f939e36d3883bec4e80",
+      "bytes": 53962
     },
     "sv-alfa-medic": {
       "coverage": [
@@ -62,11 +65,12 @@
         0.108,
         0.103,
         0.105,
-        0.235
+        0.235,
+        0.105
       ],
       "borderAlpha": 0.0,
-      "sha256": "017d6b5aa38d04cec25062ae95b6275fc27ea006e4aa5b5522b287bcca4c0800",
-      "bytes": 52348
+      "sha256": "5a43478907e2e113228d0757cc5963aa603197760f455a1ceace64c71bdc920b",
+      "bytes": 58822
     },
     "sv-bravo-leader": {
       "coverage": [
@@ -79,11 +83,12 @@
         0.111,
         0.105,
         0.101,
-        0.236
+        0.236,
+        0.103
       ],
       "borderAlpha": 0.0,
-      "sha256": "79e97aa44dc759cbfd31f8c7398a1397db54c2f94c5af08651ec9c3d6d76b3fa",
-      "bytes": 48220
+      "sha256": "82538292b7875378516d09e36046499e8ddfa817434843011716ce9a8eaba26e",
+      "bytes": 53475
     },
     "sv-bravo-mechanic": {
       "coverage": [
@@ -96,11 +101,12 @@
         0.111,
         0.105,
         0.102,
-        0.233
+        0.233,
+        0.102
       ],
       "borderAlpha": 0.0,
-      "sha256": "f933f033c7a97d6c90583f453b0375187c3723ccf6d2d11ea92e1effef8ba99b",
-      "bytes": 48863
+      "sha256": "5e2ef1bf0840a9cdd0d00d34cc2e83e8f782b4844f3fbdb84893bccb2fc0d1f8",
+      "bytes": 54030
     },
     "sv-bravo-scout": {
       "coverage": [
@@ -113,11 +119,12 @@
         0.103,
         0.098,
         0.098,
-        0.234
+        0.234,
+        0.097
       ],
       "borderAlpha": 0.0,
-      "sha256": "b85aa159dad8c20d4919398b9c55bcb3b54d2f423eaa61bcb51b7e3aee50eb9f",
-      "bytes": 48129
+      "sha256": "80134d0bc797aa46356afbea77e585fdcfad9c5f3fcccb138a3f684265eac833",
+      "bytes": 53201
     },
     "sv-bravo-volunteer": {
       "coverage": [
@@ -130,11 +137,12 @@
         0.103,
         0.097,
         0.098,
-        0.235
+        0.235,
+        0.096
       ],
       "borderAlpha": 0.0,
-      "sha256": "d1c1c222725a0ca09ffefbddf37f18300de718bcd4e9dc950b635590cc92b2e2",
-      "bytes": 48347
+      "sha256": "dafd9273df96b8a624bff12affe08c7bc8bad0d4a0ab4c430238c35bf6b023f7",
+      "bytes": 53261
     },
     "sv-civilian": {
       "coverage": [
@@ -147,11 +155,12 @@
         0.088,
         0.075,
         0.068,
-        0.233
+        0.233,
+        0.095
       ],
       "borderAlpha": 0.0,
-      "sha256": "b7ba74fc2d6931fb858a2d6719cf840e82f11436b9024bc20382237ae9f857d4",
-      "bytes": 41913
+      "sha256": "9047232e8101f6a619fea5ec23cbca635fa41b3bb2dd74417e5162d560adc442",
+      "bytes": 47755
     },
     "sv-recruit": {
       "coverage": [
@@ -164,11 +173,30 @@
         0.104,
         0.099,
         0.1,
-        0.233
+        0.233,
+        0.095
       ],
       "borderAlpha": 0.0,
-      "sha256": "0ab7dbbfd69108a35160ab3a94c219f00b8e3a118a1c29adcf3164e30304d962",
-      "bytes": 46990
+      "sha256": "d041300fc5932c94ed39abbc046b1513700e3159bd5e1bc27ff75bfd5615f064",
+      "bytes": 52198
+    },
+    "zb-crawler": {
+      "coverage": [
+        0.17,
+        0.17,
+        0.174,
+        0.17,
+        0.17,
+        0.17,
+        0.174,
+        0.17,
+        0.183,
+        0.175,
+        0.177
+      ],
+      "borderAlpha": 0.0,
+      "sha256": "296cf181d22c3864092e12db72383dbb111687dfe567586470a1ddce89f276e3",
+      "bytes": 81743
     },
     "zb-heavy": {
       "coverage": [
@@ -181,11 +209,12 @@
         0.147,
         0.143,
         0.152,
-        0.277
+        0.277,
+        0.137
       ],
       "borderAlpha": 0.0,
-      "sha256": "f01d4ed8fe9375d8511eb99884952e4241cf4fc7c40c31bb9bda3afbebd90a3c",
-      "bytes": 55475
+      "sha256": "be109b956f880ebee3718bd33db0544d150f294d4340ac51c9714817056ed5d6",
+      "bytes": 62378
     },
     "zb-runner": {
       "coverage": [
@@ -198,11 +227,12 @@
         0.124,
         0.121,
         0.128,
-        0.233
+        0.233,
+        0.11
       ],
       "borderAlpha": 0.0,
-      "sha256": "75356b47407a006702b5c6119de8bc503960443fb63cae0fa17a8c662bee5020",
-      "bytes": 50488
+      "sha256": "8f8544379d177e6fdb96f09cd66424d70d24cf6cb1b5726c0d5efb1d367aaf04",
+      "bytes": 56065
     },
     "zb-screamer": {
       "coverage": [
@@ -215,11 +245,12 @@
         0.113,
         0.11,
         0.119,
-        0.21
+        0.21,
+        0.101
       ],
       "borderAlpha": 0.0,
-      "sha256": "6b53e344a85fda75f84420b39a727754e2ff3cf39bdad977413a316d81249524",
-      "bytes": 51140
+      "sha256": "86a248326590a8a2704ff4cf446d678e33d5c7e66a295ee1f7ed8a24de31cef0",
+      "bytes": 56691
     },
     "zb-walker-0": {
       "coverage": [
@@ -232,11 +263,12 @@
         0.118,
         0.116,
         0.125,
-        0.234
+        0.234,
+        0.11
       ],
       "borderAlpha": 0.0,
-      "sha256": "63b873635436c7cea3d66bd4006b82f3769183759fa4b2575ccfeeeba1f4cf09",
-      "bytes": 50680
+      "sha256": "85604b372535b3e49ab9519fe60ac90e1e956a6a5f1f47827d2094d4202d3d42",
+      "bytes": 56268
     },
     "zb-walker-1": {
       "coverage": [
@@ -249,11 +281,12 @@
         0.12,
         0.117,
         0.126,
-        0.233
+        0.233,
+        0.11
       ],
       "borderAlpha": 0.0,
-      "sha256": "e8436ca8694014844279fb747fbffaec04f43c655169314d849f0696ccf3f2f1",
-      "bytes": 51208
+      "sha256": "542555417c538bb9ca99e739ea1c427a5a875394ec053e427cfa58aaf6f56d5d",
+      "bytes": 56927
     },
     "zb-walker-2": {
       "coverage": [
@@ -266,11 +299,12 @@
         0.116,
         0.114,
         0.124,
-        0.234
+        0.234,
+        0.112
       ],
       "borderAlpha": 0.0,
-      "sha256": "2f3df79d60e5ea78d4e2f3db6171da9a0658c28a6b14612aa84ccc1884d306d2",
-      "bytes": 50779
+      "sha256": "d14e63c0d4beb74ce34dacff37f8c695ca8cc038fab4374a6c5a4d3b55d5ebe8",
+      "bytes": 56631
     },
     "zb-walker-3": {
       "coverage": [
@@ -283,11 +317,12 @@
         0.122,
         0.119,
         0.127,
-        0.234
+        0.234,
+        0.112
       ],
       "borderAlpha": 0.0,
-      "sha256": "c4e9d9eb292c34cdf18d51b42bf4e2094c3403359bc29c03b919124814fd63dc",
-      "bytes": 50790
+      "sha256": "866f3ea1f106cd18ace83b144cdc5ba3eab8da65661728417aa5e24e28577b6d",
+      "bytes": 56377
     },
     "zb-walker-4": {
       "coverage": [
@@ -300,11 +335,12 @@
         0.119,
         0.116,
         0.126,
-        0.233
+        0.233,
+        0.111
       ],
       "borderAlpha": 0.0,
-      "sha256": "29adadbc540614b07b0305a9b3e611769646d2430298199c5e817a03a656d39b",
-      "bytes": 52600
+      "sha256": "819f6b55355d324fe7b5adb64639fd41889d386389649b50e381231a77e16a44",
+      "bytes": 58922
     },
     "zb-walker-5": {
       "coverage": [
@@ -317,11 +353,12 @@
         0.123,
         0.119,
         0.127,
-        0.234
+        0.234,
+        0.111
       ],
       "borderAlpha": 0.0,
-      "sha256": "cdc3cbc33357d80053f335be55c1db7d52299be0d56a9fb23d1f640416f76649",
-      "bytes": 55416
+      "sha256": "82031b7cbced09a3b38ef144d00c23c1cc6f0f443dca1448e58f322edaa3e001",
+      "bytes": 61911
     },
     "zb-walker-6": {
       "coverage": [
@@ -334,11 +371,12 @@
         0.127,
         0.122,
         0.134,
-        0.239
+        0.239,
+        0.117
       ],
       "borderAlpha": 0.0,
-      "sha256": "880377478d99b42bcf77faa56fa62aa64c738c9bc947b25346ae86d83e072307",
-      "bytes": 54121
+      "sha256": "f4eec734a68368329b40020163a2c4b3a66a3470862c865325730130045ef3fe",
+      "bytes": 60833
     },
     "zb-walker-7": {
       "coverage": [
@@ -351,15 +389,16 @@
         0.118,
         0.115,
         0.125,
-        0.232
+        0.232,
+        0.113
       ],
       "borderAlpha": 0.0,
-      "sha256": "e96002e8e7340a19009c85008a0ea8efb3b539ca78bb1e08f90a7b7908064d08",
-      "bytes": 50638
+      "sha256": "4bdcde16909046d3f52a574e9a0f2fbc0e270e442eeffd0a9b46bf97b8051a70",
+      "bytes": 56526
     }
   },
   "tool": "blender 5.3.0",
-  "frames": 10,
+  "frames": 11,
   "frameSize": 128,
   "pxPerCell": 64
 }

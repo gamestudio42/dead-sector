@@ -81,7 +81,7 @@
   {
     "id": "crawler",
     "displayName": "Rastejante",
-    "maxHealth": 55,
+    "maxHealth": 45,
     "moveSpeedMetersPerSecond": 0.5,
     "wanderSpeedFactor": 0.6,
     "visionRangeMeters": 8,

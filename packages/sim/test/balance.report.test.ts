@@ -17,9 +17,11 @@ import {
  */
 const SEEDS = 10;
 const enabled = !!process.env['BALANCE_REPORT'];
+/** Lets the worker answer vitest between runs, so a long report does not time out its RPC. */
+const breathe = () => new Promise((r) => setImmediate(r));
 
 describe.skipIf(!enabled)('balance report', () => {
-  it('writes docs/testing/balance.md', () => {
+  it('writes docs/testing/balance.md', async () => {
     const content = loadContent();
     const runs: [string, string, PlanStep[]][] = [
       ['a-ultima-farmacia', 'furtiva', STEALTH_PLAN],
@@ -45,6 +47,7 @@ describe.skipIf(!enabled)('balance report', () => {
         else reasons[d.reason ?? '?'] = (reasons[d.reason ?? '?'] ?? 0) + 1;
         deaths += d.survivors.filter((s) => s.status === 'dead' && s.squadId !== null).length;
         time += d.durationSeconds;
+        await breathe();
       }
       const fails = Object.entries(reasons)
         .map(([r, n]) => `${r} ×${n}`)
@@ -65,5 +68,5 @@ ${rows.join('\n')}
 `;
     writeFileSync(new URL('../../../docs/testing/balance.md', import.meta.url), md);
     console.log(md);
-  });
+  }, 1_200_000);
 });

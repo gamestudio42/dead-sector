@@ -52,7 +52,8 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   barricades on any door/window (kits per squad, loud hammering, planks absorb damage first, removable); only infected
   with a reason break through (wanderers walk around); bites progress exposed → infected → critical → **turned**, a
   squad medic nearby halves the pace; **Brutamontes** (260 HP, barely staggers, smashes doors) and **Gritador** (shriek
-  that draws everything around, with cooldown); a 4-level neighbourhood **alarm** (Calmo → Caçada) fed by loud noise,
+  that draws everything around, with cooldown); **Rastejante** (a crawler without legs: 45 HP, 0.5 m/s, bites often,
+  and survivors only notice it within 5 m; in four missions, ADR 0026); a 4-level neighbourhood **alarm** (Calmo → Caçada) fed by loud noise,
   doubling runner reinforcements at Alerta; **hordes** of 7 (1 heavy) announced 20 s ahead, entering at the far edge and
   patrolling the avenues, on a timer or early at Caçada. Save schema v3 with migration.
 
@@ -107,12 +108,14 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   pulse, then drums. The score stops for the victory or defeat sting. It has its own volume slider.
   `tools/music/render.mjs` renders it to WAV, including a 30 s cue for the trailer.
 - **Character sheets baked in Blender** (ADR 0018). `tools/sprites/bake_characters.py` builds each survivor and
-  infected type from primitives on a joint rig and renders it from straight above. Each sheet has 10 frames at
-  128 px: the walk cycle, the attack and the corpse. Arms reach the weapon by two-bone IK. Every sheet gets a dark
+  infected type from primitives on a joint rig and renders it from straight above. Each sheet has 11 frames at
+  128 px: the walk cycle, the attack, the corpse and a hit pose (a survivor flinches, an infected staggers for as long
+  as the simulation staggers it; ADR 0026). Arms reach the weapon by two-bone IK. Every sheet gets a dark
   outline, and the bake checks coverage and edge clipping. Colours and gear live in
   `apps/web/src/render/characterLooks.json`, which the bake and the code-drawn fallback both read. Heads have faces
   and hair styles, hands have fingers, and the clothes have folds, collars, belts and cuffs. Outfits (tee, tank,
-  hoodie, office, vest, hospital gown) give eight walker looks (ADR 0025).
+  hoodie, office, vest, hospital gown) give eight walker looks (ADR 0025). The crawler drags itself face down on
+  its hands.
 - **Playtest kit**: opt-in local playtest log (Opções → Playtest or `?playtest=1`) that records sessions,
   menu and briefing choices, mission starts, objectives, deaths, bites, panics, blocked orders, alarm and hordes,
   30-second samples (FPS, squad, ammo, stress), how each mission ended or was left (menu, restart, load, closed tab),
@@ -122,7 +125,7 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 ## Verification evidence
 
-- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **217/217** ✓ (plus the opt-in balance and economy reports).
+- `pnpm check`: typecheck ✓, ESLint ✓, production build ✓, Vitest **219/219** ✓ (plus the opt-in balance and economy reports).
 - `pnpm e2e`: **22/22** Playwright ✓ (in CI, which now gates publishing) — critical flow to a graded debriefing, stealth run, save/load, HUD + minimap fit
   at 1280×720 and 1920×1080, options, controls, every mission's map and texts, a scavenging run, the campaign flow with carry-over, the campaign siege, campaign deployment and recruits, campaign difficulty and upgrades, and the
   installable app (manifest, offline start after the first visit, credits with version); no console errors. The suite

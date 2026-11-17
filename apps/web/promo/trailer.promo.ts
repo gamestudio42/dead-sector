@@ -1,5 +1,6 @@
 // Gameplay footage for the trailer: each shot is a numbered JPEG sequence at 30 fps, stepped by
-// hand from the real game on its scripted routes. tools/promo/trailer.mjs cuts them together.
+// hand from the real game on its scripted routes, plus a still of the campaign map. The game runs
+// in English to match the trailer's captions. tools/promo/trailer.mjs cuts them together.
 // Run: pnpm --filter @dead-sector/game exec playwright test -c promo/playwright.config.ts trailer
 import { test, type Page } from '@playwright/test';
 import { mkdirSync, rmSync } from 'node:fs';
@@ -11,7 +12,7 @@ test.use({ viewport: { width: 1920, height: 1080 } });
 
 async function open(page: Page, id: string, hud: boolean): Promise<void> {
   await page.addInitScript(() => localStorage.setItem('dead-sector:tips', '0'));
-  await page.goto('/?lang=pt-BR');
+  await page.goto('/?lang=en');
   await page.getByTestId('btn-new-mission').click();
   await page.getByTestId(`pick-${id}`).click();
   await page.getByTestId('btn-deploy').click();
@@ -114,4 +115,17 @@ test('night fire', async ({ page }) => {
   );
   const between = `(() => { const a = h.state().survivors.find((s) => s.alive && s.squadId === 'alfa'); const f = window.__fire; return a ? { x: (a.position.x + f.x) / 2, y: (a.position.y + f.y) / 2 } : f; })()`;
   await record(page, 'night', 120, between, 2.4);
+});
+
+// The campaign map on day one, shown as a still with a slow push-in.
+test('campaign still', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.addInitScript(() => localStorage.setItem('dead-sector:tips', '0'));
+  await page.goto('/?lang=en');
+  await page.getByTestId('btn-campaign').click();
+  await page.getByTestId('diff-normal').click();
+  await page.getByTestId('strategic').waitFor();
+  await page.waitForTimeout(600);
+  mkdirSync(OUT, { recursive: true });
+  await page.screenshot({ path: path.join(OUT, 'campaign.png') });
 });

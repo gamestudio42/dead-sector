@@ -6,12 +6,10 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const W = 1920;
 const H = 1080;
 const FPS = 30;
-const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(homedir(), 'assets', '_staging', 'dead-sector', 'trailer');
 const FOOTAGE = path.join(ROOT, 'footage');
 const WORK = path.join(ROOT, 'work');
@@ -25,7 +23,7 @@ const SHOTS = [
   { footage: 'fight', caption: 'Every shot is heard.' },
   { footage: 'horde', caption: 'And the whole sector answers.' },
   {
-    still: path.join(here, '..', '..', 'docs', 'screenshots', 'campaign.png'),
+    still: path.join(FOOTAGE, 'campaign.png'),
     seconds: 3.5,
     caption: 'Every day costs food, ammo and lives.',
   },

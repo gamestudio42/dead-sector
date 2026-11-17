@@ -92,3 +92,107 @@ test('cover plate', async ({ page }) => {
     });
   }
 });
+
+// Title screen over the moving backdrop of the Bairro da Ferrugem.
+test('menu', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('dead-sector:tips', '0'));
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('menu').waitFor();
+  await manualClock(page);
+  // let the infected on the backdrop walk into their stride
+  await step(page, 150);
+  await shot(page, 'menu');
+});
+
+// Night in the Centro Velho: the squads' lanterns are the only light when the first shots ring out.
+test('night', async ({ page }) => {
+  await mission(page, 'plantao-noturno');
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.startPlan('mission'));
+  await manualClock(page);
+  await zoom(page, 2.6);
+  await until(page, 'SHOT_FIRED', 1, 'alfa', 9000);
+  for (let n = 0; n < (CANDIDATES ? 6 : 1); n++) {
+    await until(page, 'SHOT_FIRED', 2, 'alfa');
+    await step(page, 2);
+    await shot(page, CANDIDATES ? `night-${n}` : 'night');
+  }
+});
+
+// Briefing of Sinal Fraco: map, objectives and intel over the dimmed title backdrop.
+test('briefing', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('dead-sector:tips', '0'));
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-new-mission').click();
+  await page.getByTestId('pick-sinal-fraco').click();
+  await page.getByTestId('briefing').waitFor();
+  await page.waitForTimeout(600);
+  await shot(page, 'briefing');
+});
+
+// Two squads paused at the start, each with a move and three Shift-click waypoints queued.
+test('orders', async ({ page }) => {
+  await mission(page, 'a-ultima-farmacia');
+  const hook = <T>(fn: string) =>
+    page.evaluate(`(h => ${fn})(window.__DEAD_SECTOR__)`) as Promise<T>;
+  await page.keyboard.press('Space');
+  await page.getByTestId('paused-flag').waitFor();
+  await hook('h.centerOn(18, 9)');
+  await page.waitForTimeout(200);
+  const at = (x: number, y: number) =>
+    hook<{ x: number; y: number }>(`h.worldToScreen(${x}, ${y})`);
+  // drag a box around both squads, starting clear of the left HUD
+  const a = await at(5.4, 3);
+  const b = await at(19, 9);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 });
+  await page.mouse.move(b.x, b.y, { steps: 4 });
+  await page.mouse.up();
+  const route: [number, number][] = [
+    [20.5, 8.5],
+    [25.5, 9.5],
+    [27.5, 14.5],
+    [24.5, 18.5],
+  ];
+  for (const [i, [x, y]] of route.entries()) {
+    const p = await at(x, y);
+    if (i > 0) await page.keyboard.down('Shift');
+    await page.mouse.click(p.x, p.y, { button: 'right' });
+    if (i > 0) await page.keyboard.up('Shift');
+  }
+  // orders given while paused apply on the next tick: step one (the clock still reads 00:00)
+  await hook('h.fastForward(1)');
+  // the squads' bark and the queue counters settle
+  await page.mouse.move(800, 860);
+  await page.waitForTimeout(500);
+  await shot(page, 'orders');
+});
+
+// Debriefing after the scripted stealth route through A Última Farmácia.
+test('debrief', async ({ page }) => {
+  await mission(page, 'a-ultima-farmacia');
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.startPlan('stealth'));
+  for (let i = 0; i < 40; i++) {
+    const done = await page.evaluate(() => {
+      const h = (window as any).__DEAD_SECTOR__;
+      h.fastForward(250);
+      return h.state().mission.status !== 'running';
+    });
+    if (done) break;
+  }
+  await page.getByTestId('debrief').waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(800);
+  await shot(page, 'debrief');
+});
+
+// The campaign map on day one, at the 1280×720 the trailer's still expects.
+test('campaign', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.addInitScript(() => localStorage.setItem('dead-sector:tips', '0'));
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('btn-campaign').click();
+  await page.getByTestId('diff-normal').click();
+  await page.getByTestId('strategic').waitFor();
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: `${CANDIDATES ?? OUT}campaign.png` });
+});

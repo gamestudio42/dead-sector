@@ -20,7 +20,8 @@
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
-- Art, next step: textures or a sculpted pass on the models (heads and clothes).
+- Art, next step: a sculpted pass on the models (rounder torsos and heads instead of bevelled boxes and spheres).
+  At 128 px a frame it would show mostly on corpses and up close; weigh it against other work first.
 
 ## BLOCKED
 
@@ -28,6 +29,9 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Procedural surfaces on the characters: worn cloth, skin tones, hair strands, and grime, blood and bruising on the
+  infected, sized for 1.5 cm pixels (ADR 0028).
 
 - Promo refreshed with the current characters and screens: every README screenshot (battle, menu, night, orders,
   briefing, debrief, campaign), the store and studio-site cover, and the trailer

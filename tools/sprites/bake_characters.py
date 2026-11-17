@@ -137,16 +137,83 @@ def shade(h, f):
     return "#%02x%02x%02x" % tuple(max(0, min(255, round(v * 255 * f))) for v in (r, g, b))
 
 
-def material(h, rough=0.85, metal=0.0):
-    key = (h, rough, metal)
+# Procedural surfaces, sized for the sprite: a pixel is about 1.5 cm, so the detail comes as
+# patches a few centimetres across, not as a fine weave. Each entry: noise scale (per metre),
+# darkest and lightest shade of the base colour, and an optional second layer (colour, noise
+# scale, strength, threshold: lower covers more) for grime, blood or bruising.
+SURFACES = {
+    "cloth": (9.0, 0.8, 1.12, None),
+    "grimy": (9.0, 0.78, 1.1, ("#3a2219", 6.0, 0.8, 0.56)),
+    "skin": (14.0, 0.9, 1.07, None),
+    "rot": (12.0, 0.74, 1.1, ("#4b3a48", 9.0, 0.8, 0.5)),
+    "hair": (40.0, 0.68, 1.28, None),
+}
+
+
+def _rgba(h, f=1.0):
+    return (*(srgb_to_linear(min(1.0, c * f)) for c in hex_rgb(h)), 1)
+
+
+def _surface(m, h, surface):
+    """Base colour driven by noise in object space, offset per part so neighbours differ."""
+    scale, dark, light, layer = SURFACES[surface]
+    nt = m.node_tree
+    bsdf = nt.nodes["Principled BSDF"]
+    coord = nt.nodes.new("ShaderNodeTexCoord")
+    info = nt.nodes.new("ShaderNodeObjectInfo")
+    offset = nt.nodes.new("ShaderNodeVectorMath")
+    offset.operation = "MULTIPLY_ADD"
+    nt.links.new(info.outputs["Random"], offset.inputs[0])
+    offset.inputs[1].default_value = (37.0, 53.0, 71.0)
+    nt.links.new(coord.outputs["Object"], offset.inputs[2])
+
+    def noise(s, detail):
+        n = nt.nodes.new("ShaderNodeTexNoise")
+        n.inputs["Scale"].default_value = s
+        n.inputs["Detail"].default_value = detail
+        n.inputs["Roughness"].default_value = 0.55
+        nt.links.new(offset.outputs[0], n.inputs["Vector"])
+        return n
+
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    els = ramp.color_ramp.elements
+    els[0].position, els[0].color = 0.3, _rgba(h, dark)
+    els[1].position, els[1].color = 0.7, _rgba(h, light)
+    mid = els.new(0.5)
+    mid.color = _rgba(h)
+    nt.links.new(noise(scale, 3.0).outputs["Fac"], ramp.inputs["Fac"])
+    colour = ramp.outputs["Color"]
+    if layer:
+        tint, s2, strength, threshold = layer
+        mask = nt.nodes.new("ShaderNodeValToRGB")
+        mels = mask.color_ramp.elements
+        mels[0].position, mels[0].color = threshold, (0, 0, 0, 1)
+        mels[1].position, mels[1].color = threshold + 0.1, (strength, strength, strength, 1)
+        n2 = noise(s2, 2.0)
+        n2.noise_dimensions = "4D"  # a W slice of its own, so grime does not follow the shading
+        n2.inputs["W"].default_value = 3.7
+        nt.links.new(n2.outputs["Fac"], mask.inputs["Fac"])
+        mix = nt.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        nt.links.new(mask.outputs["Color"], mix.inputs[0])
+        nt.links.new(colour, mix.inputs[6])
+        mix.inputs[7].default_value = _rgba(tint)
+        colour = mix.outputs[2]
+    nt.links.new(colour, bsdf.inputs["Base Color"])
+
+
+def material(h, rough=0.85, metal=0.0, surface=None):
+    key = (h, rough, metal, surface)
     if key in _materials:
         return _materials[key]
     m = bpy.data.materials.new(f"m{len(_materials)}")
     m.use_nodes = True
     bsdf = m.node_tree.nodes["Principled BSDF"]
-    bsdf.inputs["Base Color"].default_value = (*(srgb_to_linear(c) for c in hex_rgb(h)), 1)
+    bsdf.inputs["Base Color"].default_value = _rgba(h)
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metal
+    if surface:
+        _surface(m, h, surface)
     _materials[key] = m
     return m
 
@@ -284,8 +351,8 @@ def head_model(head, look, skin, infected):
 def hair_model(head, look, infected):
     style = look.get("hairStyle", "patchy" if infected else "short")
     covered = look.get("headgear") in ("cap", "helmet")
-    hair = material(look["hair"], 0.85)
-    tuft = material(shade(look["hair"], 1.25), 0.85)
+    hair = material(look["hair"], 0.85, surface="hair")
+    tuft = material(shade(look["hair"], 1.25), 0.85, surface="hair")
     if covered or style == "bald":
         if covered:  # the nape shows under the cap
             ball(head, (0.05, 0.085, 0.05), (-0.075, 0, -0.025), hair, 12, 6)
@@ -337,9 +404,11 @@ class Rig:
         self.top = top
         outfit = look.get("outfit", "tee" if infected else "jacket")
         self.outfit = outfit
-        cloth = material(top, 0.9)
-        pants = material(look["pants"], 0.9)
-        skin = material(look["skin"], 0.6)
+        wear = "grimy" if infected else "cloth"
+        self.wear = wear
+        cloth = material(top, 0.9, surface=wear)
+        pants = material(look["pants"], 0.9, surface=wear)
+        skin = material(look["skin"], 0.6, surface="rot" if infected else "skin")
         boots = material("#17181a", 0.7)
         self.skin = skin
         # what covers each part of the arm and leg
@@ -386,8 +455,8 @@ class Rig:
         self.spine = joint("spine", (0, 0, 0.07), self.pelvis)
         length = 0.7 if outfit == "gown" else 0.5
         box(self.spine, (0.24 * bulk, 0.42 * bulk, length), (0, 0, 0.5 - length / 2), cloth, 0.08)
-        hi = material(shade(top, 1.16), 0.9)
-        lo = material(shade(top, 0.78), 0.9)
+        hi = material(shade(top, 1.16), 0.9, surface=wear)
+        lo = material(shade(top, 0.78), 0.9, surface=wear)
         box(self.spine, (0.12, 0.3 * bulk, 0.02), (-0.04, 0, 0.5), hi, 0.01)
         box(self.spine, (0.015, 0.36 * bulk, 0.012), (0.035, 0, 0.503), lo, 0.004)  # yoke seam
         rng = np.random.default_rng(seed_of(top, outfit))
@@ -406,7 +475,7 @@ class Rig:
                 box(self.spine, (0.016, 0.13, 0.016), (back - 0.006, 0, z), material(shade(top, 0.7), 0.9), 0.004)
         elif outfit == "vest":
             # a high-visibility vest over the shirt, with reflective stripes on top and around
-            vest = material("#d9c21c", 0.6)
+            vest = material("#d9c21c", 0.6, surface=wear)
             stripe = material("#c7c9c4", 0.25, 0.4)
             box(self.spine, (0.255 * bulk, 0.435 * bulk, 0.34), (0, 0, 0.335), vest, 0.06)
             for x in (-0.07, 0.05):
@@ -495,9 +564,9 @@ def survivor_gear(rig, look):
     dark = material("#16181b", 0.45, 0.6)
     hg = look["headgear"]
     if hg == "helmet":
-        ball(head, (0.13, 0.122, 0.1), (-0.005, 0, 0.035), material(shade(look["jacket"], 0.8), 0.55))
+        ball(head, (0.13, 0.122, 0.1), (-0.005, 0, 0.035), material(shade(look["jacket"], 0.8), 0.55, surface="cloth"))
     elif hg == "cap":
-        capm = material(shade(look["jacket"], 0.75), 0.8)
+        capm = material(shade(look["jacket"], 0.75), 0.8, surface="cloth")
         ball(head, (0.112, 0.102, 0.08), (-0.005, 0, 0.04), capm)
         box(head, (0.09, 0.15, 0.015), (0.1, 0, 0.035), capm, 0.006)
     if look.get("medic") or look["weapon"] in ("carbine", "shotgun"):
@@ -511,14 +580,14 @@ def survivor_gear(rig, look):
             box(spine, (0.11, 0.07, 0.025), (0, rig.shoulder_pos[side].y * 0.92, 0.505), band, 0.008)
             ball(rig.shoulders[side], (0.056, 0.056, 0.03), (0, 0, -0.08), band, 12, 6)
     if look.get("medic"):
-        bag = material("#e6e2d8", 0.8)
+        bag = material("#e6e2d8", 0.8, surface="cloth")
         red = material("#d8343a", 0.6)
         box(spine, (0.14, 0.26, 0.3), (-0.18, 0, 0.28), bag, 0.03)
         box(spine, (0.05, 0.16, 0.01), (-0.18, 0, 0.435), red, 0.003)
         box(spine, (0.12, 0.05, 0.01), (-0.18, 0, 0.436), red, 0.003)
     elif look["weapon"] in ("carbine", "shotgun"):
         # ammo pouch on the back for long-gun carriers
-        box(spine, (0.1, 0.24, 0.2), (-0.16, 0, 0.3), material(shade(look["jacket"], 0.7), 0.85), 0.03)
+        box(spine, (0.1, 0.24, 0.2), (-0.16, 0, 0.3), material(shade(look["jacket"], 0.7), 0.85, surface="cloth"), 0.03)
     return dark
 
 

@@ -92,3 +92,28 @@ test('cover plate', async ({ page }) => {
     });
   }
 });
+
+// Title screen over the moving backdrop of the Bairro da Ferrugem.
+test('menu', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('dead-sector:tips', '0'));
+  await page.goto('/?lang=pt-BR');
+  await page.getByTestId('menu').waitFor();
+  await manualClock(page);
+  // let the infected on the backdrop walk into their stride
+  await step(page, 150);
+  await shot(page, 'menu');
+});
+
+// Night in the Centro Velho: the squads' lanterns are the only light when the first shots ring out.
+test('night', async ({ page }) => {
+  await mission(page, 'plantao-noturno');
+  await page.evaluate(() => (window as any).__DEAD_SECTOR__.startPlan('mission'));
+  await manualClock(page);
+  await zoom(page, 2.6);
+  await until(page, 'SHOT_FIRED', 1, 'alfa', 9000);
+  for (let n = 0; n < (CANDIDATES ? 6 : 1); n++) {
+    await until(page, 'SHOT_FIRED', 2, 'alfa');
+    await step(page, 2);
+    await shot(page, CANDIDATES ? `night-${n}` : 'night');
+  }
+});

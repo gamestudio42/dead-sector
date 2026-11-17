@@ -21,8 +21,6 @@
   and "Baixa" accordingly.
 - Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
 - Art, next step: textures or a sculpted pass on the models (heads and clothes).
-- README `orders.jpg` still shows the code-drawn characters: it needs Shift-click waypoints and the order menu open,
-  so it has no scripted capture yet.
 
 ## BLOCKED
 
@@ -31,9 +29,10 @@
 
 ## DONE
 
-- Promo refreshed with the current characters: README battle, menu and night shots, the store and studio-site cover,
-  and the trailer footage (`~/assets/_staging/dead-sector/trailer/dead-sector-trailer.mp4`, 30.5 s, 1080p). The menu
-  and night shots are now captured by `apps/web/promo/shots.promo.ts` like the battle shot.
+- Promo refreshed with the current characters and screens: every README screenshot (battle, menu, night, orders,
+  briefing, debrief, campaign), the store and studio-site cover, and the trailer
+  (`~/assets/_staging/dead-sector/trailer/dead-sector-trailer.mp4`, 30.5 s, 1080p). All seven screenshots are now
+  captured by `apps/web/promo/shots.promo.ts`.
 
 - Idle look-around and a reload pose: sheets grow to 14 frames. Actors that stand still for 2 s glance left and right
   (not infected closing in), and a survivor changing magazines shows the reload pose. A second crawler look (ADR

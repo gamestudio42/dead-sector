@@ -159,8 +159,9 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   and on the canonical seed one walker reaches the zone, so the scripted run fires a few shots there.
 - Survivors cannot climb through broken windows (only infected do). Infection is cured only between campaign missions,
   with treatment doses; there is no cure during a mission.
-- Desktop snap: built, installed and smoke-tested in CI under software rendering; not yet in the Snap Store and not yet
-  run on a real desktop. Saves are separate from the website's.
+- Desktop snap: built, installed and smoke-tested in CI under software rendering, and published in the Snap Store
+  (`snapcraft.io/dead-sector`) on `latest/edge` only: 0.1.0, revision 17, 2026-11-17. No stable, candidate or beta
+  release yet, and not yet run on a real desktop. Saves are separate from the website's.
 - Balance is tuned for the canonical seed (1337); other seeds are playable but scripted bots sometimes lose the civilian there.
 
 ## Repository layout

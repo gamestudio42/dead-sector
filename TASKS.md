@@ -19,7 +19,8 @@
   its soundtrack.
 - Measure frame rate on real GPUs (low-end laptop, integrated graphics) with the in-game FPS readout; tune "Média"
   and "Baixa" accordingly.
-- Snap release: register `dead-sector` in the Snap Store and connect its Builds tab (CI already builds and smoke-tests it).
+- Snap release: `dead-sector` is in the Snap Store on `latest/edge` only (0.1.0, revision 17). Run it on a real
+  desktop, then promote a revision to `stable`.
 
 ## BLOCKED
 
@@ -27,6 +28,8 @@
   battery, before and after this work), so measure on another machine until that is solved.
 
 ## DONE
+
+- Snap Store: `dead-sector` is published by Game Studio 42 at `snapcraft.io/dead-sector`, on `latest/edge`.
 
 - Rounder bodies: torsos, hips, vests and bags are subdivided blocks, and torsos narrow from the shoulders to the waist
   (a hospital gown hangs straight). The gown's open back follows the body (ADR 0029).

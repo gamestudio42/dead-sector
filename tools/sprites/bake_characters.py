@@ -273,6 +273,22 @@ def box(parent, size, loc, mat, bevel=0.015, rot=None):
     return _part(tpl, size, parent, mat, bevel, loc, rot)
 
 
+def body(parent, size, loc, mat, bevel, taper=1.0):
+    """A soft body block (torso, pelvis, vest): a bevelled box narrowed at the bottom by `taper`
+    and smoothed by subdivision, so shoulders, waist and back read as rounded from above."""
+    ob = box(parent, size, loc, mat, bevel)
+    if taper != 1.0:
+        for v in ob.data.vertices:
+            if v.co.z < 0:
+                v.co.x *= taper
+                v.co.y *= taper
+    sub = ob.modifiers.new("round", "SUBSURF")
+    sub.levels = sub.render_levels = 2
+    for p in ob.data.polygons:
+        p.use_smooth = True
+    return ob
+
+
 def ball(parent, radii, loc, mat, segments=18, rings=10):
     tpl = _template(
         ("uv", segments, rings),
@@ -420,7 +436,7 @@ class Rig:
 
         self.root = joint("root", (0, 0, 0))
         self.pelvis = joint("pelvis", (0, 0, 0.95), self.root)
-        box(self.pelvis, (0.2, 0.32 * bulk, 0.18), (0, 0, 0), pants, 0.04)
+        body(self.pelvis, (0.2, 0.32 * bulk, 0.18), (0, 0, 0), pants, 0.04)
         if outfit != "gown":
             # belt with a buckle, a band that shows between shirt and trousers
             box(self.pelvis, (0.215, 0.335 * bulk, 0.045), (0, 0, 0.07), material("#1b1b1c", 0.5), 0.01)
@@ -454,7 +470,9 @@ class Rig:
         # torso: a box with folds, a yoke seam and a collar, so it reads as cloth from above
         self.spine = joint("spine", (0, 0, 0.07), self.pelvis)
         length = 0.7 if outfit == "gown" else 0.5
-        box(self.spine, (0.24 * bulk, 0.42 * bulk, length), (0, 0, 0.5 - length / 2), cloth, 0.08)
+        # broad at the shoulders, narrower at the waist; a hospital gown hangs straight over the hips
+        taper = 1.0 if outfit == "gown" else 0.84
+        body(self.spine, (0.24 * bulk, 0.42 * bulk, length), (0, 0, 0.5 - length / 2), cloth, 0.08, taper)
         hi = material(shade(top, 1.16), 0.9, surface=wear)
         lo = material(shade(top, 0.78), 0.9, surface=wear)
         box(self.spine, (0.12, 0.3 * bulk, 0.02), (-0.04, 0, 0.5), hi, 0.01)
@@ -465,19 +483,25 @@ class Rig:
             ang = rng.uniform(-0.6, 0.6)
             box(self.spine, (0.1, 0.012, 0.01), (-0.07, y, 0.511), lo, 0.003, euler_q(z=ang))
             box(self.spine, (0.1, 0.01, 0.01), (-0.07, y + 0.014, 0.512), hi, 0.003, euler_q(z=ang))
-        back = -0.12 * bulk  # the back face of the torso box
+        bottom = 0.5 - length
+
+        def back(z):
+            """The back of the torso at height z: it narrows toward the waist like the body."""
+            return -0.12 * bulk * (taper + (1 - taper) * (z - bottom) / length)
+
         if outfit == "gown":
             # the hospital gown is open at the back: a strip of skin down the spine and the ties;
-            # it shows on the corpse, which lies face down
+            # it shows on the corpse, which lies face down. Short pieces follow the narrowing back.
             box(self.spine, (0.06, 0.07, 0.02), (-0.09, 0, 0.505), skin, 0.01)
-            box(self.spine, (0.012, 0.08, 0.55), (back - 0.002, 0, 0.22), skin, 0.004)
+            for z in (0.43, 0.29, 0.15, 0.01):
+                box(self.spine, (0.012, 0.08, 0.15), (back(z) + 0.001, 0, z), skin, 0.004)
             for z in (0.4, 0.15):
-                box(self.spine, (0.016, 0.13, 0.016), (back - 0.006, 0, z), material(shade(top, 0.7), 0.9), 0.004)
+                box(self.spine, (0.016, 0.13, 0.016), (back(z) - 0.003, 0, z), material(shade(top, 0.7), 0.9), 0.004)
         elif outfit == "vest":
             # a high-visibility vest over the shirt, with reflective stripes on top and around
             vest = material("#d9c21c", 0.6, surface=wear)
             stripe = material("#c7c9c4", 0.25, 0.4)
-            box(self.spine, (0.255 * bulk, 0.435 * bulk, 0.34), (0, 0, 0.335), vest, 0.06)
+            body(self.spine, (0.255 * bulk, 0.435 * bulk, 0.34), (0, 0, 0.335), vest, 0.06)
             for x in (-0.07, 0.05):
                 box(self.spine, (0.03, 0.41 * bulk, 0.012), (x, 0, 0.51), stripe, 0.004)
             box(self.spine, (0.262 * bulk, 0.442 * bulk, 0.03), (0, 0, 0.27), stripe, 0.01)
@@ -582,7 +606,7 @@ def survivor_gear(rig, look):
     if look.get("medic"):
         bag = material("#e6e2d8", 0.8, surface="cloth")
         red = material("#d8343a", 0.6)
-        box(spine, (0.14, 0.26, 0.3), (-0.18, 0, 0.28), bag, 0.03)
+        body(spine, (0.14, 0.26, 0.3), (-0.18, 0, 0.28), bag, 0.03)
         box(spine, (0.05, 0.16, 0.01), (-0.18, 0, 0.435), red, 0.003)
         box(spine, (0.12, 0.05, 0.01), (-0.18, 0, 0.436), red, 0.003)
     elif look["weapon"] in ("carbine", "shotgun"):

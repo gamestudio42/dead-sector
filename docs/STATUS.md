@@ -116,7 +116,8 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
   and hair styles, hands have fingers, and the clothes have folds, collars, belts and cuffs. Outfits (tee, tank,
   hoodie, office, vest, hospital gown) give eight walker looks (ADR 0025). The crawler drags itself face down on
   its hands and has two looks. Surfaces are procedural shaders: worn cloth, skin tones, and grime, blood and
-  bruising on the infected (ADR 0028).
+  bruising on the infected (ADR 0028). Torsos, hips, vests and bags are rounded blocks, broader at the shoulders than
+  at the waist (ADR 0029).
 - **Playtest kit**: opt-in local playtest log (Opções → Playtest or `?playtest=1`) that records sessions,
   menu and briefing choices, mission starts, objectives, deaths, bites, panics, blocked orders, alarm and hordes,
   30-second samples (FPS, squad, ammo, stress), how each mission ended or was left (menu, restart, load, closed tab),
@@ -148,8 +149,8 @@ overview is the [README](../README.md); open work is tracked in [TASKS.md](../TA
 
 - Art and audio are **original**. Terrain is painted in code and sound is synthesized. Characters are 3D models
   rendered top-down in Blender (ADR 0018). They are built from primitives with modelled faces, hands and cloth folds
-  (ADR 0025) and procedural surfaces (ADR 0028), but no sculpted shapes or hand-painted textures, which would still
-  raise fidelity. The music is synthesized (ADR 0019), with simple timbres and a mix balanced by measurement only.
+  (ADR 0025), procedural surfaces (ADR 0028) and rounded bodies (ADR 0029). There are no sculpted details (muscles,
+  creases) and no hand-painted textures: at 128 px a frame those would barely show. The music is synthesized (ADR 0019), with simple timbres and a mix balanced by measurement only.
 - Rendering performance was checked only in headless Chromium (software GL); no measured FPS budget on low-end GPUs yet.
 - Route map and timeline are not saved: a mission continued from a quicksave shows only what happened after loading.
 - Campaign balance is verified with scripted routes on canonical seeds; with heavy early losses the later missions get

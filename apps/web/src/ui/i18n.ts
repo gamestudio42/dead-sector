@@ -242,6 +242,29 @@ export const MT: MissionTexts = new Proxy({} as MissionTexts, {
   },
 });
 
+/**
+ * A phone or tablet. A desktop mouse stays fine even if the machine also has a touchscreen,
+ * because hover is available. Some mobile emulations report a fine pointer with no hover.
+ */
+export function coarsePointer(): boolean {
+  if (typeof matchMedia !== 'function') return false;
+  if (matchMedia('(pointer: coarse)').matches) return true;
+  const touch = typeof navigator !== 'undefined' && (navigator.maxTouchPoints ?? 0) > 0;
+  return touch && matchMedia('(hover: none)').matches;
+}
+
+/**
+ * On a coarse pointer, mouse-only instructions become the touch gesture that does the same thing.
+ * Pass `coarse` from tests. Desktop copy is unchanged when this is false.
+ */
+export function adaptPointerCopy(line: string, coarse = coarsePointer()): string {
+  if (!coarse || !line) return line;
+  const swaps = [...catalog().touch.swaps].sort((a, b) => b[0].length - a[0].length);
+  let out = line;
+  for (const [from, to] of swaps) if (from) out = out.replaceAll(from, to);
+  return out;
+}
+
 /** A sentence from the active catalog, by dotted path. */
 export function text(path: string, extra: Record<string, string | number> = {}): string {
   let cur: unknown = catalog();
@@ -249,7 +272,7 @@ export function text(path: string, extra: Record<string, string | number> = {}):
     if (!cur || typeof cur !== 'object') return path;
     cur = (cur as Record<string, unknown>)[part];
   }
-  return typeof cur === 'string' ? fill(cur, extra) : path;
+  return typeof cur === 'string' ? adaptPointerCopy(fill(cur, extra)) : path;
 }
 
 export function missionTitle(id: string, fallbackName: string): string {

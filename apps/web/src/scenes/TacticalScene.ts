@@ -23,6 +23,16 @@ import { AudioEngine } from '../audio/AudioEngine';
 import { captionFor } from '../audio/captions';
 import { cuesForEvents, threatLevel } from '../audio/cues';
 import { CameraController } from '../input/CameraController';
+import {
+  clearTouchMap,
+  createTouchMap,
+  touchDown,
+  touchHold,
+  touchMove,
+  touchUp,
+  type TouchGesture,
+  type TouchMap,
+} from '../input/TouchMap';
 import { KeyBindings, type Action } from '../input/KeyBindings';
 import {
   barrierAt,
@@ -94,6 +104,8 @@ export class TacticalScene extends Phaser.Scene {
   private drag: { sx: number; sy: number; wx: number; wy: number; active: boolean } | null = null;
   private boxG!: Phaser.GameObjects.Graphics;
   private menu = new ContextMenu();
+  /** Finger gestures on the map. Mouse pointers never enter this state. */
+  private touch: TouchMap = createTouchMap();
   /** Last pointer position in cells (keyboard orders that act on what is under the cursor). */
   private cursor: Vec2 = { x: 0, y: 0 };
   private prev = new Map<string, Vec2>();
@@ -227,12 +239,21 @@ export class TacticalScene extends Phaser.Scene {
 
     this.selection = [this.sim.state.squads[0]?.id ?? 'alfa'];
     this.boxG = this.add.graphics().setDepth(19);
+    this.input.addPointer(2);
     this.input.mouse?.disableContextMenu();
-    const toWorld = (p: Phaser.Input.Pointer) => {
-      const wp = this.cameras.main.getWorldPoint(p.x, p.y);
-      return { x: wp.x / CELL, y: wp.y / CELL };
+    const toWorld = (p: Phaser.Input.Pointer) => this.cellAt(p.x, p.y);
+    const applyTouch = (gesture: TouchGesture | null): void => {
+      if (!gesture) return;
+      if (gesture.type === 'pan') this.camCtl.panPixels(gesture.dx, gesture.dy);
+      else if (gesture.type === 'zoom') this.camCtl.zoomAt(gesture.cx, gesture.cy, gesture.factor);
+      else if (gesture.type === 'tap') this.onTouchTap(this.cellAt(gesture.x, gesture.y));
+      else this.onTouchLong(gesture);
     };
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (p.wasTouch) {
+        touchDown(this.touch, p.id, p.x, p.y, performance.now());
+        return;
+      }
       const ev = p.event as MouseEvent;
       const w = toWorld(p);
       if (p.rightButtonDown()) {
@@ -243,13 +264,21 @@ export class TacticalScene extends Phaser.Scene {
       }
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (p.wasTouch) {
+        applyTouch(touchMove(this.touch, p.id, p.x, p.y));
+        return;
+      }
       this.cursor = toWorld(p);
       if (!this.drag || !p.leftButtonDown()) return;
       if (!this.drag.active && Math.hypot(p.x - this.drag.sx, p.y - this.drag.sy) > DRAG_THRESHOLD)
         this.drag.active = true;
       if (this.drag.active) this.drawDragBox(toWorld(p));
     });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
+    const endPointer = (p: Phaser.Input.Pointer): void => {
+      if (p.wasTouch) {
+        applyTouch(touchUp(this.touch, p.id, p.x, p.y, performance.now()));
+        return;
+      }
       const d = this.drag;
       this.drag = null;
       this.boxG.clear();
@@ -263,7 +292,10 @@ export class TacticalScene extends Phaser.Scene {
         const sq = squadAt(this.sim.state, w);
         if (sq) this.select(sq, additive);
       }
-    });
+    };
+    this.input.on('pointerup', endPointer);
+    this.input.on('pointerupoutside', endPointer);
+    this.input.on('gameout', () => clearTouchMap(this.touch));
     window.addEventListener('keydown', this.onKey);
     this.events.once('shutdown', () => this.teardown());
     this.exposeTestHooks();
@@ -347,8 +379,29 @@ export class TacticalScene extends Phaser.Scene {
       .strokeRect(x, y, bw, bh);
   }
 
+  private cellAt(sx: number, sy: number): Vec2 {
+    const wp = this.cameras.main.getWorldPoint(sx, sy);
+    return { x: wp.x / CELL, y: wp.y / CELL };
+  }
+
+  /** Tap: select the squad under the finger, or give the selected squad the usual right-click order. */
+  private onTouchTap(cell: Vec2): void {
+    const sq = squadAt(this.sim.state, cell);
+    if (sq) this.select(sq, false);
+    else this.rightClick(cell);
+  }
+
+  /** Long-press: the order menu, including Barricade when the spot is a door or window. */
+  private onTouchLong(gesture: Extract<TouchGesture, { type: 'long' }>): void {
+    const cell = this.cellAt(gesture.x, gesture.y);
+    const sq = squadAt(this.sim.state, cell);
+    if (sq) this.select(sq, false);
+    const rect = this.game.canvas.getBoundingClientRect();
+    this.openContextMenu(cell, rect.left + gesture.x, rect.top + gesture.y, true);
+  }
+
   /** Ctrl + right click: every order that makes sense at this spot, with its consequence. */
-  private openContextMenu(p: Vec2, sx: number, sy: number): void {
+  private openContextMenu(p: Vec2, sx: number, sy: number, fromTouch = false): void {
     const ids = this.orderable();
     if (!ids.length) return this.hud.toast(text('toasts.selectFirst'));
     this.pt?.count('contextMenu');
@@ -434,7 +487,7 @@ export class TacticalScene extends Phaser.Scene {
         },
       },
     );
-    this.menu.show(sx, sy, text('context.title', { names }), items);
+    this.menu.show(sx, sy, text('context.title', { names }), items, fromTouch ? 450 : 0);
   }
 
   /** Barricade with the first selected squad that still has plank kits. */
@@ -647,6 +700,8 @@ export class TacticalScene extends Phaser.Scene {
   }
 
   override update(time: number, delta: number): void {
+    const held = touchHold(this.touch, performance.now());
+    if (held?.type === 'long') this.onTouchLong(held);
     this.camCtl.update(delta);
     this.pt?.setPaused(this.clock.paused);
     if (!this.sim.ended) {

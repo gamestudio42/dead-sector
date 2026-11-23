@@ -1075,4 +1075,27 @@ export const ptBR: Catalog = {
     missionEndFallback: 'Fim da missão',
   },
   boot: { invalid: 'Conteúdo inválido' },
+  touch: {
+    rotate: 'Na horizontal fica mais fácil. Gire o aparelho.',
+    dismiss: 'Fechar',
+    swaps: [
+      ['Ctrl + clique direito ou B', 'toque longo e depois Barricar'],
+      [
+        'Ctrl + clique direito abre o menu de ordens no local.',
+        'Um toque longo abre o menu de ordens no local.',
+      ],
+      [
+        'clique com o botão direito no chão para mover',
+        'toque no chão para mover. Arraste para mover a câmera e pince para o zoom',
+      ],
+      ['clique ou arraste uma caixa', 'toque no esquadrão'],
+      ['clique ou arraste', 'toque no esquadrão'],
+      ['ou clique direito sobre um deles para atacar', 'ou toque num deles para atacar'],
+      ['Clique direito na porta para arrombar.', 'Toque na porta para arrombar.'],
+      ['{barricade} com o cursor sobre a porta', 'um toque longo na porta'],
+      ['clique direito para mover', 'toque no chão para mover'],
+      ['Mesmo que Shift + clique direito', 'Corre quando a ordem atual acaba'],
+      ['Aponte o cursor para uma porta ou janela', 'Toque longo numa porta ou janela'],
+    ],
+  },
 };

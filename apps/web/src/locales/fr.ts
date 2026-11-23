@@ -1093,4 +1093,30 @@ export const fr: Catalog = {
     missionEndFallback: 'Fin de la mission',
   },
   boot: { invalid: 'Contenu invalide' },
+  touch: {
+    rotate: "Le paysage est plus confortable. Tournez l'appareil.",
+    dismiss: 'Fermer',
+    swaps: [
+      ['Ctrl + clic droit ou B', 'appui long, puis Barricader'],
+      [
+        "Ctrl + clic droit ouvre le menu d'ordres sur place.",
+        "Un appui long ouvre le menu d'ordres sur place.",
+      ],
+      [
+        'cliquez droit au sol pour la déplacer',
+        'touchez le sol pour la déplacer. Glissez pour déplacer la caméra et pincez pour le zoom',
+      ],
+      ['clic ou glisser une boîte', "touchez l'escouade"],
+      ['clic ou glisser', "touchez l'escouade"],
+      ["ou cliquez droit sur l'un d'eux pour attaquer", "ou touchez l'un d'eux pour attaquer"],
+      ['Cliquez droit sur la porte pour la forcer.', 'Touchez la porte pour la forcer.'],
+      ['{barricade} avec le curseur sur la porte', 'un appui long sur la porte'],
+      ['clic droit pour se déplacer', 'touchez le sol pour vous déplacer'],
+      ['Comme Maj + clic droit', "S'exécute quand l'ordre en cours se termine"],
+      [
+        'Pointez le curseur sur une porte ou une fenêtre',
+        'Appui long sur une porte ou une fenêtre',
+      ],
+    ],
+  },
 };

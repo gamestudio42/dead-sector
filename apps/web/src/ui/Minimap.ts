@@ -33,6 +33,7 @@ export class Minimap {
   private fog = document.createElement('canvas');
   private pings: Ping[] = [];
   private dragging = false;
+  private holdTimer = 0;
   private lastDraw = 0;
   private stopLocale: (() => void) | null = null;
 
@@ -63,19 +64,42 @@ export class Minimap {
       };
     };
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    let holdAt = { x: 0, y: 0 };
+    const clearHold = (): void => {
+      window.clearTimeout(this.holdTimer);
+      this.holdTimer = 0;
+    };
     this.canvas.addEventListener('pointerdown', (e) => {
       const p = cell(e);
       if (e.button === 2) return this.onMove(p.x, p.y);
+      if (e.pointerType === 'touch') {
+        holdAt = { x: e.clientX, y: e.clientY };
+        clearHold();
+        const spot = p;
+        this.holdTimer = window.setTimeout(() => {
+          this.holdTimer = 0;
+          this.onMove(spot.x, spot.y);
+        }, 480);
+      }
       this.dragging = true;
       this.canvas.setPointerCapture(e.pointerId);
       this.onCenter(p.x, p.y);
     });
     this.canvas.addEventListener('pointermove', (e) => {
+      if (this.holdTimer && Math.hypot(e.clientX - holdAt.x, e.clientY - holdAt.y) > 18)
+        clearHold();
       if (!this.dragging) return;
       const p = cell(e);
       this.onCenter(p.x, p.y);
     });
-    this.canvas.addEventListener('pointerup', () => (this.dragging = false));
+    this.canvas.addEventListener('pointerup', () => {
+      clearHold();
+      this.dragging = false;
+    });
+    this.canvas.addEventListener('pointercancel', () => {
+      clearHold();
+      this.dragging = false;
+    });
   }
 
   private applyCopy(): void {
@@ -85,6 +109,8 @@ export class Minimap {
   }
 
   destroy(): void {
+    window.clearTimeout(this.holdTimer);
+    this.holdTimer = 0;
     this.stopLocale?.();
     this.stopLocale = null;
   }

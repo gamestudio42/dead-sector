@@ -14,9 +14,17 @@
     <div id="ui">
       <div class="boot-loading" aria-live="polite">
         <div class="title">DEAD <span>SECTOR</span></div>
-        <div class="small">Gerando o mundo…</div>
+        <div class="small" data-boot>Gerando o mundo…</div>
       </div>
     </div>
+    <script>
+      window.setTimeout(function () {
+        if (window.__PHASER_GAME__ || navigator.onLine) return;
+        var el = document.querySelector('[data-boot]');
+        if (el)
+          el.textContent = 'Sem ligação. Abra o jogo online uma vez para o guardar neste aparelho.';
+      }, 4000);
+    </script>
     <script type="module" src="/src/main.ts"></script>
     <script
       data-goatcounter="https://gamestudio42.goatcounter.com/count"

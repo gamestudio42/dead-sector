@@ -47,6 +47,23 @@ export class CameraController {
     this.scene.cameras.main.centerOn(x * CELL, y * CELL);
   }
 
+  /** Pan by screen pixels. Touch drags use this; the mouse still pans with the middle button. */
+  panPixels(dx: number, dy: number): void {
+    const cam = this.scene.cameras.main;
+    cam.scrollX -= dx / cam.zoom;
+    cam.scrollY -= dy / cam.zoom;
+  }
+
+  /** Zoom around a screen point, keeping that point under the fingers. */
+  zoomAt(screenX: number, screenY: number, factor: number): void {
+    const cam = this.scene.cameras.main;
+    const before = cam.getWorldPoint(screenX, screenY);
+    cam.setZoom(Phaser.Math.Clamp(cam.zoom * factor, 0.45, 4));
+    const after = cam.getWorldPoint(screenX, screenY);
+    cam.scrollX += before.x - after.x;
+    cam.scrollY += before.y - after.y;
+  }
+
   update(deltaMs: number): void {
     const cam = this.scene.cameras.main;
     // Shift is the "fast camera" modifier (playtest request); the base speed is a setting

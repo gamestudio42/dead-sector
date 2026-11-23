@@ -36,7 +36,13 @@ export default tseslint.config(
     // service worker: runs in the worker global scope
     files: ['apps/web/public/sw.js'],
     languageOptions: {
-      globals: { self: 'readonly', caches: 'readonly', fetch: 'readonly', URL: 'readonly' },
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        Response: 'readonly',
+      },
     },
   },
   {

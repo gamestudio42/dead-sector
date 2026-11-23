@@ -40,7 +40,13 @@ export class ContextMenu {
     return !!this.el;
   }
 
-  show(screenX: number, screenY: number, title: string, items: MenuItem[]): void {
+  show(
+    screenX: number,
+    screenY: number,
+    title: string,
+    items: MenuItem[],
+    ignoreClickMs = 0,
+  ): void {
     this.close();
     const m = document.createElement('div');
     m.className = 'context-menu panel';
@@ -53,7 +59,14 @@ export class ContextMenu {
       b.disabled = !!it.disabled;
       if (it.danger) b.classList.add('danger');
       b.innerHTML = `<span>${it.label}</span>${it.hint ? `<small>${it.hint}</small>` : ''}`;
+      const openedAt = performance.now();
       b.onclick = (e) => {
+        // The finger that opened the menu is still down; ignore the click it synthesizes on release.
+        if (ignoreClickMs > 0 && performance.now() - openedAt < ignoreClickMs) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         e.stopPropagation();
         this.close();
         it.run();
@@ -63,8 +76,8 @@ export class ContextMenu {
     m.addEventListener('contextmenu', (e) => e.preventDefault());
     uiRoot().appendChild(m);
     const r = m.getBoundingClientRect();
-    m.style.left = `${Math.min(screenX, window.innerWidth - r.width - 6)}px`;
-    m.style.top = `${Math.min(screenY, window.innerHeight - r.height - 6)}px`;
+    m.style.left = `${Math.max(6, Math.min(screenX, window.innerWidth - r.width - 6))}px`;
+    m.style.top = `${Math.max(6, Math.min(screenY, window.innerHeight - r.height - 6))}px`;
     this.el = m;
     m.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
     window.setTimeout(() => {

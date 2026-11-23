@@ -1090,4 +1090,33 @@ export const de: Catalog = {
     missionEndFallback: 'Ende der Mission',
   },
   boot: { invalid: 'Ungültiger Inhalt' },
+  touch: {
+    rotate: 'Querformat spielt sich besser. Drehen Sie das Gerät.',
+    dismiss: 'Schließen',
+    swaps: [
+      ['Strg + Rechtsklick oder B', 'langes Drücken, dann Verbarrikadieren'],
+      [
+        'Strg + Rechtsklick öffnet das Befehlsmenü an der Stelle.',
+        'Ein langes Drücken öffnet das Befehlsmenü an der Stelle.',
+      ],
+      [
+        'klickt rechts auf den Boden, um ihn zu bewegen',
+        'tippt auf den Boden, um ihn zu bewegen. Ziehen verschiebt die Kamera, Auf- und Zuziehen zoomt',
+      ],
+      ['Klick oder einen Rahmen ziehen', 'Tippen auf den Trupp'],
+      ['Klick oder Ziehen', 'Tippen auf den Trupp'],
+      ['oder klickt rechts auf einen, um anzugreifen', 'oder tippt auf einen, um anzugreifen'],
+      [
+        'Rechtsklick auf die Tür, um sie aufzubrechen.',
+        'Tippen Sie auf die Tür, um sie aufzubrechen.',
+      ],
+      ['{barricade} mit dem Zeiger über der Tür', 'ein langes Drücken auf die Tür'],
+      ['Rechtsklick zum Bewegen', 'Tippen auf den Boden zum Bewegen'],
+      ['Wie Umschalt + Rechtsklick', 'Läuft, wenn der aktuelle Befehl endet'],
+      [
+        'Zeigt mit dem Zeiger auf eine Tür oder ein Fenster',
+        'Langes Drücken auf eine Tür oder ein Fenster',
+      ],
+    ],
+  },
 };

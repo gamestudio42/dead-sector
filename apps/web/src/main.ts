@@ -8,6 +8,7 @@ import { StrategicScene } from './scenes/StrategicScene';
 import { TacticalScene } from './scenes/TacticalScene';
 import { AudioEngine } from './audio/AudioEngine';
 import { desktop } from './ui/desktop';
+import { mountRotateHint } from './ui/RotateHint';
 import { applyContrast } from './ui/SaveStore';
 import { Playtest } from './telemetry/Playtest';
 import './ui/i18n';
@@ -43,6 +44,7 @@ function boot(): void {
 }
 
 boot();
+mountRotateHint();
 
 // Installed web app: cache the static bundle for offline play (production builds only). The desktop
 // shell already serves its own files, and a worker there could only serve stale ones.

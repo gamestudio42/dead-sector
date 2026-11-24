@@ -1,6 +1,6 @@
 import type { GameState, SimEvent } from '@dead-sector/sim';
 import { keyName } from '../input/KeyBindings';
-import { catalog, fill } from '../ui/i18n';
+import { adaptPointerCopy, catalog, fill } from '../ui/i18n';
 
 /** A contextual hint, shown once per profile the first time its situation happens. */
 export interface Tip {
@@ -31,15 +31,17 @@ function tipCopy(id: (typeof TIPS)[number]): Omit<Tip, 'id'> {
     .join('');
   return {
     title: tip.title,
-    text: fill(tip.text, {
-      squad1: keyName('squad1'),
-      squad2: keyName('squad2'),
-      pan,
-      pause: keyName('pause'),
-      sneak: keyName('modeSneak'),
-      fire: keyName('firePolicy'),
-      barricade: keyName('barricade'),
-    }),
+    text: adaptPointerCopy(
+      fill(adaptPointerCopy(tip.text), {
+        squad1: keyName('squad1'),
+        squad2: keyName('squad2'),
+        pan,
+        pause: keyName('pause'),
+        sneak: keyName('modeSneak'),
+        fire: keyName('firePolicy'),
+        barricade: keyName('barricade'),
+      }),
+    ),
   };
 }
 

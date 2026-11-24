@@ -114,6 +114,11 @@ explain each mechanic the first time it matters.
 | Camera                          | `W` `A` `S` `D` or arrows (`Shift` fast), wheel, minimap |
 | Menu / sound                    | `Esc` / `M`                                              |
 
+On a touch screen the same orders use the finger: tap a squad, tap the ground to move,
+drag to pan, pinch to zoom, and long-press for the order menu (Barricade is the first
+entry on a door or window). A phone held upright asks you to rotate; the installed app
+prefers landscape. Mouse and keyboard are unchanged.
+
 Every key can be rebound in Opções → Controles, with a second key per action and a choice
 between the **WASD** layout (default) and the **Setas** classic layout (camera on the arrows,
 `Q`/`W`/`E` modes). Games and the campaign save in the browser. In

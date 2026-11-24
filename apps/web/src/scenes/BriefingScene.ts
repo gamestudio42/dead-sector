@@ -6,6 +6,7 @@ import { Backdrop } from '../render/Backdrop';
 import { clearUi, uiRoot } from '../ui/dom';
 import { CampaignStore } from '../ui/CampaignStore';
 import {
+  adaptPointerCopy,
   catalog,
   formatDeploymentBlock,
   missionBriefing,
@@ -98,13 +99,13 @@ export class BriefingScene extends Phaser.Scene {
             </div>
           </div>
           <div class="info-col">
-            <p class="briefing">${missionBriefing(missionId, mission.briefing)}</p>
+            <p class="briefing">${adaptPointerCopy(missionBriefing(missionId, mission.briefing))}</p>
             <h4>${text('briefing.objectives')}</h4>
             <ol class="obj-list">${objectiveOrder(mission)
               .map((id) => `<li>${T.objectives[id]}</li>`)
               .join('')}</ol>
             <h4>${text('briefing.intel')}</h4>
-            <ul class="intel">${MT.intel.map((i) => `<li>${i}</li>`).join('')}</ul>
+            <ul class="intel">${MT.intel.map((i) => `<li>${adaptPointerCopy(i)}</li>`).join('')}</ul>
             <p class="small">${text('briefing.timeLimit', { minutes: Math.round(mission.timeLimitSeconds / 60), person: MT.person })}</p>
           </div>
         </div>

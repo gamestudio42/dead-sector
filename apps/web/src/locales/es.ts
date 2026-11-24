@@ -1082,4 +1082,30 @@ export const es: Catalog = {
     missionEndFallback: 'Fin de la misión',
   },
   boot: { invalid: 'Contenido no válido' },
+  touch: {
+    rotate: 'En horizontal se juega mejor. Gira el dispositivo.',
+    dismiss: 'Cerrar',
+    swaps: [
+      ['Ctrl + clic derecho o B', 'pulsación larga y luego Barricar'],
+      [
+        'Ctrl + clic derecho abre el menú de órdenes en el lugar.',
+        'Una pulsación larga abre el menú de órdenes en el lugar.',
+      ],
+      [
+        'haz clic derecho en el suelo para moverlo',
+        'toca el suelo para moverlo. Arrastra para mover la cámara y pellizca para el zoom',
+      ],
+      ['clic o arrastra una caja', 'toca el escuadrón'],
+      ['clic o arrastre', 'toca el escuadrón'],
+      ['o haz clic derecho sobre uno para atacar', 'o toca a uno para atacar'],
+      ['Haz clic derecho en la puerta para forzarla.', 'Toca la puerta para forzarla.'],
+      ['{barricade} con el cursor sobre la puerta', 'una pulsación larga en la puerta'],
+      ['clic derecho para moverse', 'toca el suelo para moverte'],
+      ['Igual que Shift + clic derecho', 'Se ejecuta cuando termina la orden actual'],
+      [
+        'Apunta el cursor a una puerta o una ventana',
+        'Pulsación larga en una puerta o una ventana',
+      ],
+    ],
+  },
 };

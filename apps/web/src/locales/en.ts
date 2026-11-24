@@ -1071,6 +1071,29 @@ export const en = {
     missionEndFallback: 'Mission over',
   },
   boot: { invalid: 'Invalid content' },
+  touch: {
+    rotate: 'Landscape plays better. Rotate your device.',
+    dismiss: 'Dismiss',
+    swaps: [
+      ['Ctrl + right click or B', 'long-press, then Barricade'],
+      [
+        'Ctrl + right click opens the order menu at the spot.',
+        'A long-press opens the order menu at the spot.',
+      ],
+      [
+        'right-click the ground to move',
+        'tap the ground to move. Drag pans the camera and a pinch zooms',
+      ],
+      ['click or drag a box', 'tap the squad'],
+      ['click or drag', 'tap the squad'],
+      ['or right-click one of them to attack', 'or tap one of them to attack'],
+      ['Right-click the door to break it.', 'Tap the door to break it.'],
+      ['{barricade} with the cursor over the door', 'a long-press on the door'],
+      ['right-click to move', 'tap the ground to move'],
+      ['Same as Shift + right click', 'Runs when the current order ends'],
+      ['Point the cursor at a door or a window', 'Long-press a door or a window'],
+    ] as [string, string][],
+  },
 };
 
 export type Catalog = typeof en;

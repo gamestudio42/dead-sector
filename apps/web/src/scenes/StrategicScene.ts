@@ -37,6 +37,7 @@ import {
   upgradeBlurb,
   upgradeName,
 } from '../ui/i18n';
+import { sectorAnchor } from '../ui/sectorLayout';
 import { CAMPAIGN_ID, MISSION_ID } from './MenuScene';
 
 /** Between operations: the shelter's stock and people, and the map of the sector. */
@@ -204,7 +205,7 @@ export class StrategicScene extends Phaser.Scene {
         const status = sectorStatus(def, c, s.id);
         const shelter = s.id === def.shelterSectorId;
         const besieged = shelter && c.siegePending;
-        return `<button class="sector ${status} ${shelter ? 'shelter' : ''} ${besieged ? 'besieged' : ''} ${this.selected === s.id ? 'selected' : ''}"
+        return `<button class="sector anchor-${sectorAnchor(s.pos.x)} ${status} ${shelter ? 'shelter' : ''} ${besieged ? 'besieged' : ''} ${this.selected === s.id ? 'selected' : ''}"
           style="left:${s.pos.x}%;top:${s.pos.y}%" data-sector="${s.id}" data-testid="sector-${s.id}" data-status="${status}">
           <i></i>${status === 'lost' ? fxIcon('sector_lost', { still: !(this.freshNight && c.lastReport.some((l) => l.kind === 'sector-lost' && l.sector === s.displayName)) }) : ''}<b>${status === 'unknown' ? '???' : s.displayName}</b>
           <small>${status === 'unknown' ? text('strategic.status.unknown') : besieged ? text('strategic.siegeTag') : shelter ? text('strategic.shelterTag') : `${text(`strategic.status.${status}`)} · ${Math.round(c.sectors[s.id]!.infestation)}%`}</small>

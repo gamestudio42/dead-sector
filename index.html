@@ -8,17 +8,25 @@
     <meta name="description" content="Tática em tempo real pausável num surto zumbi." />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-    <script type="module" crossorigin src="./assets/index-B6UaX3VU.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BQh7B43R.css">
+    <script type="module" crossorigin src="./assets/index-CNxsT3OJ.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-cwR9Xcc8.css">
   </head>
   <body>
     <div id="game"></div>
     <div id="ui">
       <div class="boot-loading" aria-live="polite">
         <div class="title">DEAD <span>SECTOR</span></div>
-        <div class="small">Gerando o mundo…</div>
+        <div class="small" data-boot>Gerando o mundo…</div>
       </div>
     </div>
+    <script>
+      window.setTimeout(function () {
+        if (window.__PHASER_GAME__ || navigator.onLine) return;
+        var el = document.querySelector('[data-boot]');
+        if (el)
+          el.textContent = 'Sem ligação. Abra o jogo online uma vez para o guardar neste aparelho.';
+      }, 4000);
+    </script>
     <script
       data-goatcounter="https://gamestudio42.goatcounter.com/count"
       async
